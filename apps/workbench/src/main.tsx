@@ -10,7 +10,13 @@ import { FormPicker } from "@/components/form-picker";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { PALETTES, surpriseOptions } from "@/lib/random-options";
+import { Showcase } from "@/pages/showcase";
+import { Research } from "@/pages/research";
 import "./style.css";
+
+type Page = "workbench" | "showcase" | "research";
+const pageFromPath = (path: string): Page => path.replace(/\/+$/, "") === "/showcase" ? "showcase" : path.replace(/\/+$/, "") === "/research" ? "research" : "workbench";
+const pathForPage = (page: Page): string => page === "workbench" ? "/" : `/${page}`;
 
 const VIEWS: { id: RenderView; name: string }[] = [
   { id: "solid", name: "Shaded" }, { id: "solid-wireframe", name: "Shaded + edges" },
@@ -38,6 +44,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 }
 
 function App() {
+  const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname));
   const [options, setOptions] = useState<WorkbenchOptions>(initial.options);
   const [stats, setStats] = useState(false);
   const [codeError, setCodeError] = useState(initial.error);
@@ -52,20 +59,32 @@ function App() {
   const shapeIndex = SHAPES.findIndex(item => item.id === options.shape);
 
   useEffect(() => { document.documentElement.dataset.theme = options.theme; }, [options.theme]);
+  useEffect(() => { document.title = `${page === "workbench" ? "Workbench" : page === "showcase" ? "Showcase" : "Research"} — Noble Forms`; }, [page]);
   useLayoutEffect(() => {
     if (replacingDesign.current && hero.current) {
       if (options.rotation) hero.current.setAttribute("rotation", options.rotation.join(","));
       else hero.current.removeAttribute("rotation");
     }
     replacingDesign.current = false;
-  }, [options]);
-  useEffect(() => { setDraftCode(code); const url = new URL(window.location.href); url.searchParams.set("code", code); window.history.replaceState(null, "", url); }, [code]);
+  }, [options, page]);
   useEffect(() => {
-    const onPopState = () => { const next = readLocation(); replacingDesign.current = true; setOptions(next.options); setCodeError(next.error); };
+    setDraftCode(code);
+    if (page !== "workbench") return;
+    const url = new URL(window.location.href);
+    url.searchParams.set("code", code);
+    window.history.replaceState(null, "", url);
+  }, [code, page]);
+  useEffect(() => {
+    const onPopState = () => {
+      const nextPage = pageFromPath(window.location.pathname);
+      setPage(nextPage);
+      if (nextPage === "workbench") { const next = readLocation(); replacingDesign.current = true; setOptions(next.options); setCodeError(next.error); }
+    };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
   useEffect(() => {
+    if (page !== "workbench") return;
     const element = hero.current;
     if (!element) return;
     const onChange = () => {
@@ -77,7 +96,19 @@ function App() {
     };
     element.addEventListener("change", onChange);
     return () => element.removeEventListener("change", onChange);
-  }, []);
+  }, [page]);
+
+  const navigate = (nextPage: Page) => {
+    if (nextPage === page) return;
+    const url = new URL(pathForPage(nextPage), window.location.origin);
+    if (nextPage === "workbench") url.searchParams.set("code", code);
+    window.history.pushState(null, "", url);
+    setPage(nextPage);
+  };
+  const navClick = (event: React.MouseEvent<HTMLAnchorElement>, target: Page) => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault(); navigate(target);
+  };
 
   const update = (patch: Partial<WorkbenchOptions>) => { setOptions(previous => ({ ...previous, ...patch })); setCodeError(""); };
   const updateGeometry = (patch: Partial<WorkbenchOptions>) => {
@@ -117,7 +148,7 @@ function App() {
     c: family === "disphenoid" ? String(options.c) : undefined,
   };
   const snippet = `import "@noble-polyhedra/web-component";\n\n<noble-polyhedron\n${Object.entries(appearanceAttrs).filter(([, value]) => value !== undefined).map(([key, value]) => `  ${key}="${value}"`).join("\n")}\n></noble-polyhedron>`;
-  const shareUrl = new URL(window.location.href); shareUrl.searchParams.set("code", code);
+  const shareUrl = new URL("/", window.location.origin); shareUrl.searchParams.set("code", code);
   const download = () => hero.current?.canvas.toBlob(blob => {
     if (!blob) return;
     const url = URL.createObjectURL(blob), link = document.createElement("a");
@@ -127,12 +158,12 @@ function App() {
 
   return <div className="app-shell">
     <header className="app-header">
-      <div className="flex min-w-0 items-center gap-3"><div className="brand-mark">N</div><div className="min-w-0"><p className="font-heading text-sm font-bold tracking-tight">Noble Forms</p><p className="text-[10px] text-muted-foreground">Shape studio</p></div></div>
-      <div className="hidden text-[11px] text-muted-foreground md:block">146 finite forms <span className="px-2 text-border">/</span> 2 infinite families</div>
-      <div className="flex items-center gap-2"><Button variant="outline" size="sm" onClick={() => copyText("link", shareUrl.toString())}><Share2 className="size-3.5" />{copied === "link" ? "Link copied" : "Share"}</Button><Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} onClick={() => update({ theme: options.theme === "light" ? "dark" : "light" })}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
+      <a className="brand-link" href="/" onClick={event => navClick(event, "workbench")}><div className="brand-mark">N</div><div className="min-w-0"><p className="font-heading text-sm font-bold tracking-tight">Noble Forms</p><p className="text-[10px] text-muted-foreground">Shape studio</p></div></a>
+      <nav className="app-nav" aria-label="Main navigation">{(["workbench", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>
+      <div className="header-actions">{page === "workbench" && <Button variant="outline" size="sm" onClick={() => copyText("link", shareUrl.toString())}><Share2 className="size-3.5" /><span className="share-label">{copied === "link" ? "Copied" : "Share"}</span></Button>}<Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} onClick={() => update({ theme: options.theme === "light" ? "dark" : "light" })}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
     </header>
 
-    <div className="app-layout">
+    {page === "showcase" ? <Showcase theme={options.theme} onOpen={next => { replacingDesign.current = true; setOptions(next); setCodeError(""); setParameterError(""); const url = new URL("/", window.location.origin); url.searchParams.set("code", optionsToString(next)); window.history.pushState(null, "", url); setPage("workbench"); }} /> : page === "research" ? <Research /> : <div className="app-layout">
       <aside className="control-panel">
         <div className="control-intro"><p className="eyebrow">Workbench</p><h1 className="font-heading text-xl font-bold tracking-tight">Make a form.</h1><p className="mt-1 text-xs text-muted-foreground">Every adjustment lives in the share link.</p><Button className="mt-4 w-full" onClick={() => { replacingDesign.current = true; setOptions(surpriseOptions()); setCodeError(""); setParameterError(""); }}><Shuffle className="size-4" /> Surprise me</Button></div>
 
@@ -176,7 +207,7 @@ function App() {
         <div className="preview-meta"><p>{poly.vertices.length} vertices <span>·</span> {poly.edges.length} edges <span>·</span> {poly.faces.length} faces</p><p>Drag to rotate <span>·</span> Scroll to zoom</p></div>
         <details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Embed this form</span><span className="text-xs text-muted-foreground">Web component</span></summary><div className="embed-content"><pre><code>{snippet}</code></pre><Button variant="outline" size="sm" onClick={() => copyText("embed", snippet)}>{copied === "embed" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied === "embed" ? "Copied" : "Copy code"}</Button></div></details>
       </main>
-    </div>
+    </div>}
   </div>;
 }
 
