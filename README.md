@@ -16,6 +16,8 @@ pnpm test
 pnpm render:examples
 ```
 
+The workbench form picker starts with named solids, then lets you browse icosahedral and octahedral forms, infinite families, all forms, or recently viewed forms. Typing a name or catalogue ID searches across every collection.
+
 ## Use the web component
 
 Install `@noble-polyhedra/web-component` in a bundled web project and import it once:

@@ -1,13 +1,13 @@
 import { createElement, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { ArrowDownToLine, ArrowRight, Check, Copy, RotateCcw, Search, Shuffle, SlidersHorizontal } from "lucide-react";
+import { ArrowDownToLine, ArrowRight, Check, Copy, RotateCcw, Shuffle, SlidersHorizontal } from "lucide-react";
 import { createPolyhedron, seededDefaults, SHAPES, type ShapeId } from "@noble-polyhedra/core";
 import "@noble-polyhedra/web-component";
 import type { NoblePolyhedronElement } from "@noble-polyhedra/web-component";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { FormPicker } from "@/components/form-picker";
 import { Input } from "@/components/ui/input";
-import { NativeSelect } from "@/components/ui/native-select";
 import { Slider } from "@/components/ui/slider";
 import "./style.css";
 
@@ -37,7 +37,6 @@ function Control({ label, value, children }: { label: string; value?: string; ch
 
 function App() {
   const [shape, setShape] = useState<string>("small-stellated-dodecahedron");
-  const [query, setQuery] = useState("");
   const [seed, setSeed] = useState("noble-01");
   const [palette, setPalette] = useState<Palette>("aurora");
   const [color, setColor] = useState(PALETTES.aurora.color);
@@ -111,7 +110,6 @@ function App() {
     c: family === "disphenoid" ? String(c) : undefined,
   };
   const snippet = `import "@noble-polyhedra/web-component";\n\n<noble-polyhedron\n${Object.entries(attrs).filter(([, value]) => value !== undefined).map(([key, value]) => value === "" ? `  ${key}` : `  ${key}="${value}"`).join("\n")}\n></noble-polyhedron>`;
-  const matches = SHAPES.filter(item => item.name.toLowerCase().includes(query.toLowerCase()) || item.id.toLowerCase().includes(query.toLowerCase()) || item.id === shape);
 
   const download = () => hero.current?.canvas.toBlob(blob => {
     if (!blob) return;
@@ -145,8 +143,7 @@ function App() {
 
           <Card><CardHeader className="border-b border-border pb-4"><div className="flex items-center gap-2"><SlidersHorizontal className="size-4" /><h3 className="font-heading text-lg font-semibold">Make it yours</h3></div><p className="mt-1 text-xs text-muted-foreground">Choose a form, then find its character.</p></CardHeader>
             <CardContent className="space-y-5 pt-5">
-              <Control label="Form"><div className="relative"><Search className="absolute left-2.5 top-2 size-4 text-muted-foreground" /><Input aria-label="Search forms" placeholder="Search forms" className="pl-8" value={query} onChange={event => setQuery(event.target.value)} /></div>
-                <NativeSelect id="shape" aria-label="Form" value={shape} onChange={event => { setShape(event.target.value); setRotation(undefined); setFaceIndex(0); setViewTouched(false); }}><option value="random">Surprise me</option>{matches.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</NativeSelect></Control>
+              <Control label="Form"><FormPicker shape={shape} onSelect={next => { setShape(next); setRotation(undefined); setFaceIndex(0); setViewTouched(false); }} /></Control>
               <Control label="View"><div className="grid grid-cols-2 gap-1.5">{VIEWS.map(item => <Button key={item.id} variant={view === item.id ? "default" : "outline"} size="sm" className={item.id === "face-context" ? "col-span-2" : ""} onClick={() => chooseView(item.id)}>{item.name}</Button>)}</div></Control>
               {(view === "face" || view === "face-context") && poly && <Control label="Repeated face" value={`${selectedFace + 1} of ${poly.faces.length}`}><Slider min={0} max={poly.faces.length - 1} step={1} value={[selectedFace]} onValueChange={value => setFaceIndex(sliderValue(value, 0))} /></Control>}
               <Control label="Seed"><div className="flex gap-2"><Input id="seed" value={seed} onChange={event => applySeed(event.target.value)} spellCheck={false} /><Button variant="outline" size="icon" aria-label="New seed" title="New seed" onClick={() => applySeed(Math.random().toString(36).slice(2, 10))}><Shuffle className="size-4" /></Button></div></Control>
