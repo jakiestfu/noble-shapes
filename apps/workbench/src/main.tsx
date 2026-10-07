@@ -196,6 +196,7 @@ function App() {
   };
 
   const update = (patch: Partial<WorkbenchOptions>) => { setOptions(previous => ({ ...previous, ...patch })); setCodeError(""); };
+  const toggleTheme = () => setOptions(previous => { const theme = previous.theme === "light" ? "dark" : "light"; return designForTheme({ ...previous, theme }, theme); });
   const toggleSection = (id: string) => setExpandedSections(current => {
     const next = new Set(current);
     if (next.has(id)) next.delete(id);
@@ -308,7 +309,7 @@ function App() {
     <header className="app-header">
       <div className="brand-lockup"><a className="brand-parent" href="https://jakiestfu.com/" target="_blank" rel="noopener noreferrer">JAKIESTFU</a><span className="brand-separator">/</span><a className="brand-product" href="/" onClick={event => navClick(event, "workbench")}>NOBLE POLYHEDRONS</a></div>
       <nav className="app-nav" aria-label="Main navigation">{(["workbench", "showcase", "research", "documentation"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>
-      <div className="header-actions">{page === "workbench" && <Button variant="ghost" size="sm" onClick={() => copyText("link", shareUrl.toString())}><Share2 className="size-3.5" /><span className="share-label">{copied === "link" ? "Copied" : "Share"}</span></Button>}<Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={() => setOptions(previous => { const theme = previous.theme === "light" ? "dark" : "light"; return designForTheme({ ...previous, theme }, theme); })}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
+      <div className="header-actions">{page !== "workbench" && <Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button>}</div>
     </header>
 
     {page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
@@ -366,15 +367,19 @@ function App() {
       <main className="preview-panel">
         <div className={`preview-toolbar ${lightScene ? "is-light-scene" : ""}`}>
           <h2 className="preview-toolbar-title truncate font-heading text-lg font-semibold tracking-tight">{poly.name}</h2>
-          <DropdownMenu>
-            <DropdownMenuTrigger className="preview-export-trigger"><Download className="size-3.5" /> Export <ChevronDown className="size-3" /></DropdownMenuTrigger>
-            <DropdownMenuContent aria-label="Export formats">
-              <DropdownMenuItem onClick={downloadPng}><span className="export-menu-format"><FileImage className="size-3.5" /> PNG</span><span className="export-menu-caption">Current view</span></DropdownMenuItem>
-              <DropdownMenuItem onClick={downloadGlb}><span className="export-menu-format"><Box className="size-3.5" /> GLB</span><span className="export-menu-caption">3D geometry</span></DropdownMenuItem>
-              <DropdownMenuItem onClick={downloadGeometry}><span className="export-menu-format"><Braces className="size-3.5" /> JSON</span><span className="export-menu-caption">Exact topology</span></DropdownMenuItem>
-              <p className="export-menu-note">Complex faces remain as edges in GLB.</p>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          <div className="preview-toolbar-actions">
+            <Button variant="ghost" size="icon" className="preview-theme-icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button>
+            <Button variant="ghost" size="sm" className="preview-share" aria-label={copied === "link" ? "Link copied" : "Share design"} onClick={() => copyText("link", shareUrl.toString())}>{copied === "link" ? <Check className="size-3.5" /> : <Share2 className="size-3.5" />}<span>{copied === "link" ? "Copied" : "Share"}</span></Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="preview-export-trigger"><Download className="size-3.5" /> Export <ChevronDown className="size-3" /></DropdownMenuTrigger>
+              <DropdownMenuContent aria-label="Export formats">
+                <DropdownMenuItem onClick={downloadPng}><span className="export-menu-format"><FileImage className="size-3.5" /> PNG</span><span className="export-menu-caption">Current view</span></DropdownMenuItem>
+                <DropdownMenuItem onClick={downloadGlb}><span className="export-menu-format"><Box className="size-3.5" /> GLB</span><span className="export-menu-caption">3D geometry</span></DropdownMenuItem>
+                <DropdownMenuItem onClick={downloadGeometry}><span className="export-menu-format"><Braces className="size-3.5" /> JSON</span><span className="export-menu-caption">Exact topology</span></DropdownMenuItem>
+                <p className="export-menu-note">Complex faces remain as edges in GLB.</p>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
           <div className="preview-toolbar-math" aria-label="Polyhedron geometry">
             <Suspense fallback={<span>V {poly.vertices.length} · E {poly.edges.length} · F {poly.faces.length} · χ {eulerCharacteristic(poly)}</span>}>
               <MathText tex={`V=${poly.vertices.length},\\; E=${poly.edges.length},\\; F=${poly.faces.length}`} />
