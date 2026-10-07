@@ -8,6 +8,7 @@ import type { NoblePolyhedronElement } from "@noble-polyhedra/web-component";
 import { Button } from "@/components/ui/button";
 import { CodePreview } from "@/components/code-preview";
 import { FormPicker } from "@/components/form-picker";
+import { LoadingState } from "@/components/loading-state";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { eulerCharacteristic, REGULAR_SYMBOL_LABELS, REGULAR_SYMBOLS } from "@/lib/shape-math";
@@ -245,7 +246,7 @@ function App() {
       <div className="header-actions">{page === "workbench" && <Button variant="ghost" size="sm" onClick={() => copyText("link", shareUrl.toString())}><Share2 className="size-3.5" /><span className="share-label">{copied === "link" ? "Copied" : "Share"}</span></Button>}<Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={() => update({ theme: options.theme === "light" ? "dark" : "light" })}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
     </header>
 
-    {page === "showcase" ? <Suspense fallback={<main className="content-page" aria-busy="true"><div className="content-inner"><p className="eyebrow">Curated forms</p><h1 className="section-title">Showcase</h1><p className="page-description">Loading forms…</p></div></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page" aria-busy="true"><p className="eyebrow">Documentation</p><h1 className="section-title">Loading guide…</h1></main>}><Documentation /></Suspense> : <div className="app-layout">
+    {page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
         <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Workbench</h1><p className="mt-1 text-xs text-muted-foreground">146 finite forms · two infinite families</p></div>
 
@@ -287,7 +288,7 @@ function App() {
           <Noble innerRef={hero} {...appearanceAttrs} background="transparent" stats={stats ? "true" : undefined} className="preview-model" />
         </div>
         <div className="preview-dock"><div className="preview-meta"><p>{poly.vertices.length} vertices <span>·</span> {poly.edges.length} edges <span>·</span> {poly.faces.length} faces</p><p>Drag to rotate <span>·</span> Scroll to zoom</p></div>
-          <details className="math-panel" open={mathOpen} onToggle={event => setMathOpen(event.currentTarget.open)}><summary><span>Form mathematics</span><span className="math-panel-summary-value">χ = V − E + F = {eulerCharacteristic(poly)}</span></summary>{mathOpen && <Suspense fallback={<p className="math-note p-4">Loading notation…</p>}><MathPanel poly={poly} regularSymbol={regularSymbol} /></Suspense>}</details>
+          <details className="math-panel" open={mathOpen} onToggle={event => setMathOpen(event.currentTarget.open)}><summary><span>Form mathematics</span><span className="math-panel-summary-value">χ = V − E + F = {eulerCharacteristic(poly)}</span></summary>{mathOpen && <Suspense fallback={<div className="math-loading" aria-busy="true"><LoadingState label="Loading notation" /></div>}><MathPanel poly={poly} regularSymbol={regularSymbol} /></Suspense>}</details>
           <details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Embed this form</span><span className="text-xs text-muted-foreground">Web component</span></summary><div className="embed-content"><CodePreview code={snippet} language="html" compact /></div></details></div>
       </main>
     </div>}
