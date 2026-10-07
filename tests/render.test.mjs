@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { inflateSync } from "node:zlib";
-import { DEFAULT_WORKBENCH_OPTIONS, optionsToString, randomOptions, renderScene, resolveSceneOptions, rotateVertex, stringToOptions } from "../packages/render/dist/index.js";
+import { clearRenderCaches, createGeometryCache, DEFAULT_WORKBENCH_OPTIONS, optionsToString, randomOptions, renderPolyhedron, renderScene, resolveSceneOptions, rotateVertex, stringToOptions } from "../packages/render/dist/index.js";
 import { renderPng } from "../packages/node/dist/index.js";
 import { createPolyhedron, SHAPES } from "../packages/core/dist/index.js";
 
@@ -40,6 +40,31 @@ test("transparent backgrounds preserve alpha in the shared browser and Node pixe
   assert.equal(image.data[3], 0);
   assert.ok(image.data.some((value, index) => index % 4 === 3 && value === 255));
   assert.ok(image.data.some((value, index) => index % 4 === 3 && value > 0 && value < 255));
+});
+
+test("cached meshes and backgrounds preserve pixels across camera, color, and alpha changes", () => {
+  const geometry = createGeometryCache(2);
+  const first = geometry.get({ shape: "cube" });
+  assert.equal(first.hit, false);
+  assert.equal(geometry.get({ shape: "cube" }).polyhedron, first.polyhedron);
+  assert.equal(geometry.get({ shape: "cube" }).hit, true);
+  assert.equal(geometry.get({ shape: "tetrahedron" }).hit, false);
+  const options = { width: 96, height: 96, quality: 2, view: "solid-wireframe" };
+  clearRenderCaches();
+  let coldTiming, warmTiming;
+  const cold = renderPolyhedron(first.polyhedron, { ...options, onTiming: value => { coldTiming = value; } });
+  renderPolyhedron(first.polyhedron, { ...options, background: "transparent", yaw: 1 });
+  renderPolyhedron(first.polyhedron, { ...options, color: "#ff0000" });
+  renderPolyhedron(first.polyhedron, options);
+  const warm = renderPolyhedron(first.polyhedron, { ...options, onTiming: value => { warmTiming = value; } });
+  assert.equal(coldTiming.backgroundCacheHit, false);
+  assert.equal(warmTiming.backgroundCacheHit, true);
+  assert.deepEqual(warm.data, cold.data);
+  clearRenderCaches();
+  const transparentCold = renderPolyhedron(first.polyhedron, { ...options, background: "transparent" });
+  renderPolyhedron(first.polyhedron, options);
+  const transparentWarm = renderPolyhedron(first.polyhedron, { ...options, background: "transparent" });
+  assert.deepEqual(transparentWarm.data, transparentCold.data);
 });
 
 test("design codes capture only form and appearance and read older links", () => {

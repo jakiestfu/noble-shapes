@@ -1,4 +1,5 @@
-import { createPolyhedron, seededDefaults, type Polyhedron, type ShapeOptions, type Vec3 } from "@noble-polyhedra/core";
+import { seededDefaults, type Polyhedron, type ShapeOptions, type Vec3 } from "@noble-polyhedra/core";
+import { createGeometryCache } from "./geometry-cache.js";
 import { PALETTES } from "./palettes.js";
 import { resolveSceneOptions } from "./random-options.js";
 
@@ -6,6 +7,15 @@ export type PaletteName = "aurora" | "coral" | "violet" | "gold";
 export type RenderView = "solid" | "solid-wireframe" | "wireframe" | "face" | "face-context";
 /** Quaternion in [x, y, z, w] order. Overrides yaw and pitch when provided. */
 export type Quaternion = readonly [number, number, number, number];
+export interface RenderTimings {
+  setupMs: number;
+  backgroundMs: number;
+  facesMs: number;
+  edgesMs: number;
+  downsampleMs: number;
+  totalMs: number;
+  backgroundCacheHit: boolean;
+}
 export interface RenderOptions {
   /** A true or empty random value draws a fresh design; a string is a stable seed. */
   random?: string | boolean;
@@ -26,9 +36,11 @@ export interface RenderOptions {
   faceIndex?: number;
   /** Internal supersampling. The web component uses 2 at rest and during motion. */
   quality?: 1 | 2;
+  /** Optional timing callback for profiling the CPU rasterizer. */
+  onTiming?: (timings: RenderTimings) => void;
 }
 export type SceneOptions = ShapeOptions & RenderOptions;
-export interface RenderedImage { width: number; height: number; data: Uint8ClampedArray }
+export interface RenderedImage { width: number; height: number; data: Uint8ClampedArray<ArrayBuffer> }
 
 export const PALETTE_NAMES = Object.keys(PALETTES) as PaletteName[];
 export { PALETTES } from "./palettes.js";
@@ -37,6 +49,16 @@ export { randomOptions, randomSeed, resolveSceneOptions } from "./random-options
 type RGB = readonly [number, number, number];
 type Point = { x: number; y: number; z: number };
 const clamp = (value: number, low = 0, high = 1): number => Math.max(low, Math.min(high, value));
+const now = (): number => performance.now();
+
+let cachedBackground: { key: string; data: Uint8ClampedArray } | undefined;
+let cachedScratch: { width: number; height: number; data: Uint8ClampedArray<ArrayBuffer>; depth: Float32Array<ArrayBuffer> } | undefined;
+const sceneGeometryCache = createGeometryCache(32);
+const MAX_CACHED_BACKGROUND_BYTES = 64 * 1024 * 1024;
+
+/** Drop the reusable background buffer, chiefly for isolated benchmarks. */
+export function clearRenderCaches(): void { cachedBackground = undefined; cachedScratch = undefined; sceneGeometryCache.clear(); }
+export { createGeometryCache } from "./geometry-cache.js";
 
 function parseHex(value: string): RGB {
   const match = /^#([0-9a-f]{6})$/i.exec(value);
@@ -81,9 +103,12 @@ function put(data: Uint8ClampedArray, index: number, color: RGB, alpha = 255): v
 
 /** Shared, dependency-free orthographic rasterizer with a per-pixel depth buffer. */
 export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions = {}): RenderedImage {
+  const profile = options.onTiming;
+  const started = profile ? now() : 0;
   const width = Math.round(options.width ?? 512), height = Math.round(options.height ?? 512);
   if (!(width > 0 && height > 0 && width <= 8192 && height <= 8192)) throw new Error("Image dimensions must be 1–8192 pixels");
   const quality = options.quality ?? 2;
+  if (quality !== 1 && quality !== 2) throw new Error("Quality must be 1 or 2");
   if (width * height * quality * quality > 64_000_000) throw new Error("Image size exceeds the renderer's pixel budget");
   const w = width * quality, h = height * quality;
   const palette = PALETTES[options.palette ?? "aurora"];
@@ -119,25 +144,41 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
     transformed = local.map(point => rotateVertex(point, yaw, pitch, rotation));
   } else transformed = polyhedron.vertices.map(v => rotateVertex(v, yaw, pitch, rotation));
   const points: Point[] = transformed.map(v => ({ x: w / 2 + v[0] * radius, y: h / 2 - v[1] * radius, z: v[2] }));
-  const data = new Uint8ClampedArray(w * h * 4);
-  const depth = new Float32Array(w * h);
+  const reusable = quality === 2 && w * h * 4 <= MAX_CACHED_BACKGROUND_BYTES;
+  if (reusable && (!cachedScratch || cachedScratch.width !== w || cachedScratch.height !== h)) {
+    cachedScratch = { width: w, height: h, data: new Uint8ClampedArray(w * h * 4), depth: new Float32Array(w * h) };
+  }
+  const data = reusable ? cachedScratch!.data : new Uint8ClampedArray(w * h * 4);
+  const depth = reusable ? cachedScratch!.depth : new Float32Array(w * h);
+  if (reusable && !background) data.fill(0);
   depth.fill(-Infinity);
+  const backgroundStarted = profile ? now() : 0;
+  let backgroundCacheHit = false;
 
   if (background) {
-    // Quiet vignette and a soft halo keep a small embedded image legible on many pages.
-    const glow = Math.min(w, h) * 0.58;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      const dx = x - w / 2, dy = y - h / 2;
-      const halo = Math.exp(-(dx * dx + dy * dy) / (glow * glow)) * 0.14;
-      const vignette = clamp(1 - Math.hypot(dx / w, dy / h) * 0.34, 0.72, 1);
-      const i = (y * w + x) * 4;
-      put(data, i, [
-        Math.round((background[0] + base[0] * halo) * vignette),
-        Math.round((background[1] + base[1] * halo) * vignette),
-        Math.round((background[2] + base[2] * halo) * vignette),
-      ]);
+    const key = `${w}x${h}:${base.join(",")}:${background.join(",")}`;
+    if (cachedBackground?.key === key) {
+      data.set(cachedBackground.data);
+      backgroundCacheHit = true;
+    } else {
+      // Quiet vignette and a soft halo keep a small embedded image legible on many pages.
+      const glow = Math.min(w, h) * 0.58;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const dx = x - w / 2, dy = y - h / 2;
+        const halo = Math.exp(-(dx * dx + dy * dy) / (glow * glow)) * 0.14;
+        const vignette = clamp(1 - Math.hypot(dx / w, dy / h) * 0.34, 0.72, 1);
+        const i = (y * w + x) * 4;
+        put(data, i, [
+          Math.round((background[0] + base[0] * halo) * vignette),
+          Math.round((background[1] + base[1] * halo) * vignette),
+          Math.round((background[2] + base[2] * halo) * vignette),
+        ]);
+      }
+      cachedBackground = data.byteLength <= MAX_CACHED_BACKGROUND_BYTES
+        ? { key, data: new Uint8ClampedArray(data) } : undefined;
     }
   }
+  const facesStarted = profile ? now() : 0;
 
   for (let drawnFace = 0; drawnFace < polyhedron.faces.length; drawnFace++) {
     if (view === "wireframe" || ((view === "face" || view === "face-context") && drawnFace !== faceIndex)) continue;
@@ -178,6 +219,7 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
     }
   }
 
+  const edgesStarted = profile ? now() : 0;
   const edgeRadius = Math.max(0.65, (options.edgeWidth ?? (view === "wireframe" || view === "face-context" ? 1.3 : 1.0)) * quality / 2);
   const edgeColor: RGB = [0, 1, 2].map(i => clamp(base[i]! * (view === "solid-wireframe" ? 0.55 : 0.65) + (view === "solid-wireframe" ? 95 : 115), 0, 255)) as unknown as RGB;
   const drawEdge = (ia: number, ib: number, opacity: number, testDepth: boolean): void => {
@@ -233,21 +275,29 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
     for (let i = 0; i < face.length; i++) drawEdge(face[i]!, face[(i + 1) % face.length]!, 1, false);
   }
 
-  if (quality === 1) return { width, height, data };
+  const downsampleStarted = profile ? now() : 0;
+  const report = (): void => {
+    if (!profile) return;
+    const ended = now();
+    profile({ setupMs: backgroundStarted - started, backgroundMs: facesStarted - backgroundStarted,
+      facesMs: edgesStarted - facesStarted, edgesMs: downsampleStarted - edgesStarted,
+      downsampleMs: ended - downsampleStarted, totalMs: ended - started, backgroundCacheHit });
+  };
+  if (quality === 1) { report(); return { width, height, data }; }
   const reduced = new Uint8ClampedArray(width * height * 4);
   for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
     const out = (y * width + x) * 4;
-    let alphaSum = 0;
-    const colorSum = [0, 0, 0];
-    for (let sy = 0; sy < quality; sy++) for (let sx = 0; sx < quality; sx++) {
-      const source = ((y * quality + sy) * w + x * quality + sx) * 4;
-      const alpha = data[source + 3]!;
-      alphaSum += alpha;
-      for (let channel = 0; channel < 3; channel++) colorSum[channel]! += data[source + channel]! * alpha;
+    const top = (y * 2 * w + x * 2) * 4;
+    const bottom = top + w * 4;
+    const a0 = data[top + 3]!, a1 = data[top + 7]!, a2 = data[bottom + 3]!, a3 = data[bottom + 7]!;
+    const alphaSum = a0 + a1 + a2 + a3;
+    if (alphaSum) for (let channel = 0; channel < 3; channel++) {
+      reduced[out + channel] = (data[top + channel]! * a0 + data[top + 4 + channel]! * a1
+        + data[bottom + channel]! * a2 + data[bottom + 4 + channel]! * a3) / alphaSum;
     }
-    for (let channel = 0; channel < 3; channel++) reduced[out + channel] = alphaSum ? colorSum[channel]! / alphaSum : 0;
-    reduced[out + 3] = alphaSum / (quality * quality);
+    reduced[out + 3] = alphaSum / 4;
   }
+  report();
   return { width, height, data: reduced };
 }
 
@@ -256,7 +306,7 @@ export { optionsToString, stringToOptions, DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKB
 export function renderScene(options: SceneOptions = {}): RenderedImage {
   const resolved = resolveSceneOptions(options);
   const defaults = seededDefaults(resolved.seed);
-  const polyhedron = createPolyhedron(resolved);
+  const { polyhedron } = sceneGeometryCache.get(resolved);
   return renderPolyhedron(polyhedron, {
     ...resolved,
     palette: resolved.palette ?? defaults.palette,

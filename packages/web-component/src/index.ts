@@ -1,5 +1,5 @@
-import { randomOptions, randomSeed, renderScene, type DesignOptions, type Quaternion, type RenderedImage, type SceneOptions } from "@noble-polyhedra/render";
-import { createPolyhedron, seededDefaults } from "@noble-polyhedra/core";
+import { createGeometryCache, randomOptions, randomSeed, renderPolyhedron, type DesignOptions, type Quaternion, type RenderedImage, type RenderTimings, type SceneOptions } from "@noble-polyhedra/render";
+import { seededDefaults } from "@noble-polyhedra/core";
 
 const numericAttribute = (element: Element, name: string): number | undefined => {
   const value = element.getAttribute(name);
@@ -31,7 +31,9 @@ const parseRotation = (value: string | null): Quaternion | undefined => {
 };
 
 type RenderRequest = { id: number; options: SceneOptions; requestedAt: number };
-type RenderReply = { id: number; width?: number; height?: number; buffer?: ArrayBuffer; renderMs?: number; vertices?: number; edges?: number; faces?: number; error?: string };
+type RenderReply = { id: number; width?: number; height?: number; buffer?: ArrayBuffer; renderMs?: number;
+  geometryMs?: number; meshCacheHit?: boolean; stages?: RenderTimings;
+  vertices?: number; edges?: number; faces?: number; error?: string };
 
 const HTMLElementBase: typeof HTMLElement = typeof HTMLElement === "undefined" ? class {} as typeof HTMLElement : HTMLElement;
 
@@ -65,7 +67,9 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   #drawTimes: number[] = [];
   #randomKey?: string;
   #randomBase?: DesignOptions;
-  #metrics = { renderMs: 0, presentMs: 0, latencyMs: 0, width: 0, height: 0, vertices: 0, edges: 0, faces: 0, quality: 2 };
+  #geometry = createGeometryCache(4);
+  #metrics = { renderMs: 0, geometryMs: 0, meshCacheHit: false, stages: undefined as RenderTimings | undefined,
+    presentMs: 0, latencyMs: 0, width: 0, height: 0, vertices: 0, edges: 0, faces: 0, quality: 2 };
 
   constructor() {
     super();
@@ -246,7 +250,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
       this.#motionAngle = (this.#motionAngle + Math.min((time - this.#lastMotionTime) / 1000, 0.1) * MAX_ROTATION_SPEED * this.rotate) % (Math.PI * 2);
     }
     this.#lastMotionTime = time;
-    if (!this.#dragging && !document.hidden && !this.#busy && !this.#pending && !this.#frame && time - this.#lastMotionDraw >= 40) {
+    if (!this.#dragging && !document.hidden && !this.#busy && !this.#pending && !this.#frame && time - this.#lastMotionDraw >= 16) {
       this.#lastMotionDraw = time;
       this.#draw();
     }
@@ -300,7 +304,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
       rotation: rotating ? this.#currentRotation() : parseRotation(this.getAttribute("rotation")),
       zoom: numericAttribute(this, "zoom"),
       view: this.getAttribute("view") as SceneOptions["view"] ?? generated?.view,
-      faceIndex: explicitFaceIndex ?? (generated ? generated.faceIndex % createPolyhedron(geometry).faces.length : undefined),
+      faceIndex: explicitFaceIndex ?? (generated ? generated.faceIndex % this.#geometry.get(geometry).polyhedron.faces.length : undefined),
       quality: 2,
     };
   }
@@ -312,10 +316,20 @@ export class NoblePolyhedronElement extends HTMLElementBase {
         if (this.#busy) this.#pending = request;
         else this.#send(request);
       } else {
-        const start = performance.now();
-        const image = renderScene(request.options);
-        const polyhedron = createPolyhedron(request.options);
-        this.#present(image, request, performance.now() - start, polyhedron.vertices.length, polyhedron.edges.length, polyhedron.faces.length);
+        const geometryStarted = performance.now();
+        const defaults = seededDefaults(request.options.seed);
+        const { polyhedron, hit: meshCacheHit } = this.#geometry.get(request.options);
+        const geometryMs = performance.now() - geometryStarted;
+        let stages: RenderTimings | undefined;
+        const renderStarted = performance.now();
+        const image = renderPolyhedron(polyhedron, {
+          ...request.options, palette: request.options.palette ?? defaults.palette,
+          yaw: request.options.yaw ?? defaults.yaw,
+          pitch: request.options.pitch ?? (request.options.view === "face" ? 0 : defaults.pitch),
+          onTiming: timings => { stages = timings; },
+        });
+        this.#present(image, request, performance.now() - renderStarted, polyhedron.vertices.length,
+          polyhedron.edges.length, polyhedron.faces.length, geometryMs, meshCacheHit, stages);
       }
     } catch (error) {
       this.#showError(error);
@@ -335,14 +349,16 @@ export class NoblePolyhedronElement extends HTMLElementBase {
       if (reply.error) this.#showError(reply.error);
       else if (reply.buffer && reply.width && reply.height && this.#active) {
         this.#present({ width: reply.width, height: reply.height, data: new Uint8ClampedArray(reply.buffer) },
-          this.#active, reply.renderMs ?? 0, reply.vertices ?? 0, reply.edges ?? 0, reply.faces ?? 0);
+          this.#active, reply.renderMs ?? 0, reply.vertices ?? 0, reply.edges ?? 0, reply.faces ?? 0,
+          reply.geometryMs ?? 0, reply.meshCacheHit ?? false, reply.stages);
       }
     }
     this.#active = undefined;
     if (this.#pending) { const next = this.#pending; this.#pending = undefined; this.#send(next); }
   };
 
-  #present(image: RenderedImage, request: RenderRequest, renderMs: number, vertices: number, edges: number, faces: number): void {
+  #present(image: RenderedImage, request: RenderRequest, renderMs: number, vertices: number, edges: number,
+    faces: number, geometryMs: number, meshCacheHit: boolean, stages?: RenderTimings): void {
     const start = performance.now();
     if (this.#canvas.width !== image.width || this.#canvas.height !== image.height) {
       this.#canvas.width = image.width;
@@ -350,11 +366,11 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     }
     const context = this.#canvas.getContext("2d", { alpha: true });
     if (!context) throw new Error("Canvas 2D is unavailable");
-    context.putImageData(new ImageData(new Uint8ClampedArray(image.data), image.width, image.height), 0, 0);
+    context.putImageData(new ImageData(image.data, image.width, image.height), 0, 0);
     this.#copyBackdrop();
     const now = performance.now();
     this.#drawTimes.push(now);
-    this.#metrics = { renderMs, presentMs: now - start, latencyMs: now - request.requestedAt,
+    this.#metrics = { renderMs, geometryMs, meshCacheHit, stages, presentMs: now - start, latencyMs: now - request.requestedAt,
       width: image.width, height: image.height, vertices, edges, faces, quality: request.options.quality ?? 2 };
     this.#message.style.display = "none";
     this.#updateStats();
@@ -380,7 +396,23 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     const now = performance.now();
     this.#drawTimes = this.#drawTimes.filter(time => time > now - 1000);
     const m = this.#metrics;
-    this.#stats.textContent = `DRAW FPS   ${this.#drawTimes.length}${this.#drawTimes.length ? "" : " (idle)"}\nRENDER     ${m.renderMs.toFixed(1)} ms\nPRESENT    ${m.presentMs.toFixed(1)} ms\nLATENCY    ${m.latencyMs.toFixed(1)} ms\nCANVAS     ${m.width} × ${m.height}\nPIXELS     ${(m.width * m.height / 1e6).toFixed(2)} MP\nQUALITY    ${m.quality}× ${this.#dragging ? "drag" : this.rotate && !this.#motionPreference?.matches ? "motion" : "still"}\nMOTION     r ${this.rotate.toFixed(2)} · f ${this.float.toFixed(2)}\nGEOMETRY   ${m.vertices}v ${m.edges}e ${m.faces}f\nBACKEND    ${this.#worker ? "worker" : "main"}${this.#pending ? " · queued" : ""}`;
+    this.#stats.textContent = [
+      `DRAW FPS   ${this.#drawTimes.length}${this.#drawTimes.length ? "" : " (idle)"}`,
+      `MESH       ${m.geometryMs.toFixed(1)} ms ${m.meshCacheHit ? "cached" : "built"}`,
+      `RENDER     ${m.renderMs.toFixed(1)} ms`,
+      `BACKGROUND ${m.stages?.backgroundMs.toFixed(1) ?? "0.0"} ms ${m.stages?.backgroundCacheHit ? "cached" : "built"}`,
+      `FACES      ${m.stages?.facesMs.toFixed(1) ?? "0.0"} ms`,
+      `EDGES      ${m.stages?.edgesMs.toFixed(1) ?? "0.0"} ms`,
+      `DOWNSAMPLE ${m.stages?.downsampleMs.toFixed(1) ?? "0.0"} ms`,
+      `PRESENT    ${m.presentMs.toFixed(1)} ms`,
+      `LATENCY    ${m.latencyMs.toFixed(1)} ms`,
+      `CANVAS     ${m.width} × ${m.height}`,
+      `PIXELS     ${(m.width * m.height / 1e6).toFixed(2)} MP`,
+      `QUALITY    ${m.quality}× ${this.#dragging ? "drag" : this.rotate && !this.#motionPreference?.matches ? "motion" : "still"}`,
+      `MOTION     r ${this.rotate.toFixed(2)} · f ${this.float.toFixed(2)}`,
+      `GEOMETRY   ${m.vertices}v ${m.edges}e ${m.faces}f`,
+      `BACKEND    ${this.#worker ? "worker" : "main"}${this.#pending ? " · queued" : ""}`,
+    ].join("\n");
   }
 
   #pointerDown = (event: PointerEvent): void => {

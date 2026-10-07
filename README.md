@@ -96,6 +96,22 @@ node packages/node/dist/cli.js --random foobar --shape stephanoid --palette cora
 
 The Node package writes PNG with Node's built-in compression. The browser and Node both use the same pure TypeScript depth-buffered renderer, so the pixels and alpha channel match for identical settings. No browser or native canvas dependency is required for image generation. The workbench uses local shadcn/ui components with neutral light and dark themes based on `jakiestfu-next/packages/ui`.
 
+## Benchmark performance
+
+```sh
+pnpm bench --shape cube
+pnpm bench --shape cube --width 1788 --height 818 --samples 15 --warmup 5
+pnpm bench --shape stephanoid --n 31 --p 11 --q 3
+pnpm bench --family all
+pnpm bench --all --output benchmark.json
+pnpm bench --all --compare benchmark.json --output benchmark-next.json
+```
+
+`--all` benchmarks all 146 finite forms and nine valid small, medium, and large examples from the three infinite families. Infinite families cannot be enumerated completely; use `--shape` with family parameters to measure any particular member. The CLI records cold and warm geometry, mesh cache lookup, CPU raster stages (setup, background, faces, edges, downsample), complete scene rendering, PNG encoding, full PNG generation, p95, checksums, and memory. It warms up the JavaScript runtime before measuring. Use more samples when comparing small changes; the default suite prioritizes a quick full-catalogue scan.
+`--compare` reports percentage changes and pixel checksum matches for matching cases. It requires the same machine, resolution, quality, view, render options, and backend. Direct raster and complete scene pixels are also checked against each other during every case. The single-form default takes 15 timed samples after five warmups; use more samples and repeat runs when investigating small changes.
+
+The reported FPS is a theoretical single-thread CPU ceiling from complete scene timing. The browser's `stats` overlay measures actual completed draw FPS, mesh and raster time, presentation, and end-to-end latency. The web component currently runs the same CPU renderer in a worker, reusing geometry and backgrounds across frames. WebGL2 is a future backend: self-intersecting noble faces require an even-odd fill and depth treatment that must be checked against the Node renderer before GPU output can replace it.
+
 ## Mathematical scope
 
 The core implements all 146 classified finite forms and exports `KNOWN_FINITE_COUNT` and `IMPLEMENTED_FINITE_COUNT` (both 146). It also supports the disphenoid and stephanoid families (including prismatic and antiprismatic crowns). The core keeps ordered mathematical face cycles separate from rendering. Valid crown parameters follow Hill's definitions; tuples that generate disconnected compounds are rejected.
