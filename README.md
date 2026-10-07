@@ -29,7 +29,16 @@ const code = optionsToString({ ...DEFAULT_WORKBENCH_OPTIONS, background: "transp
 const options = stringToOptions(code);
 ```
 
-Design codes begin with `np1_` and contain the form, view, palette, colors, optional transparent background, orientation, zoom, repeated face, family dimensions, motion, and studio theme. Decoding validates the version and geometry. The studio writes the code to the `code` URL parameter as controls change; pasting a code into the sidebar restores it. **Surprise me** randomizes the visual options and creates a new code. Renderer stats are intentionally excluded.
+Design codes begin with `np1_` and contain the form, view, palette, colors, optional transparent background, orientation, zoom, repeated face, family dimensions, motion, and studio theme. Decoding validates the version and geometry. The studio writes the code to the `code` URL parameter as controls change; pasting a code into the sidebar restores it. **Surprise me** randomizes the visual options and creates a new code. **Generate from text** makes the same design for the same input, then saves the complete design in the URL. Renderer stats are intentionally excluded.
+
+An identity seed generates a design; a design code captures its exact options. Keep the seed if you want an avatar that stays tied to a username, or share a code if you want a snapshot that can be edited independently:
+
+```ts
+import { optionsToString, randomOptions } from "@noble-polyhedra/render";
+
+const design = randomOptions("foobar");
+const code = optionsToString(design);
+```
 
 ## Use the web component
 
@@ -53,6 +62,8 @@ import "@noble-polyhedra/web-component";
 ></noble-polyhedron>
 ```
 
+For a deterministic avatar, use `<noble-polyhedron random="foobar"></noble-polyhedron>`. The same string produces the same static appearance across embeds and Node; the element also uses its generated motion settings. A bare `random` attribute, or `element.random = true`, makes a fresh design that remains stable for that element until `random` changes. Any explicit attribute wins over the generated value: `<noble-polyhedron random="foobar" shape="cube" color="#aabbcc" rotate="0"></noble-polyhedron>`. To disable generated motion, specify `rotate="0"` or `float="0"`. The older `seed` attribute controls only legacy defaults and is distinct from `random` and the URL design code.
+
 Drag the image to rotate; scroll to zoom. Named shapes include the five Platonic solids and the four Kepler–Poinsot solids: `small-stellated-dodecahedron`, `great-dodecahedron`, `great-stellated-dodecahedron`, and `great-icosahedron`. `disphenoid`, `stephanoid`, and `antistephanoid` cover the families. Families accept `a`, `b`, `c` (disphenoid) or `n`, `p`, `q`, `crown-height` (stephanoids). The `color` attribute accepts a six-digit hex color; `background` accepts a six-digit hex color or `transparent`.
 
 The `view` attribute selects `solid` (shaded mesh), `solid-wireframe` (shaded with visible abstract edges, the default), `wireframe` (all edges), `face` (one isolated repeated face), or `face-context` (one face highlighted over the complete wireframe). `face-index` selects which congruent face to inspect.
@@ -67,7 +78,8 @@ Set `rotate` and `float` from `0` (off) to `1` for subtle pickup motion. At `rot
 import { savePng } from "@noble-polyhedra/node";
 
 await savePng("avatar.png", {
-  shape: "great-stellated-dodecahedron",
+  random: "foobar",
+  shape: "great-stellated-dodecahedron", // Overrides the generated form.
   palette: "violet",
   view: "wireframe",
   background: "transparent",
@@ -79,7 +91,7 @@ await savePng("avatar.png", {
 The command-line renderer is also available after building:
 
 ```sh
-node packages/node/dist/cli.js --shape stephanoid --palette coral --out crown.png
+node packages/node/dist/cli.js --random foobar --shape stephanoid --palette coral --out crown.png
 ```
 
 The Node package writes PNG with Node's built-in compression. The browser and Node both use the same pure TypeScript depth-buffered renderer, so the pixels and alpha channel match for identical settings. No browser or native canvas dependency is required for image generation. The workbench uses local shadcn/ui components with neutral light and dark themes based on `jakiestfu-next/packages/ui`.

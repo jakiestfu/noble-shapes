@@ -1,10 +1,14 @@
 import { createPolyhedron, seededDefaults, type Polyhedron, type ShapeOptions, type Vec3 } from "@noble-polyhedra/core";
+import { PALETTES } from "./palettes.js";
+import { resolveSceneOptions } from "./random-options.js";
 
 export type PaletteName = "aurora" | "coral" | "violet" | "gold";
 export type RenderView = "solid" | "solid-wireframe" | "wireframe" | "face" | "face-context";
 /** Quaternion in [x, y, z, w] order. Overrides yaw and pitch when provided. */
 export type Quaternion = readonly [number, number, number, number];
 export interface RenderOptions {
+  /** A true or empty random value draws a fresh design; a string is a stable seed. */
+  random?: string | boolean;
   width?: number;
   height?: number;
   palette?: PaletteName;
@@ -26,13 +30,9 @@ export interface RenderOptions {
 export type SceneOptions = ShapeOptions & RenderOptions;
 export interface RenderedImage { width: number; height: number; data: Uint8ClampedArray }
 
-const PALETTES: Record<PaletteName, { color: string; background: string }> = {
-  aurora: { color: "#5ce0d3", background: "#07131d" },
-  coral: { color: "#ffad8c", background: "#21101b" },
-  violet: { color: "#c0adff", background: "#131025" },
-  gold: { color: "#ffce83", background: "#20150d" },
-};
 export const PALETTE_NAMES = Object.keys(PALETTES) as PaletteName[];
+export { PALETTES } from "./palettes.js";
+export { randomOptions, randomSeed, resolveSceneOptions } from "./random-options.js";
 
 type RGB = readonly [number, number, number];
 type Point = { x: number; y: number; z: number };
@@ -254,12 +254,13 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
 export { optionsToString, stringToOptions, DEFAULT_WORKBENCH_OPTIONS, type WorkbenchOptions } from "./options-code.js";
 
 export function renderScene(options: SceneOptions = {}): RenderedImage {
-  const defaults = seededDefaults(options.seed);
-  const polyhedron = createPolyhedron(options);
+  const resolved = resolveSceneOptions(options);
+  const defaults = seededDefaults(resolved.seed);
+  const polyhedron = createPolyhedron(resolved);
   return renderPolyhedron(polyhedron, {
-    ...options,
-    palette: options.palette ?? defaults.palette,
-    yaw: options.yaw ?? defaults.yaw,
-    pitch: options.pitch ?? (options.view === "face" ? 0 : defaults.pitch),
+    ...resolved,
+    palette: resolved.palette ?? defaults.palette,
+    yaw: resolved.yaw ?? defaults.yaw,
+    pitch: resolved.pitch ?? (resolved.view === "face" ? 0 : defaults.pitch),
   });
 }

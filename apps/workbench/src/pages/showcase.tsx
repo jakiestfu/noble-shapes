@@ -1,10 +1,9 @@
 import { createElement } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { SHAPES, type ShapeId } from "@noble-polyhedra/core";
-import { DEFAULT_WORKBENCH_OPTIONS, type PaletteName, type WorkbenchOptions } from "@noble-polyhedra/render";
+import { DEFAULT_WORKBENCH_OPTIONS, PALETTES, type PaletteName, type WorkbenchOptions } from "@noble-polyhedra/render";
 import { Button } from "@/components/ui/button";
 import { MathText } from "@/components/math-text";
-import { PALETTES } from "@/lib/random-options";
 import { REGULAR_SYMBOLS } from "@/lib/shape-math";
 
 type Favorite = { shape: ShapeId; palette: PaletteName; yaw: number; pitch: number; note: string };

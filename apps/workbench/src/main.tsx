@@ -2,14 +2,13 @@ import { createElement, lazy, Suspense, useEffect, useLayoutEffect, useMemo, use
 import { createRoot } from "react-dom/client";
 import { Check, Code2, Copy, Download, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
 import { createPolyhedron, SHAPES, type ShapeId } from "@noble-polyhedra/core";
-import { DEFAULT_WORKBENCH_OPTIONS, optionsToString, stringToOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-polyhedra/render";
+import { DEFAULT_WORKBENCH_OPTIONS, optionsToString, PALETTES, randomOptions, randomSeed, stringToOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-polyhedra/render";
 import "@noble-polyhedra/web-component";
 import type { NoblePolyhedronElement } from "@noble-polyhedra/web-component";
 import { Button } from "@/components/ui/button";
 import { FormPicker } from "@/components/form-picker";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { PALETTES, surpriseOptions } from "@/lib/random-options";
 import { eulerCharacteristic, REGULAR_SYMBOL_LABELS, REGULAR_SYMBOLS } from "@/lib/shape-math";
 import { Research } from "@/pages/research";
 import "./style.css";
@@ -53,6 +52,7 @@ function App() {
   const [mathOpen, setMathOpen] = useState(false);
   const [codeError, setCodeError] = useState(initial.error);
   const [parameterError, setParameterError] = useState("");
+  const [identity, setIdentity] = useState("");
   const [copied, setCopied] = useState<"link" | "embed" | "">("");
   const code = useMemo(() => optionsToString(options), [options]);
   const [draftCode, setDraftCode] = useState(code);
@@ -170,7 +170,7 @@ function App() {
 
     {page === "showcase" ? <Suspense fallback={<main className="content-page" aria-busy="true"><div className="content-inner"><p className="eyebrow">Curated forms</p><h1 className="section-title">Showcase</h1><p className="page-description">Loading forms…</p></div></main>}><Showcase theme={options.theme} onOpen={next => { replacingDesign.current = true; setOptions(next); setCodeError(""); setParameterError(""); const url = new URL("/", window.location.origin); url.searchParams.set("code", optionsToString(next)); window.history.pushState(null, "", url); setPage("workbench"); }} /></Suspense> : page === "research" ? <Research /> : <div className="app-layout">
       <aside className="control-panel">
-        <div className="control-intro"><p className="eyebrow">Workbench</p><h1 className="font-heading text-xl font-bold tracking-tight">Make a form.</h1><p className="mt-1 text-xs text-muted-foreground">Every adjustment lives in the share link.</p><Button className="mt-4 w-full" onClick={() => { replacingDesign.current = true; setOptions(surpriseOptions()); setCodeError(""); setParameterError(""); }}><Shuffle className="size-4" /> Surprise me</Button></div>
+        <div className="control-intro"><p className="eyebrow">Workbench</p><h1 className="font-heading text-xl font-bold tracking-tight">Make a form.</h1><p className="mt-1 text-xs text-muted-foreground">Every adjustment lives in the share link.</p><Button className="mt-4 w-full" onClick={() => { replacingDesign.current = true; setOptions(randomOptions(randomSeed())); setCodeError(""); setParameterError(""); }}><Shuffle className="size-4" /> Surprise me</Button><div className="mt-4 space-y-2"><label htmlFor="identity" className="text-xs font-medium">Generate from text</label><div className="flex gap-2"><Input id="identity" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && identity) { replacingDesign.current = true; setOptions(randomOptions(identity)); setCodeError(""); setParameterError(""); } }} /><Button variant="outline" size="sm" disabled={!identity} onClick={() => { replacingDesign.current = true; setOptions(randomOptions(identity)); setCodeError(""); setParameterError(""); }}>Generate</Button></div><p className="text-[11px] text-muted-foreground">The same text makes the same design. Your share link saves the full design.</p></div></div>
 
         <Group title="Geometry">
           <Control label="Form"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /></Control>

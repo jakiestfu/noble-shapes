@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { inflateSync } from "node:zlib";
-import { DEFAULT_WORKBENCH_OPTIONS, optionsToString, renderScene, rotateVertex, stringToOptions } from "../packages/render/dist/index.js";
+import { DEFAULT_WORKBENCH_OPTIONS, optionsToString, randomOptions, renderScene, resolveSceneOptions, rotateVertex, stringToOptions } from "../packages/render/dist/index.js";
 import { renderPng } from "../packages/node/dist/index.js";
-import { SHAPES } from "../packages/core/dist/index.js";
+import { createPolyhedron, SHAPES } from "../packages/core/dist/index.js";
 
 function checkPngPixels(options) {
   const image = renderScene(options), png = renderPng(options);
@@ -55,6 +55,36 @@ test("design codes round-trip every visual option and reject invalid values", ()
   assert.throws(() => stringToOptions("np2_invalid"), /Unsupported design code/);
   assert.throws(() => optionsToString({ ...options, rotate: 2 }), /invalid motion/);
   assert.throws(() => optionsToString({ ...options, color: "red" }), /invalid color/);
+});
+
+test("identity seeds generate complete reproducible designs separate from design codes", () => {
+  const first = randomOptions("foobar");
+  assert.deepEqual(first, randomOptions("foobar"));
+  assert.notDeepEqual(first, randomOptions("another-user"));
+  assert.deepEqual(stringToOptions(optionsToString(first)), first);
+  assert.equal("random" in stringToOptions(optionsToString(first)), false);
+  for (let i = 0; i < 150; i++) {
+    const design = randomOptions(`avatar-${i}`);
+    assert.ok(design.faceIndex < createPolyhedron(design).faces.length);
+    assert.deepEqual(stringToOptions(optionsToString(design)), design);
+  }
+});
+
+test("explicit rendering options override a seeded draw in Node and the shared renderer", () => {
+  const seed = "foobar";
+  const options = { random: seed, shape: "cube", palette: "gold", color: "#123456", view: "solid", zoom: 1.2, width: 72, height: 72 };
+  const resolved = resolveSceneOptions(options);
+  assert.equal(resolved.shape, "cube");
+  assert.equal(resolved.palette, "gold");
+  assert.equal(resolved.color, "#123456");
+  assert.equal(resolved.view, "solid");
+  assert.equal(resolved.zoom, 1.2);
+  assert.ok(resolved.faceIndex < createPolyhedron(resolved).faces.length);
+  assert.deepEqual(renderScene(options).data, renderScene(resolved).data);
+  checkPngPixels(options);
+  const family = resolveSceneOptions({ random: seed, shape: "stephanoid", n: 7, p: 3, q: 1 });
+  assert.ok(family.faceIndex < createPolyhedron(family).faces.length);
+  assert.equal(resolveSceneOptions({ random: seed, view: "face" }).pitch, 0);
 });
 
 test("horizontal and vertical drag axes turn the 3D form toward the pointer", () => {
