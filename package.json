@@ -1,0 +1,16 @@
+{
+  "name": "noble-polyhedra",
+  "private": true,
+  "packageManager": "pnpm@11.3.0",
+  "type": "module",
+  "scripts": {
+    "build": "pnpm -r --filter './packages/**' build && pnpm --filter @noble-polyhedra/workbench build",
+    "dev": "pnpm --filter @noble-polyhedra/workbench dev",
+    "test": "pnpm build && node --test tests/*.test.mjs",
+    "render:examples": "node scripts/render-examples.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}
