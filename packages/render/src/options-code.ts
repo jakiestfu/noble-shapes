@@ -34,7 +34,7 @@ export interface WorkbenchOptions extends DesignOptions {
 }
 
 export const DEFAULT_DESIGN_OPTIONS: DesignOptions = {
-  shape: "small-stellated-dodecahedron", view: "solid-wireframe", material: "cel", palette: "aurora",
+  shape: "small-stellated-dodecahedron", view: "solid-wireframe", material: "studio", palette: "aurora",
   paletteLinked: true,
   color: "#5ce0d3", background: "#07131d",
   faceIndex: 0, n: 5, p: 3, q: 1, crownHeight: 0.7, a: 1.15, b: 0.9, c: 0.75,
@@ -78,13 +78,13 @@ function parseTuple(value: unknown, checkGeometry: boolean, version: 1 | 2 | 3 |
   if (!VIEWS.has(view as RenderView) || !PALETTE_NAMES.has(palette as PaletteName)) throw new Error("Design code has an unknown view or palette");
   if (typeof color !== "string" || !HEX.test(color) || typeof background !== "string" || (background !== "transparent" && !HEX.test(background))) throw new Error("Design code has an invalid color");
   if (version >= 3 && typeof value[13] !== "boolean") throw new Error("Design code has an invalid palette setting");
-  if (version === 4 && value[14] !== "cel" && value[14] !== "clay") throw new Error("Design code has an invalid material");
+  if (version === 4 && value[14] !== "cel" && value[14] !== "studio" && value[14] !== "clay" && value[14] !== "marble") throw new Error("Design code has an invalid material");
   if (!integerIn(faceIndex, 0, 100_000) || !integerIn(n, 3, 64) || !integerIn(p, 1, 63) || !integerIn(q, 1, 63)) throw new Error("Design code has invalid geometry parameters");
   if (!numberIn(crownHeight, 0.1, 2) || !numberIn(a, 0.1, 3) || !numberIn(b, 0.1, 3) || !numberIn(c, 0.1, 3)) throw new Error("Design code has invalid dimensions");
   const selected = PALETTES[palette as PaletteName];
   const linked = (selected.color === color && (selected.background === background || background === "transparent"))
     || (selected.light.color === color && (selected.light.background === background || background === "transparent"));
-  const options: DesignOptions = { shape: shape as ShapeId, view: view as RenderView, material: version === 4 ? value[14] as MaterialName : "cel", palette: palette as PaletteName,
+  const options: DesignOptions = { shape: shape as ShapeId, view: view as RenderView, material: version === 4 && value[14] !== "cel" ? value[14] as MaterialName : "studio", palette: palette as PaletteName,
     paletteLinked: version < 3 ? linked : value[13] as boolean, color, background, faceIndex, n, p, q, crownHeight, a, b, c };
   if (checkGeometry && faceIndex >= createPolyhedron(options).faces.length) throw new Error("Design code selects a face outside this form");
   return options;

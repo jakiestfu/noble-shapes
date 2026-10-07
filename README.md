@@ -68,7 +68,7 @@ Drag the image to rotate; scroll to zoom. Named shapes include the five Platonic
 
 The `view` attribute selects `solid` (shaded mesh), `solid-wireframe` (shaded with visible abstract edges, the default), `wireframe` (all edges), `face` (one isolated repeated face), or `face-context` (one face highlighted over the complete wireframe). `face-index` selects which congruent face to inspect.
 
-The `material` attribute selects `cel` (the original crisp lighting) or `clay` (soft matte lighting). It works in the browser and Node renderers, independently of the view. In the workbench, **Whole shape** and **Show edges** control the solid views separately.
+The `material` attribute selects `studio` (the original directional facet lighting), `clay` (softer matte lighting), or `marble` (object-space mineral veins). It works in the browser and Node renderers, independently of the view. The previous `cel` value remains an alias for `studio`. In the workbench, **Whole shape** and **Show edges** control the solid views separately.
 
 Drag with a mouse or touch pointer for screen-space 3D trackball rotation. The resulting `rotation` attribute is a unit quaternion in `x,y,z,w` order, so an adjusted view can be copied into another embed. Changing `yaw` or `pitch` in the workbench resets the trackball orientation. The browser renders every frame at the canvas's CSS size multiplied by the window's device pixel ratio, including during dragging and animation. The optional `stats` attribute (or `element.stats = true` property) displays completed draw FPS (zero while idle), mesh preparation, GPU submission and asynchronous GPU timer time when supported, time from input to GPU submission, canvas dimensions, pixel count, geometry counts, quality, and backend. The `noble-render` event exposes the same metrics in `event.detail`.
 
@@ -102,6 +102,7 @@ The Node package writes PNG with Node's built-in compression. The browser uses W
 
 ```sh
 pnpm bench --shape cube
+pnpm bench --shape cube --material marble
 pnpm bench --shape cube --width 1788 --height 818 --samples 15 --warmup 5
 pnpm bench --shape stephanoid --n 31 --p 11 --q 3
 pnpm bench --family all

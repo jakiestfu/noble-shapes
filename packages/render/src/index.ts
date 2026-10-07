@@ -1,12 +1,12 @@
 import { seededDefaults, type Polyhedron, type ShapeOptions, type Vec3 } from "@noble-polyhedra/core";
 import { createGeometryCache } from "./geometry-cache.js";
-import { MATERIAL_NAMES, shadeFace, type MaterialName } from "./materials.js";
+import { MATERIAL_NAMES, marbleTone, shadeFace, type MaterialName } from "./materials.js";
 import { PALETTES } from "./palettes.js";
 import { resolveSceneOptions } from "./random-options.js";
 
 export type PaletteName = "aurora" | "coral" | "violet" | "gold" | "glacier" | "jade" | "rose" | "ember";
 export type RenderView = "solid" | "solid-wireframe" | "wireframe" | "face" | "face-context";
-export { MATERIAL_NAMES, shadeFace, type MaterialName } from "./materials.js";
+export { MATERIAL_NAMES, marbleTone, shadeFace, type MaterialName } from "./materials.js";
 /** Quaternion in [x, y, z, w] order. Overrides yaw and pitch when provided. */
 export type Quaternion = readonly [number, number, number, number];
 export interface RenderTimings {
@@ -88,6 +88,14 @@ export function rotateVertex(v: Vec3, yaw: number, pitch: number, quaternion?: Q
   return [x, v[1] * cp - z * sp, v[1] * sp + z * cp];
 }
 
+function inverseRotateVertex(v: Vec3, yaw: number, pitch: number, quaternion?: Quaternion): Vec3 {
+  if (quaternion) return rotateVertex(v, 0, 0, [-quaternion[0], -quaternion[1], -quaternion[2], quaternion[3]]);
+  const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+  const y = v[1] * cp + v[2] * sp;
+  const z = -v[1] * sp + v[2] * cp;
+  return [v[0] * cy - z * sy, y, v[0] * sy + z * cy];
+}
+
 function faceNormal(a: Vec3, b: Vec3, c: Vec3): Vec3 {
   const ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2];
   const vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
@@ -122,7 +130,7 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
   const background = transparent ? undefined : parseHex(options.background ?? palette.background);
   const view: RenderView = options.view ?? "solid-wireframe";
   if (!["solid", "solid-wireframe", "wireframe", "face", "face-context"].includes(view)) throw new Error(`Unknown render view: ${view}`);
-  const material = options.material ?? "cel";
+  const material = options.material ?? "studio";
   if (!MATERIAL_NAMES.includes(material)) throw new Error(`Unknown material: ${material}`);
   const yaw = options.yaw ?? 0.55, pitch = options.pitch ?? (view === "face" ? 0 : 0.72);
   const rotation = options.rotation;
@@ -149,6 +157,11 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
     radius = Math.min(w, h) * 0.38 * zoom / faceRadius;
     transformed = local.map(point => rotateVertex(point, yaw, pitch, rotation));
   } else transformed = polyhedron.vertices.map(v => rotateVertex(v, yaw, pitch, rotation));
+  const inverseAxes = material === "marble" ? ([
+    inverseRotateVertex([1, 0, 0], yaw, pitch, rotation),
+    inverseRotateVertex([0, 1, 0], yaw, pitch, rotation),
+    inverseRotateVertex([0, 0, 1], yaw, pitch, rotation),
+  ] as const) : undefined;
   const points: Point[] = transformed.map(v => ({ x: w / 2 + v[0] * radius, y: h / 2 - v[1] * radius, z: v[2] }));
   const reusable = quality === 2 && w * h * 4 <= MAX_CACHED_BACKGROUND_BYTES;
   if (reusable && (!cachedScratch || cachedScratch.width !== w || cachedScratch.height !== h)) {
@@ -215,7 +228,18 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
           const worldX = (x + 0.5 - w / 2) / radius;
           const z = (planeD - normal[0] * worldX - normal[1] * worldY) / normal[2];
           const index = y * w + x;
-          if (z > depth[index]! + 1e-5) { depth[index] = z; put(data, index * 4, color); }
+          if (z > depth[index]! + 1e-5) {
+            depth[index] = z;
+            if (inverseAxes) {
+              const localX = inverseAxes[0][0] * worldX + inverseAxes[1][0] * worldY + inverseAxes[2][0] * z;
+              const localY = inverseAxes[0][1] * worldX + inverseAxes[1][1] * worldY + inverseAxes[2][1] * z;
+              const localZ = inverseAxes[0][2] * worldX + inverseAxes[1][2] * worldY + inverseAxes[2][2] * z;
+              const tone = marbleTone(localX, localY, localZ);
+              const offset = index * 4;
+              data[offset] = color[0] * tone; data[offset + 1] = color[1] * tone;
+              data[offset + 2] = color[2] * tone; data[offset + 3] = 255;
+            } else put(data, index * 4, color);
+          }
         }
       }
     }

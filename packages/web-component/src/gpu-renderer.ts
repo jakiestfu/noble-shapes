@@ -36,16 +36,15 @@ uniform vec3 u_center, u_basis0, u_basis1, u_basis2;
 uniform vec4 u_rotation;
 uniform float u_radius, u_depthScale, u_offsetY;
 uniform vec2 u_size;
+out vec3 v_local;
 vec3 rotated(vec3 p) {
   vec3 t = 2.0 * cross(u_rotation.xyz, p);
   return p + u_rotation.w * t + cross(u_rotation.xyz, t);
 }
-vec3 placed(vec3 p) {
-  p -= u_center;
-  return rotated(vec3(dot(p,u_basis0), dot(p,u_basis1), dot(p,u_basis2)));
-}
 void main() {
-  vec3 p = placed(a_position);
+  vec3 relative = a_position - u_center;
+  v_local = vec3(dot(relative,u_basis0), dot(relative,u_basis1), dot(relative,u_basis2));
+  vec3 p = rotated(v_local);
   vec2 clip = p.xy * u_radius * 2.0 / u_size;
   clip.y -= u_offsetY * 2.0 / u_size.y;
   gl_Position = vec4(clip, -p.z * u_depthScale, 1.0);
@@ -54,8 +53,24 @@ void main() {
 const FACE_FRAGMENT = `#version 300 es
 precision highp float;
 uniform vec4 u_color;
+uniform bool u_marble;
+in vec3 v_local;
 out vec4 outColor;
-void main() { outColor = u_color; }`;
+float smoothBand(float low, float high, float value) {
+  float t = clamp((value-low)/(high-low),0.0,1.0);
+  return t*t*(3.0-2.0*t);
+}
+void main() {
+  if (!u_marble) { outColor = u_color; return; }
+  vec3 p = v_local;
+  float phase = p.x*10.0+p.y*7.0+p.z*5.0+sin(p.y*6.0+p.z*12.0)*2.2+sin(p.x*9.0-p.z*7.0)*1.8;
+  float wave = sin(phase);
+  float secondary = sin(p.y*12.0-p.z*10.0+p.x*3.0+sin(p.x*6.0+p.z*3.0)*1.8);
+  float cloud = 0.5+0.5*sin(p.x*3.1-p.y*4.7+p.z*5.3+sin(p.y*4.0+p.z*3.0));
+  float vein = max(smoothBand(0.94,0.98,wave),smoothBand(0.97,0.995,secondary)*0.5);
+  float tone = 0.78+0.32*cloud+0.12*smoothBand(0.78,0.9,wave)-0.38*vein;
+  outColor = vec4(clamp(u_color.rgb*tone,0.0,1.0),u_color.a);
+}`;
 
 const EDGE_VERTEX = `#version 300 es
 precision highp float;
@@ -204,7 +219,7 @@ export class GpuRenderer {
   private constructor(canvas: HTMLCanvasElement, gl: WebGL2RenderingContext) {
     this.#canvas = canvas; this.#gl = gl;
     const shared = ["u_center","u_basis0","u_basis1","u_basis2","u_rotation","u_radius","u_depthScale","u_size","u_offsetY"];
-    this.#face = compile(gl,VERTEX_SOURCE,FACE_FRAGMENT,[...shared,"u_color"]);
+    this.#face = compile(gl,VERTEX_SOURCE,FACE_FRAGMENT,[...shared,"u_color","u_marble"]);
     this.#edge = compile(gl,EDGE_VERTEX,EDGE_FRAGMENT,[...shared,"u_edgeRadius","u_depthBias","u_opacity","u_color"]);
     this.#background = compile(gl,QUAD_VERTEX,BACKGROUND_FRAGMENT,["u_size","u_base","u_background"]);
     const empty = gl.createVertexArray(), face = gl.createVertexArray(), edge = gl.createVertexArray();
@@ -323,7 +338,7 @@ export class GpuRenderer {
     const background=transparent?undefined:parseHex(options.background??palette.background);
     const view: RenderView=options.view??"solid-wireframe";
     if (!["solid","solid-wireframe","wireframe","face","face-context"].includes(view)) throw new Error(`Unknown render view: ${view}`);
-    const material=options.material??"cel";
+    const material=options.material??"studio";
     if (!MATERIAL_NAMES.includes(material)) throw new Error(`Unknown material: ${material}`);
     const faceIndex=options.faceIndex??0;
     if (!Number.isInteger(faceIndex)||faceIndex<0||faceIndex>=mesh.faces.length) throw new Error("Face index is outside this shape's face range");
@@ -374,6 +389,7 @@ export class GpuRenderer {
     }
     gl.bindVertexArray(this.#faceVao);
     this.#uniforms(this.#face,center,basis,rotation,radius,depthScale,offsetY);
+    gl.uniform1i(this.#face.uniforms.u_marble!,material==="marble"?1:0);
     gl.enable(gl.DEPTH_TEST); gl.depthFunc(gl.LESS);
     for (let i=0;i<mesh.faces.length;i++) {
       if (view==="wireframe"||((view==="face"||view==="face-context")&&i!==faceIndex)) continue;
@@ -395,10 +411,13 @@ export class GpuRenderer {
       gl.enable(gl.STENCIL_TEST); gl.stencilFunc(gl.ALWAYS,0,0xff); gl.stencilOp(gl.KEEP,gl.KEEP,gl.INVERT);
       gl.colorMask(false,false,false,false); gl.depthMask(false); gl.disable(gl.DEPTH_TEST);
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,this.#mesh!.faces[i]!.buffer);
+      // The stencil pass only builds coverage; skip procedural work until color is written.
+      if (material==="marble") gl.uniform1i(this.#face.uniforms.u_marble!,0);
       gl.drawElements(gl.TRIANGLE_FAN,face.length,gl.UNSIGNED_INT,0); drawCalls++;
       gl.colorMask(true,true,true,true); gl.depthMask(true); gl.enable(gl.DEPTH_TEST);
       gl.stencilMask(0); gl.stencilFunc(gl.NOTEQUAL,0,0xff); gl.stencilOp(gl.KEEP,gl.KEEP,gl.KEEP);
       // The planar fan can color itself: every fragment has the correct face depth.
+      if (material==="marble") gl.uniform1i(this.#face.uniforms.u_marble!,1);
       gl.drawElements(gl.TRIANGLE_FAN,face.length,gl.UNSIGNED_INT,0); drawCalls++;
       gl.disable(gl.STENCIL_TEST); gl.disable(gl.SCISSOR_TEST);
       faces++;

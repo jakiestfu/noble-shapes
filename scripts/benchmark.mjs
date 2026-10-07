@@ -4,7 +4,7 @@ import { cpus, platform, arch, totalmem } from "node:os";
 import { readFile, writeFile } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import { createPolyhedron, IMPLEMENTED_FINITE_COUNT, seededDefaults, SHAPES } from "../packages/core/dist/index.js";
-import { clearRenderCaches, createGeometryCache, renderPolyhedron, renderScene, resolveSceneOptions } from "../packages/render/dist/index.js";
+import { clearRenderCaches, createGeometryCache, MATERIAL_NAMES, renderPolyhedron, renderScene, resolveSceneOptions } from "../packages/render/dist/index.js";
 import { encodePng, renderPng } from "../packages/node/dist/index.js";
 
 const FAMILY_CASES = [
@@ -21,7 +21,7 @@ const FAMILY_CASES = [
 const VIEWS = new Set(["solid", "solid-wireframe", "wireframe", "face", "face-context"]);
 const FLAGS = new Set(["all", "json", "help", "list"]);
 const VALUES = new Set(["shape", "family", "width", "height", "quality", "view", "samples", "warmup",
-  "output", "compare", "seed", "n", "p", "q", "crown-height", "a", "b", "c", "background", "palette", "color", "yaw", "pitch", "zoom", "face-index"]);
+  "output", "compare", "seed", "n", "p", "q", "crown-height", "a", "b", "c", "background", "palette", "color", "material", "yaw", "pitch", "zoom", "face-index"]);
 
 function usage() {
   return `Noble Polyhedra CPU benchmark
@@ -40,6 +40,7 @@ Options:
   --width N --height N     Output pixels (default: 512 single, 256 suite)
   --quality 1|2            Internal supersampling (default: 2)
   --view NAME              solid, solid-wireframe, wireframe, face, face-context
+  --material NAME          studio, clay, marble (default: studio)
   --samples N --warmup N   Timed samples and untimed warmups (defaults: 15/5 single, 5/3 suite)
   --seed TEXT              Used with --shape random
   --n --p --q --crown-height --a --b --c  Family geometry parameters for --shape
@@ -205,7 +206,9 @@ async function main() {
   const warmup = numberArg(args, "warmup", suite ? 3 : 5, 0, 50, true);
   const view = args.get("view") ?? "solid-wireframe";
   if (!VIEWS.has(view)) throw new Error(`Unknown view: ${view}`);
-  const renderOptions = { width, height, quality, view };
+  const material = args.get("material") ?? "studio";
+  if (!MATERIAL_NAMES.includes(material)) throw new Error(`Unknown material: ${material}`);
+  const renderOptions = { width, height, quality, view, material };
   for (const key of ["palette", "color", "background"]) if (args.has(key)) renderOptions[key] = args.get(key);
   for (const key of ["yaw", "pitch", "zoom", "face-index"]) if (args.has(key)) renderOptions[key === "face-index" ? "faceIndex" : key] = numberArg(args, key, 0, key === "face-index" ? 0 : -100, 100);
   // Prime shared JIT paths before the first catalogue row; this is outside all timings.

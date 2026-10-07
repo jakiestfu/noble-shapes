@@ -48,7 +48,7 @@ export function randomOptions(seed: string | number = randomSeed()): DesignOptio
   // Preserve the face choice for existing identity seeds after removing camera draws.
   next(); if (view !== "face") next(); next();
   const faceIndex = Math.floor(next() * faces);
-  const material = pick(["cel", "clay"] as const);
+  const material = pick(["studio", "clay", "marble"] as const);
   return {
     shape, view, material, palette, paletteLinked: true,
     color, background,

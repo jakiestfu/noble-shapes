@@ -4,7 +4,7 @@ import type { SceneOptions } from "@noble-polyhedra/render";
 
 const args = process.argv.slice(2);
 if (args.includes("--help") || args.includes("-h")) {
-  process.stdout.write("Usage: noble-render --out image.png [--random identity] [--shape id] [--view solid|solid-wireframe|wireframe|face|face-context] [--material cel|clay] [--face-index number] [--seed text] [--palette name] [--width px] [--height px] [--rotation x,y,z,w] [--n number] [--p number] [--q number]\n");
+  process.stdout.write("Usage: noble-render --out image.png [--random identity] [--shape id] [--view solid|solid-wireframe|wireframe|face|face-context] [--material studio|clay|marble] [--face-index number] [--seed text] [--palette name] [--width px] [--height px] [--rotation x,y,z,w] [--n number] [--p number] [--q number]\n");
   process.exit(0);
 }
 const values = new Map<string, string>();

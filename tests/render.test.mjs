@@ -87,17 +87,21 @@ test("design codes capture only form and appearance and read older links", () =>
     options.faceIndex, options.n, options.p, options.q, options.crownHeight, options.a, options.b, options.c];
   assert.deepEqual(stringToOptions(`np2_${Buffer.from(JSON.stringify(previousTuple)).toString("base64url")}`), design);
   assert.deepEqual(stringToOptions(`np3_${Buffer.from(JSON.stringify([...previousTuple, options.paletteLinked])).toString("base64url")}`), design);
+  assert.equal(stringToOptions(`np4_${Buffer.from(JSON.stringify([...previousTuple, options.paletteLinked, "cel"])).toString("base64url")}`).material, "studio");
   assert.throws(() => stringToOptions("np5_invalid"), /Unsupported design code/);
   assert.throws(() => optionsToString({ ...options, color: "red" }), /invalid color/);
   assert.throws(() => optionsToString({ ...options, material: "glass" }), /invalid material/);
 });
 
-test("clay material changes facet lighting and survives a design code", () => {
+test("materials change the surface and survive a design code and Node PNG", () => {
   const scene = { shape: "dodecahedron", view: "solid", background: "transparent", width: 80, height: 80 };
-  assert.notDeepEqual(renderScene({ ...scene, material: "clay" }).data, renderScene({ ...scene, material: "cel" }).data);
+  assert.deepEqual(renderScene({ ...scene, material: "studio" }).data, renderScene({ ...scene, material: "cel" }).data);
+  assert.notDeepEqual(renderScene({ ...scene, material: "clay" }).data, renderScene({ ...scene, material: "studio" }).data);
+  assert.notDeepEqual(renderScene({ ...scene, material: "marble" }).data, renderScene({ ...scene, material: "studio" }).data);
   checkPngPixels({ ...scene, material: "clay" });
-  const design = { ...DEFAULT_WORKBENCH_OPTIONS, material: "clay" };
-  assert.equal(stringToOptions(optionsToString(design)).material, "clay");
+  checkPngPixels({ ...scene, material: "marble" });
+  const design = { ...DEFAULT_WORKBENCH_OPTIONS, material: "marble" };
+  assert.equal(stringToOptions(optionsToString(design)).material, "marble");
 });
 
 test("linked palettes follow the viewer theme without changing the shared design code", () => {
