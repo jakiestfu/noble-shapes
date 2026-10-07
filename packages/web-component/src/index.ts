@@ -1,5 +1,6 @@
 import { createGeometryCache, randomOptions, randomSeed, renderPolyhedron, type DesignOptions, type Quaternion, type RenderedImage, type RenderTimings, type SceneOptions } from "@noble-polyhedra/render";
 import { seededDefaults } from "@noble-polyhedra/core";
+import { createGpuRenderer, type GpuRenderer } from "./gpu-renderer.js";
 
 const numericAttribute = (element: Element, name: string): number | undefined => {
   const value = element.getAttribute(name);
@@ -42,7 +43,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     return ["shape", "seed", "random", "palette", "color", "background", "yaw", "pitch", "rotation", "zoom", "view", "face-index", "stats", "rotate", "float", "n", "p", "q", "crown-height", "a", "b", "c"];
   }
 
-  readonly #canvas: HTMLCanvasElement;
+  #canvas: HTMLCanvasElement;
   readonly #backdrop: HTMLCanvasElement;
   readonly #message: HTMLDivElement;
   readonly #stats: HTMLOutputElement;
@@ -50,6 +51,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   #visibilityObserver?: IntersectionObserver;
   #visible = true;
   #worker?: Worker;
+  #gpu?: GpuRenderer;
   #frame = 0;
   #motionFrame = 0;
   #lastMotionTime = 0;
@@ -69,7 +71,9 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   #randomBase?: DesignOptions;
   #geometry = createGeometryCache(4);
   #metrics = { renderMs: 0, geometryMs: 0, meshCacheHit: false, stages: undefined as RenderTimings | undefined,
-    presentMs: 0, latencyMs: 0, width: 0, height: 0, vertices: 0, edges: 0, faces: 0, quality: 2 };
+    presentMs: 0, latencyMs: 0, width: 0, height: 0, vertices: 0, edges: 0, faces: 0, quality: 2,
+    backend: "cpu" as "cpu" | "webgl2", gpuMs: undefined as number | undefined,
+    uploadMs: undefined as number | undefined, drawCalls: undefined as number | undefined };
 
   constructor() {
     super();
@@ -104,18 +108,14 @@ export class NoblePolyhedronElement extends HTMLElementBase {
       });
       this.#visibilityObserver.observe(this);
     }
-    this.#canvas.addEventListener("pointerdown", this.#pointerDown);
-    this.#canvas.addEventListener("pointermove", this.#pointerMove);
-    this.#canvas.addEventListener("pointerup", this.#pointerUp);
-    this.#canvas.addEventListener("pointercancel", this.#pointerUp);
-    this.#canvas.addEventListener("wheel", this.#wheel, { passive: false });
     try {
-      if (typeof Worker !== "undefined") {
-        this.#worker = new Worker(new URL("./renderer.worker.js", import.meta.url), { type: "module" });
-        this.#worker.onmessage = this.#workerMessage;
-        this.#worker.onerror = () => { this.#worker?.terminate(); this.#worker = undefined; this.#busy = false; this.#schedule(); };
-      }
-    } catch { this.#worker = undefined; }
+      this.#gpu = createGpuRenderer(this.#canvas);
+    } catch {
+      // A failed shader compilation can leave this canvas bound to WebGL.
+      this.#replaceCanvas();
+    }
+    if (!this.#gpu) this.#startWorker();
+    this.#bindCanvasEvents();
     this.#motionPreference = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     this.#motionPreference?.addEventListener("change", this.#motionPreferenceChanged);
     this.#watchPixelRatio();
@@ -144,13 +144,62 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     clearInterval(this.#timer);
     this.#worker?.terminate();
     this.#worker = undefined;
+    this.#gpu?.dispose();
+    this.#gpu = undefined;
     this.#busy = false;
+    this.#unbindCanvasEvents();
+  }
+
+  #startWorker(): void {
+    try {
+      if (typeof Worker === "undefined") return;
+      this.#worker = new Worker(new URL("./renderer.worker.js", import.meta.url), { type: "module" });
+      this.#worker.onmessage = this.#workerMessage;
+      this.#worker.onerror = () => { this.#worker?.terminate(); this.#worker = undefined; this.#busy = false; this.#schedule(); };
+    } catch { this.#worker = undefined; }
+  }
+
+  #bindCanvasEvents(): void {
+    this.#canvas.addEventListener("pointerdown", this.#pointerDown);
+    this.#canvas.addEventListener("pointermove", this.#pointerMove);
+    this.#canvas.addEventListener("pointerup", this.#pointerUp);
+    this.#canvas.addEventListener("pointercancel", this.#pointerUp);
+    this.#canvas.addEventListener("wheel", this.#wheel, { passive: false });
+    if (this.#gpu) this.#canvas.addEventListener("webglcontextlost", this.#gpuContextLost);
+  }
+
+  #unbindCanvasEvents(): void {
     this.#canvas.removeEventListener("pointerdown", this.#pointerDown);
     this.#canvas.removeEventListener("pointermove", this.#pointerMove);
     this.#canvas.removeEventListener("pointerup", this.#pointerUp);
     this.#canvas.removeEventListener("pointercancel", this.#pointerUp);
     this.#canvas.removeEventListener("wheel", this.#wheel);
+    this.#canvas.removeEventListener("webglcontextlost", this.#gpuContextLost);
   }
+
+  #replaceCanvas(): void {
+    const replacement = this.#canvas.cloneNode(false) as HTMLCanvasElement;
+    this.#canvas.replaceWith(replacement);
+    this.#canvas = replacement;
+  }
+
+  #fallbackGpu(): void {
+    if (!this.#gpu) return;
+    this.#gpu.dispose();
+    this.#gpu = undefined;
+    this.#unbindCanvasEvents();
+    this.#replaceCanvas();
+    this.#bindCanvasEvents();
+    this.#startWorker();
+    this.#updateFloat();
+    this.#syncMotion();
+    this.#schedule();
+  }
+
+  #gpuContextLost = (event: Event): void => {
+    event.preventDefault();
+    this.#fallbackGpu();
+  };
 
   attributeChangedCallback(name: string, oldValue: string | null): void {
     if (name === "random") {
@@ -170,7 +219,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
       }
       this.#syncMotion();
     }
-    if (name === "float") this.#updateFloat();
+    if (name === "float") { this.#updateFloat(); this.#syncMotion(); if (this.#gpu) this.#schedule(); }
     if (name === "stats") this.#syncStatsTimer();
     else if (name !== "float") this.#schedule();
     this.#updateStats();
@@ -234,7 +283,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   }
 
   #syncMotion(): void {
-    if (this.isConnected && this.#visible && this.rotate > 0 && !this.#motionPreference?.matches) {
+    if (this.isConnected && this.#visible && (this.rotate > 0 || (this.#gpu && this.float > 0)) && !this.#motionPreference?.matches) {
       if (!this.#motionFrame) this.#motionFrame = requestAnimationFrame(this.#motionTick);
     } else {
       cancelAnimationFrame(this.#motionFrame);
@@ -245,8 +294,8 @@ export class NoblePolyhedronElement extends HTMLElementBase {
 
   #motionTick = (time: number): void => {
     this.#motionFrame = 0;
-    if (!this.isConnected || this.rotate === 0 || this.#motionPreference?.matches) return;
-    if (this.#lastMotionTime && !this.#dragging && !document.hidden) {
+    if (!this.isConnected || (this.rotate === 0 && (!this.#gpu || this.float === 0)) || this.#motionPreference?.matches) return;
+    if (this.rotate > 0 && this.#lastMotionTime && !this.#dragging && !document.hidden) {
       this.#motionAngle = (this.#motionAngle + Math.min((time - this.#lastMotionTime) / 1000, 0.1) * MAX_ROTATION_SPEED * this.rotate) % (Math.PI * 2);
     }
     this.#lastMotionTime = time;
@@ -259,14 +308,15 @@ export class NoblePolyhedronElement extends HTMLElementBase {
 
   #updateFloat(): void {
     const enabled = this.float > 0 && !this.#motionPreference?.matches;
-    this.#canvas.classList.toggle("floating", enabled);
-    this.#backdrop.hidden = !enabled;
-    if (enabled) this.#copyBackdrop();
-    if (enabled) this.#canvas.style.setProperty("--float-distance", `${Math.min(MAX_FLOAT_DISTANCE, this.clientHeight * 0.012) * this.float}px`);
+    const cssFloat = enabled && !this.#gpu;
+    this.#canvas.classList.toggle("floating", cssFloat);
+    this.#backdrop.hidden = !cssFloat;
+    if (cssFloat) this.#copyBackdrop();
+    if (cssFloat) this.#canvas.style.setProperty("--float-distance", `${Math.min(MAX_FLOAT_DISTANCE, this.clientHeight * 0.012) * this.float}px`);
   }
 
   #copyBackdrop(): void {
-    if (this.#backdrop.hidden) return;
+    if (this.#backdrop.hidden || this.#gpu) return;
     if (this.#backdrop.width !== this.#canvas.width) this.#backdrop.width = this.#canvas.width;
     if (this.#backdrop.height !== this.#canvas.height) this.#backdrop.height = this.#canvas.height;
     this.#backdrop.getContext("2d")?.drawImage(this.#canvas, 0, 0);
@@ -312,7 +362,30 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   #draw(): void {
     try {
       const request: RenderRequest = { id: ++this.#version, options: this.#options(), requestedAt: performance.now() };
-      if (this.#worker) {
+      if (this.#gpu) {
+        const geometryStarted = performance.now();
+        const defaults = seededDefaults(request.options.seed);
+        const { polyhedron, hit: meshCacheHit } = this.#geometry.get(request.options);
+        const geometryMs = performance.now() - geometryStarted;
+        const result = this.#gpu.render(polyhedron, {
+          ...request.options, palette: request.options.palette ?? defaults.palette,
+          yaw: request.options.yaw ?? defaults.yaw,
+          pitch: request.options.pitch ?? (request.options.view === "face" ? 0 : defaults.pitch),
+          floatOffsetY: this.float > 0 && !this.#motionPreference?.matches
+            ? Math.sin(performance.now() * 2 * Math.PI / 3600) * Math.min(MAX_FLOAT_DISTANCE, this.clientHeight * 0.012)
+              * this.float * (window.devicePixelRatio || 1) : 0,
+        });
+        const now = performance.now();
+        this.#drawTimes.push(now);
+        this.#metrics = { renderMs: result.renderMs, geometryMs, meshCacheHit, stages: undefined,
+          presentMs: 0, latencyMs: now - request.requestedAt, width: result.width, height: result.height,
+          vertices: polyhedron.vertices.length, edges: polyhedron.edges.length, faces: polyhedron.faces.length,
+          quality: request.options.quality ?? 2, backend: "webgl2", gpuMs: result.gpuMs,
+          uploadMs: result.geometryMs, drawCalls: result.drawCalls };
+        this.#message.style.display = "none";
+        this.#updateStats();
+        this.dispatchEvent(new CustomEvent("noble-render", { detail: { ...this.#metrics } }));
+      } else if (this.#worker) {
         if (this.#busy) this.#pending = request;
         else this.#send(request);
       } else {
@@ -332,7 +405,8 @@ export class NoblePolyhedronElement extends HTMLElementBase {
           polyhedron.edges.length, polyhedron.faces.length, geometryMs, meshCacheHit, stages);
       }
     } catch (error) {
-      this.#showError(error);
+      if (this.#gpu) this.#fallbackGpu();
+      else this.#showError(error);
     }
   }
 
@@ -371,7 +445,8 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     const now = performance.now();
     this.#drawTimes.push(now);
     this.#metrics = { renderMs, geometryMs, meshCacheHit, stages, presentMs: now - start, latencyMs: now - request.requestedAt,
-      width: image.width, height: image.height, vertices, edges, faces, quality: request.options.quality ?? 2 };
+      width: image.width, height: image.height, vertices, edges, faces, quality: request.options.quality ?? 2,
+      backend: "cpu", gpuMs: undefined, uploadMs: undefined, drawCalls: undefined };
     this.#message.style.display = "none";
     this.#updateStats();
     this.dispatchEvent(new CustomEvent("noble-render", { detail: { ...this.#metrics } }));
@@ -396,23 +471,31 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     const now = performance.now();
     this.#drawTimes = this.#drawTimes.filter(time => time > now - 1000);
     const m = this.#metrics;
-    this.#stats.textContent = [
+    const common = [
       `DRAW FPS   ${this.#drawTimes.length}${this.#drawTimes.length ? "" : " (idle)"}`,
       `MESH       ${m.geometryMs.toFixed(1)} ms ${m.meshCacheHit ? "cached" : "built"}`,
-      `RENDER     ${m.renderMs.toFixed(1)} ms`,
-      `BACKGROUND ${m.stages?.backgroundMs.toFixed(1) ?? "0.0"} ms ${m.stages?.backgroundCacheHit ? "cached" : "built"}`,
-      `FACES      ${m.stages?.facesMs.toFixed(1) ?? "0.0"} ms`,
-      `EDGES      ${m.stages?.edgesMs.toFixed(1) ?? "0.0"} ms`,
-      `DOWNSAMPLE ${m.stages?.downsampleMs.toFixed(1) ?? "0.0"} ms`,
-      `PRESENT    ${m.presentMs.toFixed(1)} ms`,
-      `LATENCY    ${m.latencyMs.toFixed(1)} ms`,
+      ...(m.backend === "webgl2" ? [
+        `GPU UPLOAD ${m.uploadMs?.toFixed(1) ?? "0.0"} ms`,
+        `GPU SUBMIT ${m.renderMs.toFixed(1)} ms`,
+        `GPU TIME   ${m.gpuMs === undefined ? "unavailable" : `${m.gpuMs.toFixed(1)} ms`}`,
+        `DRAWS      ${m.drawCalls ?? 0}`,
+      ] : [
+        `RENDER     ${m.renderMs.toFixed(1)} ms`,
+        `BACKGROUND ${m.stages?.backgroundMs.toFixed(1) ?? "0.0"} ms ${m.stages?.backgroundCacheHit ? "cached" : "built"}`,
+        `FACES      ${m.stages?.facesMs.toFixed(1) ?? "0.0"} ms`,
+        `EDGES      ${m.stages?.edgesMs.toFixed(1) ?? "0.0"} ms`,
+        `DOWNSAMPLE ${m.stages?.downsampleMs.toFixed(1) ?? "0.0"} ms`,
+        `PRESENT    ${m.presentMs.toFixed(1)} ms`,
+      ]),
+      `${m.backend === "webgl2" ? "TO SUBMIT" : "LATENCY"}  ${m.latencyMs.toFixed(1)} ms`,
       `CANVAS     ${m.width} × ${m.height}`,
       `PIXELS     ${(m.width * m.height / 1e6).toFixed(2)} MP`,
-      `QUALITY    ${m.quality}× ${this.#dragging ? "drag" : this.rotate && !this.#motionPreference?.matches ? "motion" : "still"}`,
+      `QUALITY    ${m.quality}× ${this.#dragging ? "drag" : (this.rotate > 0 || (this.#gpu && this.float > 0)) && !this.#motionPreference?.matches ? "motion" : "still"}`,
       `MOTION     r ${this.rotate.toFixed(2)} · f ${this.float.toFixed(2)}`,
       `GEOMETRY   ${m.vertices}v ${m.edges}e ${m.faces}f`,
-      `BACKEND    ${this.#worker ? "worker" : "main"}${this.#pending ? " · queued" : ""}`,
-    ].join("\n");
+      `BACKEND    ${m.backend === "webgl2" ? "WebGL2" : this.#worker ? "CPU worker" : "CPU main"}${this.#pending ? " · queued" : ""}`,
+    ];
+    this.#stats.textContent = common.join("\n");
   }
 
   #pointerDown = (event: PointerEvent): void => {
