@@ -33,6 +33,14 @@ const VIEWS: { id: RenderView; name: string }[] = [
   { id: "face-context", name: "Face + wireframe" },
 ];
 const sliderValue = (value: number | readonly number[], fallback: number): number => typeof value === "number" ? value : value[0] ?? fallback;
+function sceneIsLight(background: string, theme: "light" | "dark"): boolean {
+  if (background === "transparent") return theme === "light";
+  const channels = [1, 3, 5].map(offset => {
+    const value = parseInt(background.slice(offset, offset + 2), 16) / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722 > 0.179;
+}
 const VIEWER_STORAGE_KEY = "noble-forms-viewer-v1";
 type ViewerPreferences = Pick<WorkbenchOptions, "theme" | "yaw" | "pitch" | "rotation" | "zoom" | "rotate" | "float"> & { stats: boolean };
 
@@ -88,6 +96,7 @@ function App() {
   const poly = useMemo(() => createPolyhedron(options), [options.shape, options.n, options.p, options.q, options.crownHeight, options.a, options.b, options.c]);
   const shapeIndex = SHAPES.findIndex(item => item.id === options.shape);
   const regularSymbol = REGULAR_SYMBOLS[options.shape];
+  const lightScene = sceneIsLight(options.background, options.theme);
 
   useEffect(() => { document.documentElement.dataset.theme = options.theme; }, [options.theme]);
   useEffect(() => {
@@ -290,7 +299,11 @@ function App() {
       </aside>
 
       <main className="preview-panel">
-        <div className="preview-toolbar"><div className="preview-toolbar-title"><p className="eyebrow mb-1">Live preview <span className="mx-1">/</span> {String(shapeIndex + 1).padStart(3, "0")} of {SHAPES.length}</p><h2 className="truncate font-heading text-xl font-semibold tracking-tight">{poly.name}</h2></div><Button variant="ghost" size="sm" onClick={download}><Download className="size-3.5" /> PNG</Button><div className="preview-toolbar-math" aria-label="Polyhedron geometry"><span>V {poly.vertices.length} <i>·</i> E {poly.edges.length} <i>·</i> F {poly.faces.length}</span><span>χ {eulerCharacteristic(poly)}</span>{regularSymbol && <span className="preview-symbol">{REGULAR_SYMBOL_LABELS[options.shape]}</span>}</div></div>
+        <div className={`preview-toolbar ${lightScene ? "is-light-scene" : ""}`}>
+          <h2 className="preview-toolbar-title truncate font-heading text-lg font-semibold tracking-tight">{poly.name}</h2>
+          <Button variant="default" size="sm" className="preview-download" onClick={download}><Download className="size-3.5" /> PNG</Button>
+          <div className="preview-toolbar-math" aria-label="Polyhedron geometry"><span>V {poly.vertices.length} <i>·</i> E {poly.edges.length} <i>·</i> F {poly.faces.length}</span><span>χ {eulerCharacteristic(poly)}</span>{regularSymbol && <span className="preview-symbol">{REGULAR_SYMBOL_LABELS[options.shape]}</span>}</div>
+        </div>
         <div className="preview-surface">
           <noble-polyhedron ref={hero} {...appearanceAttrs} background="transparent" stats={stats ? "true" : undefined} className="preview-model" />
         </div>
