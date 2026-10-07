@@ -12,7 +12,7 @@ function ComboboxInput({ className, ...props }: ComboboxPrimitive.Input.Props) {
       className={cn("h-9 w-full rounded-sm border border-input bg-transparent py-1 pl-8 pr-9 text-sm outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40", className)}
       {...props}
     />
-    <ComboboxPrimitive.Trigger aria-label="Show forms" className="absolute right-1 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+    <ComboboxPrimitive.Trigger aria-label="Show shapes" className="absolute right-1 top-1/2 flex size-7 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
       <ChevronsUpDown className="size-3.5" />
     </ComboboxPrimitive.Trigger>
   </div>;

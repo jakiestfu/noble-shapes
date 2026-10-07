@@ -37,7 +37,7 @@ const FORM_OPTIONS: FormOption[] = [
 const SCOPES: { id: Scope; label: string }[] = [
   { id: "featured", label: "Featured" }, { id: "icosahedral", label: "Icosahedral" },
   { id: "octahedral", label: "Octahedral" }, { id: "families", label: "Families" },
-  { id: "all", label: "All forms" }, { id: "recent", label: "Recent" },
+  { id: "all", label: "All shapes" }, { id: "recent", label: "Recent" },
 ];
 
 export function FormPicker({ shape, onSelect }: { shape: string; onSelect: (shape: string) => void }) {
@@ -73,7 +73,7 @@ export function FormPicker({ shape, onSelect }: { shape: string; onSelect: (shap
     onValueChange={(item: FormOption | null) => { if (item) { onSelect(item.id); setInputValue(""); } }}
     autoHighlight
   >
-    <ComboboxInput aria-label="Form" placeholder="Search by name or ID…" autoComplete="off" />
+    <ComboboxInput aria-label="Polyhedron" placeholder="Search by name or ID…" autoComplete="off" />
     <ComboboxContent aria-label="Choose a noble polyhedron">
       <div className="border-b border-border px-2.5 pb-2.5 pt-2">
         <p className="mb-2 px-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Browse the catalogue</p>
@@ -87,7 +87,7 @@ export function FormPicker({ shape, onSelect }: { shape: string; onSelect: (shap
           >{option.label}</button>)}
         </div>
       </div>
-      <ComboboxEmpty>No forms found. Try a name or a paper ID.</ComboboxEmpty>
+      <ComboboxEmpty>No shapes found. Try a name or a paper ID.</ComboboxEmpty>
       <ComboboxList>
         {(item: FormOption) => <ComboboxItem key={item.id} value={item}>
           <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
@@ -95,7 +95,7 @@ export function FormPicker({ shape, onSelect }: { shape: string; onSelect: (shap
         </ComboboxItem>}
       </ComboboxList>
       <p className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
-        {searching ? `${visible.length} matching ${visible.length === 1 ? "form" : "forms"} across the catalogue` : `${visible.length} forms · Search all ${SHAPES.length} by name or ID`}
+        {searching ? `${visible.length} matching ${visible.length === 1 ? "shape" : "shapes"} across the catalogue` : `${visible.length} shapes · Search all ${SHAPES.length} by name or ID`}
       </p>
     </ComboboxContent>
   </Combobox>;

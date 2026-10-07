@@ -192,8 +192,19 @@ function App() {
     try { setOptions(previous => ({ ...previous, ...stringToOptions(draftCode.trim()) })); setCodeError(""); setParameterError(""); }
     catch (error) { setCodeError(error instanceof Error ? error.message : String(error)); }
   };
-  const generate = (seed: string) => {
+  const generateFromText = (seed: string) => {
     setOptions(previous => ({ ...previous, ...randomOptions(seed) }));
+    setCodeError(""); setParameterError("");
+  };
+  const surpriseMe = () => {
+    const next = randomOptions(randomSeed());
+    setOptions(previous => ({
+      ...previous,
+      ...next,
+      view: previous.view,
+      background: previous.background === "transparent" ? "transparent"
+        : next.background === "transparent" ? PALETTES[next.palette].background : next.background,
+    }));
     setCodeError(""); setParameterError("");
   };
   const copyText = async (kind: "link", text: string) => {
@@ -244,11 +255,11 @@ function App() {
 
     {page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
-        <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Workbench</h1><p className="mt-1 text-xs text-muted-foreground">146 finite forms · two infinite families</p></div>
+        <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Workbench</h1><p className="mt-1 text-xs text-muted-foreground">146 finite polyhedra · two infinite families</p></div>
 
-        <Group title="Form">
-          <Control label="Polyhedron" value={`${shapeIndex + 1} / ${SHAPES.length}`}><div className="form-selector"><Button variant="ghost" size="icon" className="size-8" aria-label="Previous form" title="Previous form (←)" onClick={() => stepShape(-1)}><ChevronLeft className="size-4" /></Button><div className="min-w-0 flex-1"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /></div><Button variant="ghost" size="icon" className="size-8" aria-label="Next form" title="Next form (→)" onClick={() => stepShape(1)}><ChevronRight className="size-4" /></Button></div></Control>
-          <div className="design-actions"><Button variant="ghost" size="sm" className="surprise-action" onClick={() => generate(randomSeed())}><Shuffle className="size-3.5" /> Surprise me</Button><details className="identity-disclosure"><summary>From text</summary><form className="identity-form" onSubmit={event => { event.preventDefault(); if (identity.trim()) generate(identity.trim()); }}><Input id="identity" aria-label="Text for repeatable design" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} /><Button variant="ghost" size="sm" type="submit" disabled={!identity.trim()}>Generate</Button></form><p>Same text produces the same design.</p></details></div>
+        <Group title="Shape">
+          <Control label="Polyhedron" value={`${shapeIndex + 1} / ${SHAPES.length}`}><div className="shape-selector"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /><div className="shape-step-links"><button type="button" className="shape-step-link" title="Previous shape (←)" onClick={() => stepShape(-1)}><ChevronLeft aria-hidden="true" /> Previous</button><button type="button" className="shape-step-link" title="Next shape (→)" onClick={() => stepShape(1)}>Next <ChevronRight aria-hidden="true" /></button></div></div></Control>
+          <div className="design-actions"><Button variant="ghost" size="sm" className="surprise-action" onClick={surpriseMe}><Shuffle className="size-3.5" /> Surprise me</Button><details className="identity-disclosure"><summary>From text</summary><form className="identity-form" onSubmit={event => { event.preventDefault(); if (identity.trim()) generateFromText(identity.trim()); }}><Input id="identity" aria-label="Text for repeatable design" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} /><Button variant="ghost" size="sm" type="submit" disabled={!identity.trim()}>Generate</Button></form><p>Same text produces the same design.</p></details></div>
           <Control label="View"><div className="view-options">{VIEWS.map(item => <Button key={item.id} variant="ghost" aria-pressed={options.view === item.id} size="sm" className={`${item.id === "face-context" ? "col-span-2" : ""} ${options.view === item.id ? "is-selected" : ""}`} onClick={() => update({ view: item.id, ...(item.id === "face" ? { pitch: 0, rotation: undefined } : {}) })}>{item.name}</Button>)}</div></Control>
           {(options.view === "face" || options.view === "face-context") && <Control label="Repeated face" value={`${options.faceIndex + 1} / ${poly.faces.length}`}><Slider min={0} max={poly.faces.length - 1} step={1} value={[options.faceIndex]} onValueChange={value => update({ faceIndex: sliderValue(value, 0) })} /></Control>}
           {family === "disphenoid" && <div className="grid grid-cols-3 gap-2">{(["a", "b", "c"] as const).map(key => <Control key={key} label={`Axis ${key.toUpperCase()}`}><Input type="number" min="0.1" max="3" step="0.05" value={options[key]} onChange={event => updateGeometry({ [key]: Number(event.target.value) })} /></Control>)}</div>}
@@ -279,11 +290,11 @@ function App() {
       </aside>
 
       <main className="preview-panel">
-        <div className="preview-toolbar"><div className="preview-toolbar-title"><p className="eyebrow mb-1">Live preview <span className="mx-1">/</span> {String(shapeIndex + 1).padStart(3, "0")} of {SHAPES.length}</p><h2 className="truncate font-heading text-xl font-semibold tracking-tight">{poly.name}</h2></div><Button variant="ghost" size="sm" onClick={download}><Download className="size-3.5" /> PNG</Button><div className="preview-toolbar-math" aria-label="Form mathematics"><span>V {poly.vertices.length} <i>·</i> E {poly.edges.length} <i>·</i> F {poly.faces.length}</span><span>χ {eulerCharacteristic(poly)}</span>{regularSymbol && <span className="preview-symbol">{REGULAR_SYMBOL_LABELS[options.shape]}</span>}</div></div>
+        <div className="preview-toolbar"><div className="preview-toolbar-title"><p className="eyebrow mb-1">Live preview <span className="mx-1">/</span> {String(shapeIndex + 1).padStart(3, "0")} of {SHAPES.length}</p><h2 className="truncate font-heading text-xl font-semibold tracking-tight">{poly.name}</h2></div><Button variant="ghost" size="sm" onClick={download}><Download className="size-3.5" /> PNG</Button><div className="preview-toolbar-math" aria-label="Polyhedron geometry"><span>V {poly.vertices.length} <i>·</i> E {poly.edges.length} <i>·</i> F {poly.faces.length}</span><span>χ {eulerCharacteristic(poly)}</span>{regularSymbol && <span className="preview-symbol">{REGULAR_SYMBOL_LABELS[options.shape]}</span>}</div></div>
         <div className="preview-surface">
           <noble-polyhedron ref={hero} {...appearanceAttrs} background="transparent" stats={stats ? "true" : undefined} className="preview-model" />
         </div>
-        <div className="preview-dock"><details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Use this form</span><span className="text-xs text-muted-foreground">Code examples</span></summary><div className="embed-content"><CodePreview formats={codeFormats} compact /></div></details></div>
+        <div className="preview-dock"><details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Use this shape</span><span className="text-xs text-muted-foreground">Code examples</span></summary><div className="embed-content"><CodePreview formats={codeFormats} compact /></div></details></div>
       </main>
     </div>}
   </div>;

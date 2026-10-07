@@ -126,7 +126,12 @@ noble-polyhedron { display: block; }
 .control-intro { padding: 18px 20px 19px; }
 .control-group { border-top: 1px solid var(--border); padding: 17px 20px 22px; }
 .control-group-title { margin-bottom: 15px; color: var(--muted-foreground); font: 700 10px/1.2 ui-monospace, SFMono-Regular, monospace; letter-spacing: 0.15em; text-transform: uppercase; }
-.form-selector { display: flex; align-items: center; gap: 4px; }
+.shape-selector { display: grid; min-width: 0; gap: 5px; }
+.shape-step-links { display: flex; align-items: center; justify-content: space-between; }
+.shape-step-link { display: inline-flex; min-height: 24px; align-items: center; gap: 2px; padding: 0 1px; color: var(--muted-foreground); font-size: 11px; cursor: pointer; }
+.shape-step-link:hover { color: var(--foreground); text-decoration: underline; text-underline-offset: 3px; }
+.shape-step-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.shape-step-link svg { width: 12px; height: 12px; }
 .design-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
 .design-actions .surprise-action { margin-left: -8px; color: var(--muted-foreground); }
 .design-actions .surprise-action:hover { color: var(--foreground); }
