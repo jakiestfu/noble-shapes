@@ -26,22 +26,22 @@
 /* Mirrored from the light, warm-neutral theme in jakiestfu-next/packages/ui. */
 :root {
   --background: oklch(0.9818 0.0054 95.0986);
-  --foreground: oklch(0.3438 0.0269 95.7226);
+  --foreground: rgb(0 0 0 / 0.7);
   --card: oklch(0.9665 0.0067 97.3521);
-  --card-foreground: oklch(0.1908 0.002 106.5859);
+  --card-foreground: rgb(0 0 0 / 0.84);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2671 0.0196 98.939);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.9245 0.0138 92.9892);
-  --secondary-foreground: oklch(0.4334 0.0177 98.6048);
-  --muted: oklch(0.9341 0.0153 90.239);
-  --muted-foreground: oklch(0.5341 0.0078 97.4503);
-  --accent: oklch(0.9245 0.0138 92.9892);
-  --accent-foreground: oklch(0.2671 0.0196 98.939);
-  --border: oklch(0.8847 0.0069 97.3627);
-  --input: oklch(0.87083 0.00549 16.27);
-  --ring: oklch(0.708 0 0);
+  --popover-foreground: rgb(0 0 0 / 0.76);
+  --primary: rgb(0 0 0 / 0.86);
+  --primary-foreground: rgb(255 255 255 / 0.98);
+  --secondary: rgb(0 0 0 / 0.055);
+  --secondary-foreground: rgb(0 0 0 / 0.62);
+  --muted: rgb(0 0 0 / 0.04);
+  --muted-foreground: rgb(0 0 0 / 0.48);
+  --accent: rgb(0 0 0 / 0.055);
+  --accent-foreground: rgb(0 0 0 / 0.76);
+  --border: rgb(0 0 0 / 0.11);
+  --input: rgb(0 0 0 / 0.15);
+  --ring: rgb(0 0 0 / 0.36);
   --radius: 0.25rem;
   --checker-light: #f4f4f3;
   --checker-dark: #e4e4e2;
@@ -49,22 +49,22 @@
 
 :root[data-theme="dark"] {
   --background: oklch(0.2679 0.0036 106.6427);
-  --foreground: oklch(0.9576 0.0027 106.4494);
+  --foreground: rgb(255 255 255 / 0.94);
   --card: oklch(0.2928 0.0018 106.5092);
-  --card-foreground: oklch(0.9818 0.0054 95.0986);
+  --card-foreground: rgb(255 255 255 / 0.97);
   --popover: oklch(0.3085 0.0035 106.6039);
-  --popover-foreground: oklch(0.9211 0.004 106.4781);
-  --primary: oklch(0.92 0.004 95);
-  --primary-foreground: oklch(0.18 0.003 95);
-  --secondary: oklch(0.3 0.003 95);
-  --secondary-foreground: oklch(0.93 0.003 95);
-  --muted: oklch(0.2213 0.0038 106.707);
-  --muted-foreground: oklch(0.7713 0.0169 99.0657);
-  --accent: oklch(0.213 0.0078 95.4245);
-  --accent-foreground: oklch(0.95 0.003 95);
-  --border: oklch(0.3618 0.0101 106.8928);
-  --input: oklch(0.4336 0.0113 100.2195);
-  --ring: oklch(0.556 0 0);
+  --popover-foreground: rgb(255 255 255 / 0.9);
+  --primary: rgb(255 255 255 / 0.9);
+  --primary-foreground: rgb(0 0 0 / 0.9);
+  --secondary: rgb(255 255 255 / 0.05);
+  --secondary-foreground: rgb(255 255 255 / 0.8);
+  --muted: rgb(0 0 0 / 0.16);
+  --muted-foreground: rgb(255 255 255 / 0.68);
+  --accent: rgb(0 0 0 / 0.2);
+  --accent-foreground: rgb(255 255 255 / 0.9);
+  --border: rgb(255 255 255 / 0.14);
+  --input: rgb(255 255 255 / 0.22);
+  --ring: rgb(255 255 255 / 0.45);
   --checker-light: #292929;
   --checker-dark: #353535;
 }
@@ -164,7 +164,7 @@ noble-polyhedron { display: block; }
 .preview-surface noble-polyhedron { width: 100%; height: 100%; min-height: 0; aspect-ratio: auto; border-radius: 0; }
 .preview-surface noble-polyhedron::part(stats) { top: 92px; right: 16px; border-radius: 3px; }
 .preview-dock { position: relative; z-index: 1; width: min(560px, calc(100% - 32px)); max-height: 58%; overflow-y: auto; align-self: flex-end; margin: auto 16px 16px; border: 1px solid var(--border); border-radius: 4px; background: color-mix(in srgb, var(--background) 72%, transparent); backdrop-filter: blur(28px) saturate(1.4); scrollbar-width: thin; }
-.embed-panel { flex: none; border-top: 1px solid var(--border); }
+.embed-panel { flex: none; }
 .embed-panel summary { display: flex; min-height: 42px; cursor: pointer; list-style: none; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 12px; font-weight: 600; }
 .embed-panel summary::-webkit-details-marker { display: none; }
 .embed-content { max-height: 260px; overflow: auto; border-top: 1px solid var(--border); }
@@ -202,11 +202,11 @@ noble-polyhedron { display: block; }
 .docs-callout > :last-child { margin-bottom: 0; }
 .code-preview { overflow: hidden; margin: 1.25rem 0; border: 1px solid var(--border); border-radius: 3px; background: color-mix(in srgb, var(--background) 58%, var(--card)); color: var(--foreground); }
 .code-preview-bar { display: flex; min-height: 38px; align-items: center; justify-content: space-between; gap: 6px; border-bottom: 1px solid var(--border); padding: 4px 7px; color: var(--muted-foreground); }
-.code-preview-bar button { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; cursor: pointer; }
-.code-format-group { display: flex; min-width: 0; align-items: center; gap: 1px; overflow-x: auto; scrollbar-width: none; }
+.code-preview-bar button { display: inline-flex; min-height: 28px; flex: none; align-items: center; gap: 5px; font-size: 11px; cursor: pointer; }
+.code-format-group { display: flex; min-width: 0; align-self: center; align-items: center; gap: 1px; overflow-x: auto; scrollbar-width: none; }
 .code-format-group::-webkit-scrollbar { display: none; }
 .code-format-group [data-pressed], .code-preview-actions [data-pressed] { background: var(--accent); color: var(--foreground); }
-.code-preview-actions { display: flex; flex: none; align-items: center; gap: 3px; border-left: 1px solid var(--border); padding-left: 6px; }
+.code-preview-actions { display: flex; flex: none; align-self: center; align-items: center; gap: 3px; border-left: 1px solid var(--border); padding-left: 6px; }
 .code-preview-actions > button:last-child { min-height: 27px; border-radius: 2px; padding: 0 7px; color: var(--muted-foreground); }
 .code-preview-actions > button:last-child:hover { background: var(--accent); color: var(--foreground); }
 .code-preview-bar button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
@@ -311,7 +311,6 @@ noble-polyhedron { display: block; }
   .code-preview.has-preview .code-preview-body { grid-template-columns: minmax(0, 1fr); }
   .code-preview.has-preview pre { min-height: 0; }
   .code-preview-visual { min-height: 300px; border-top: 1px solid var(--border); border-left: 0; }
-  .preview-dock .code-preview-bar { align-items: flex-start; }
   .preview-dock .code-format-group { flex-wrap: wrap; overflow: visible; }
   .app-nav-link { padding-inline: 3px; }
   .research-grid, .video-layout { grid-template-columns: 1fr; }
