@@ -1,5 +1,6 @@
+"use client";
+
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { createRoot } from "react-dom/client";
 import { Box, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, Copy, Download, FileImage, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
 import { createPolyhedron, polyhedronToGlb, SHAPES, type ShapeId } from "@noble-shapes/core";
 import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, designForTheme, optionsToString, PALETTES, paletteColors, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-shapes/render";
@@ -15,12 +16,11 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { eulerCharacteristic, REGULAR_SYMBOLS } from "@/lib/shape-math";
 import { workbenchCodeFormats } from "@/lib/workbench-code";
-import { Research } from "@/pages/research";
+import { Research } from "@/views/research";
 import { PRODUCT } from "@/lib/resources";
-import "./style.css";
 
-const Showcase = lazy(() => import("@/pages/showcase").then(module => ({ default: module.Showcase })));
-const Documentation = lazy(() => import("@/pages/documentation").then(module => ({ default: module.Documentation })));
+const Showcase = lazy(() => import("@/views/showcase").then(module => ({ default: module.Showcase })));
+const Documentation = lazy(() => import("@/views/documentation").then(module => ({ default: module.Documentation })));
 const MathText = lazy(() => import("@/components/math-text").then(module => ({ default: module.MathText })));
 
 type Page = "workbench" | "showcase" | "research" | "documentation";
@@ -93,7 +93,7 @@ function ColorControl({ label, value, onChange }: { label: string; value: string
   </div></div>;
 }
 
-function App() {
+export function App() {
   const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname));
   const [options, setOptions] = useState<WorkbenchOptions>(() => defaultWorkbench(initial.design, initialTheme));
   const [stats, setStats] = useState(false);
@@ -440,5 +440,3 @@ function App() {
     </div>}
   </div>;
 }
-
-createRoot(document.getElementById("app")!).render(<App />);

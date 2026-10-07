@@ -1,6 +1,11 @@
 import product from "../../../../product.config.json";
 
-export const PRODUCT = product;
+const configuredOrigin = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+export const PRODUCT = {
+  ...product,
+  url: configuredOrigin && /^https?:\/\/[^/]+\/?$/.test(configuredOrigin)
+    ? configuredOrigin.replace(/\/$/, "") : product.url,
+};
 /** Set githubUrl in product.config.json when the repository is ready to share. */
 export const PROJECT_GITHUB_URL: string | null = PRODUCT.githubUrl;
 

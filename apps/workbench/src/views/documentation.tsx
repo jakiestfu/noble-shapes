@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import Content from "../../../../DOCUMENTATION.md";
-import Catalogue from "../../../../CATALOGUE.md";
-import source from "virtual:documentation-source";
+import Content from "../../.generated/DOCUMENTATION.mdx";
+import Catalogue from "../../.generated/CATALOGUE.mdx";
+import source from "../../.generated/source";
 import { CodePreview, MdxCodeBlock, type CodeFormat, type PreviewScene } from "@/components/code-preview";
 import { CODE_EXAMPLES, type CodeExampleId } from "@/lib/code-examples";
 

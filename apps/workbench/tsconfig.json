@@ -1,5 +1,6 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "jsx": "react-jsx", "module": "ESNext", "moduleResolution": "Bundler", "baseUrl": ".", "paths": { "@/*": ["./src/*"] }, "noEmit": true },
-  "include": ["src", "vite.config.ts"]
+  "compilerOptions": { "jsx": "react-jsx", "module": "ESNext", "moduleResolution": "Bundler", "baseUrl": ".", "paths": { "@/*": ["./src/*"] }, "noEmit": true, "plugins": [{ "name": "next" }] },
+  "include": ["next-env.d.ts", "app", "src", "mdx-components.tsx", "next.config.mjs", ".generated", ".next/types/**/*.ts"],
+  "exclude": ["node_modules"]
 }
