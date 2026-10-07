@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { inflateSync } from "node:zlib";
-import { renderScene, rotateVertex } from "../packages/render/dist/index.js";
+import { DEFAULT_WORKBENCH_OPTIONS, optionsToString, renderScene, rotateVertex, stringToOptions } from "../packages/render/dist/index.js";
 import { renderPng } from "../packages/node/dist/index.js";
 import { SHAPES } from "../packages/core/dist/index.js";
 
@@ -32,6 +32,29 @@ test("Node PNG contains exactly the shared renderer's pixels in every study view
   }
   checkPngPixels({ shape: "great-dodecahedron", view: "face-context", width: 72, height: 72,
     rotation: [0.18, 0.32, -0.07, Math.sqrt(1 - 0.18 ** 2 - 0.32 ** 2 - 0.07 ** 2)] });
+  checkPngPixels({ shape: "icosahedron", view: "solid-wireframe", background: "transparent", width: 72, height: 72 });
+});
+
+test("transparent backgrounds preserve alpha in the shared browser and Node pixels", () => {
+  const image = renderScene({ shape: "icosahedron", background: "transparent", width: 72, height: 72 });
+  assert.equal(image.data[3], 0);
+  assert.ok(image.data.some((value, index) => index % 4 === 3 && value === 255));
+  assert.ok(image.data.some((value, index) => index % 4 === 3 && value > 0 && value < 255));
+});
+
+test("design codes round-trip every visual option and reject invalid values", () => {
+  const options = { ...DEFAULT_WORKBENCH_OPTIONS, shape: "stephanoid", view: "face-context",
+    palette: "gold", color: "#dace89", background: "transparent", yaw: -0.7, pitch: 0.33,
+    rotation: [0, Math.sin(0.2), 0, Math.cos(0.2)], zoom: 1.19, faceIndex: 2,
+    n: 7, p: 3, q: 1, crownHeight: 0.82, a: 1.21, b: 0.88, c: 1.03,
+    rotate: 0.42, float: 0.31, theme: "dark" };
+  const code = optionsToString(options);
+  assert.match(code, /^np1_[A-Za-z0-9_-]+$/);
+  assert.deepEqual(stringToOptions(code), options);
+  assert.equal(optionsToString(stringToOptions(code)), code);
+  assert.throws(() => stringToOptions("np2_invalid"), /Unsupported design code/);
+  assert.throws(() => optionsToString({ ...options, rotate: 2 }), /invalid motion/);
+  assert.throws(() => optionsToString({ ...options, color: "red" }), /invalid color/);
 });
 
 test("horizontal and vertical drag axes turn the 3D form toward the pointer", () => {

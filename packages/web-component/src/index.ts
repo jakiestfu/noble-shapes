@@ -291,7 +291,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
       this.#canvas.width = image.width;
       this.#canvas.height = image.height;
     }
-    const context = this.#canvas.getContext("2d", { alpha: false });
+    const context = this.#canvas.getContext("2d", { alpha: true });
     if (!context) throw new Error("Canvas 2D is unavailable");
     context.putImageData(new ImageData(new Uint8ClampedArray(image.data), image.width, image.height), 0, 0);
     const now = performance.now();
@@ -330,7 +330,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
       const current = this.#currentRotation();
       this.#motionAngle = 0;
       this.setAttribute("rotation", current.map(value => value.toFixed(6)).join(","));
-      this.dispatchEvent(new Event("change", { bubbles: true }));
+      this.dispatchEvent(new Event("input", { bubbles: true }));
     }
     this.#dragging = true;
     this.#lastPointer = { x: event.clientX, y: event.clientY };
@@ -345,10 +345,17 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     const delta = multiply(axisRotation(1, 0, 0, dy * 0.008), axisRotation(0, 1, 0, dx * 0.008));
     this.setAttribute("rotation", normalize(multiply(delta, current)).map(value => value.toFixed(6)).join(","));
     this.#lastPointer = { x: event.clientX, y: event.clientY };
-    this.dispatchEvent(new Event("change", { bubbles: true }));
+    this.dispatchEvent(new Event("input", { bubbles: true }));
   };
 
-  #pointerUp = (): void => { this.#dragging = false; this.#lastPointer = undefined; this.#schedule(); this.#updateStats(); };
+  #pointerUp = (): void => {
+    if (!this.#dragging) return;
+    this.#dragging = false;
+    this.#lastPointer = undefined;
+    this.#schedule();
+    this.#updateStats();
+    this.dispatchEvent(new Event("change", { bubbles: true }));
+  };
 
   #wheel = (event: WheelEvent): void => {
     event.preventDefault();

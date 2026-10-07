@@ -16,7 +16,18 @@ pnpm test
 pnpm render:examples
 ```
 
-The workbench form picker starts with named solids, then lets you browse icosahedral and octahedral forms, infinite families, all forms, or recently viewed forms. Typing a name or catalogue ID searches across every collection.
+The full-screen studio has a searchable form picker, a separate **Surprise me** action, light and dark modes, and a shareable URL. Every visual control is encoded in the URL; the renderer stats toggle is local to the browser.
+
+## Share a complete design
+
+```ts
+import { DEFAULT_WORKBENCH_OPTIONS, optionsToString, stringToOptions } from "@noble-polyhedra/render";
+
+const code = optionsToString({ ...DEFAULT_WORKBENCH_OPTIONS, background: "transparent" });
+const options = stringToOptions(code);
+```
+
+Design codes begin with `np1_` and contain the form, view, palette, colors, optional transparent background, orientation, zoom, repeated face, family dimensions, motion, and studio theme. Decoding validates the version and geometry. The studio writes the code to the `code` URL parameter as controls change; pasting a code into the sidebar restores it. **Surprise me** randomizes the visual options and creates a new code. Renderer stats are intentionally excluded.
 
 ## Use the web component
 
@@ -29,7 +40,6 @@ import "@noble-polyhedra/web-component";
 ```html
 <noble-polyhedron
   shape="small-stellated-dodecahedron"
-  seed="my-avatar"
   palette="aurora"
   view="face-context"
   face-index="0"
@@ -41,7 +51,7 @@ import "@noble-polyhedra/web-component";
 ></noble-polyhedron>
 ```
 
-Use `shape="random"` with a stable `seed` for a repeatable shape, camera angle, and palette. Drag the image to rotate; scroll to zoom. Named shapes include the five Platonic solids and the four Kepler–Poinsot solids: `small-stellated-dodecahedron`, `great-dodecahedron`, `great-stellated-dodecahedron`, and `great-icosahedron`. `disphenoid`, `stephanoid`, and `antistephanoid` cover the families. Families accept `a`, `b`, `c` (disphenoid) or `n`, `p`, `q`, `crown-height` (stephanoids). The `color` and `background` attributes accept six-digit hex colors.
+Drag the image to rotate; scroll to zoom. Named shapes include the five Platonic solids and the four Kepler–Poinsot solids: `small-stellated-dodecahedron`, `great-dodecahedron`, `great-stellated-dodecahedron`, and `great-icosahedron`. `disphenoid`, `stephanoid`, and `antistephanoid` cover the families. Families accept `a`, `b`, `c` (disphenoid) or `n`, `p`, `q`, `crown-height` (stephanoids). The `color` attribute accepts a six-digit hex color; `background` accepts a six-digit hex color or `transparent`.
 
 The `view` attribute selects `solid` (shaded mesh), `solid-wireframe` (shaded with visible abstract edges, the default), `wireframe` (all edges), `face` (one isolated repeated face), or `face-context` (one face highlighted over the complete wireframe). `face-index` selects which congruent face to inspect.
 
@@ -55,10 +65,10 @@ Set `rotate` and `float` from `0` (off) to `1` for subtle pickup motion. At `rot
 import { savePng } from "@noble-polyhedra/node";
 
 await savePng("avatar.png", {
-  shape: "random",
-  seed: "person-42",
+  shape: "great-stellated-dodecahedron",
   palette: "violet",
   view: "wireframe",
+  background: "transparent",
   width: 512,
   height: 512,
 });
@@ -70,7 +80,7 @@ The command-line renderer is also available after building:
 node packages/node/dist/cli.js --shape stephanoid --palette coral --out crown.png
 ```
 
-The Node package writes PNG with Node's built-in compression. The browser and Node both use the same pure TypeScript depth-buffered renderer, so the pixels match for identical settings. No browser or native canvas dependency is required for image generation. The workbench uses local shadcn/ui components with the light theme tokens mirrored from `jakiestfu-next/packages/ui`.
+The Node package writes PNG with Node's built-in compression. The browser and Node both use the same pure TypeScript depth-buffered renderer, so the pixels and alpha channel match for identical settings. No browser or native canvas dependency is required for image generation. The workbench uses local shadcn/ui components with neutral light and dark themes based on `jakiestfu-next/packages/ui`.
 
 ## Mathematical scope
 

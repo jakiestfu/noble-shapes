@@ -9,6 +9,7 @@ export interface RenderOptions {
   height?: number;
   palette?: PaletteName;
   color?: string;
+  /** Six-digit hex color, or "transparent" for an alpha background. */
   background?: string;
   yaw?: number;
   pitch?: number;
@@ -88,7 +89,8 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
   const palette = PALETTES[options.palette ?? "aurora"];
   if (!palette) throw new Error(`Unknown palette: ${options.palette}`);
   const base = parseHex(options.color ?? palette.color);
-  const background = parseHex(options.background ?? palette.background);
+  const transparent = options.background === "transparent";
+  const background = transparent ? undefined : parseHex(options.background ?? palette.background);
   const view: RenderView = options.view ?? "solid-wireframe";
   if (!["solid", "solid-wireframe", "wireframe", "face", "face-context"].includes(view)) throw new Error(`Unknown render view: ${view}`);
   const yaw = options.yaw ?? 0.55, pitch = options.pitch ?? (view === "face" ? 0 : 0.72);
@@ -121,18 +123,20 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
   const depth = new Float32Array(w * h);
   depth.fill(-Infinity);
 
-  // Quiet vignette and a soft halo keep a small embedded image legible on many pages.
-  const glow = Math.min(w, h) * 0.58;
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const dx = x - w / 2, dy = y - h / 2;
-    const halo = Math.exp(-(dx * dx + dy * dy) / (glow * glow)) * 0.14;
-    const vignette = clamp(1 - Math.hypot(dx / w, dy / h) * 0.34, 0.72, 1);
-    const i = (y * w + x) * 4;
-    put(data, i, [
-      Math.round((background[0] + base[0] * halo) * vignette),
-      Math.round((background[1] + base[1] * halo) * vignette),
-      Math.round((background[2] + base[2] * halo) * vignette),
-    ]);
+  if (background) {
+    // Quiet vignette and a soft halo keep a small embedded image legible on many pages.
+    const glow = Math.min(w, h) * 0.58;
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const dx = x - w / 2, dy = y - h / 2;
+      const halo = Math.exp(-(dx * dx + dy * dy) / (glow * glow)) * 0.14;
+      const vignette = clamp(1 - Math.hypot(dx / w, dy / h) * 0.34, 0.72, 1);
+      const i = (y * w + x) * 4;
+      put(data, i, [
+        Math.round((background[0] + base[0] * halo) * vignette),
+        Math.round((background[1] + base[1] * halo) * vignette),
+        Math.round((background[2] + base[2] * halo) * vignette),
+      ]);
+    }
   }
 
   for (let drawnFace = 0; drawnFace < polyhedron.faces.length; drawnFace++) {
@@ -194,13 +198,15 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
       const z = a.z + t * (b.z - a.z);
       if (testDepth && z + 0.008 < depth[index]!) return;
       const offset = index * 4;
-      const underlying: RGB = [data[offset]!, data[offset + 1]!, data[offset + 2]!];
       const alpha = coverage * opacity;
+      const underlyingAlpha = data[offset + 3]! / 255;
+      const outputAlpha = alpha + underlyingAlpha * (1 - alpha);
+      const underlying: RGB = [data[offset]!, data[offset + 1]!, data[offset + 2]!];
       put(data, offset, [
-        underlying[0] * (1 - alpha) + edgeColor[0] * alpha,
-        underlying[1] * (1 - alpha) + edgeColor[1] * alpha,
-        underlying[2] * (1 - alpha) + edgeColor[2] * alpha,
-      ]);
+        (underlying[0] * underlyingAlpha * (1 - alpha) + edgeColor[0] * alpha) / outputAlpha,
+        (underlying[1] * underlyingAlpha * (1 - alpha) + edgeColor[1] * alpha) / outputAlpha,
+        (underlying[2] * underlyingAlpha * (1 - alpha) + edgeColor[2] * alpha) / outputAlpha,
+      ], outputAlpha * 255);
     };
     // Visit only a narrow strip around the segment, including rounded caps.
     // The coverage and depth formulas stay identical to the full box traversal.
@@ -231,14 +237,21 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
   const reduced = new Uint8ClampedArray(width * height * 4);
   for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) {
     const out = (y * width + x) * 4;
-    for (let channel = 0; channel < 4; channel++) {
-      let sum = 0;
-      for (let sy = 0; sy < quality; sy++) for (let sx = 0; sx < quality; sx++) sum += data[((y * quality + sy) * w + x * quality + sx) * 4 + channel]!;
-      reduced[out + channel] = sum / (quality * quality);
+    let alphaSum = 0;
+    const colorSum = [0, 0, 0];
+    for (let sy = 0; sy < quality; sy++) for (let sx = 0; sx < quality; sx++) {
+      const source = ((y * quality + sy) * w + x * quality + sx) * 4;
+      const alpha = data[source + 3]!;
+      alphaSum += alpha;
+      for (let channel = 0; channel < 3; channel++) colorSum[channel]! += data[source + channel]! * alpha;
     }
+    for (let channel = 0; channel < 3; channel++) reduced[out + channel] = alphaSum ? colorSum[channel]! / alphaSum : 0;
+    reduced[out + 3] = alphaSum / (quality * quality);
   }
   return { width, height, data: reduced };
 }
+
+export { optionsToString, stringToOptions, DEFAULT_WORKBENCH_OPTIONS, type WorkbenchOptions } from "./options-code.js";
 
 export function renderScene(options: SceneOptions = {}): RenderedImage {
   const defaults = seededDefaults(options.seed);

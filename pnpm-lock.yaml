@@ -23,6 +23,9 @@ importers:
       '@noble-polyhedra/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@noble-polyhedra/render':
+        specifier: workspace:*
+        version: link:../../packages/render
       '@noble-polyhedra/web-component':
         specifier: workspace:*
         version: link:../../packages/web-component

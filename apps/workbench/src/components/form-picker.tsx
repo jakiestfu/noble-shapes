@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 type Scope = "featured" | "icosahedral" | "octahedral" | "families" | "all" | "recent";
 type FormOption = {
-  id: ShapeId | "random";
+  id: ShapeId;
   label: string;
   subtitle: string;
   search: string;
@@ -24,7 +24,6 @@ const NAMED_ICOSAHEDRAL = new Set<ShapeId>([
 const NAMED_OCTAHEDRAL = new Set<ShapeId>(["cube", "octahedron"]);
 const OCTAHEDRAL_PREFIXES = ["tO-", "tC-", "rC-", "sC-", "gC-"];
 const FORM_OPTIONS: FormOption[] = [
-  { id: "random", label: "Surprise me", subtitle: "A form chosen by your seed", search: "random surprise seed", section: "named" },
   ...SHAPES.map(item => {
     const section: FormOption["section"] = item.family !== "Finite" ? "families"
       : FEATURED.has(item.id) ? "named"
@@ -53,7 +52,7 @@ export function FormPicker({ shape, onSelect }: { shape: string; onSelect: (shap
   }, [shape]);
 
   const inScope = (item: FormOption): boolean => scope === "all"
-    || (scope === "featured" && (item.id === "random" || item.section === "named"))
+    || (scope === "featured" && item.section === "named")
     || (scope === "recent" && recent.includes(item.id))
     || (scope === "icosahedral" && NAMED_ICOSAHEDRAL.has(item.id as ShapeId))
     || (scope === "octahedral" && NAMED_OCTAHEDRAL.has(item.id as ShapeId))
