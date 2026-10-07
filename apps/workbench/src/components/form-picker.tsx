@@ -82,7 +82,7 @@ export function FormPicker({ shape, onSelect }: { shape: string; onSelect: (shap
             key={option.id}
             type="button"
             aria-pressed={scope === option.id}
-            className={cn("min-w-0 rounded-md px-1.5 py-1 text-[11px] font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", scope === option.id && "bg-primary text-primary-foreground hover:bg-primary/85")}
+            className={cn("min-w-0 rounded-sm px-1.5 py-1 text-[11px] font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", scope === option.id && "bg-accent text-accent-foreground")}
             onClick={() => setScope(option.id)}
           >{option.label}</button>)}
         </div>

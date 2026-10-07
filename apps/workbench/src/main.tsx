@@ -1,4 +1,4 @@
-import { createElement, lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createElement, lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { Check, ChevronLeft, ChevronRight, Code2, Copy, Download, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
 import { createPolyhedron, SHAPES, type ShapeId } from "@noble-polyhedra/core";
@@ -30,6 +30,25 @@ const VIEWS: { id: RenderView; name: string }[] = [
   { id: "face-context", name: "Face + wireframe" },
 ];
 const sliderValue = (value: number | readonly number[], fallback: number): number => typeof value === "number" ? value : value[0] ?? fallback;
+const VIEWER_STORAGE_KEY = "noble-forms-viewer-v1";
+type ViewerPreferences = Pick<WorkbenchOptions, "theme" | "yaw" | "pitch" | "rotation" | "zoom" | "rotate" | "float"> & { stats: boolean; mathOpen: boolean };
+
+function readViewerPreferences(): Partial<ViewerPreferences> {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(VIEWER_STORAGE_KEY) ?? "null");
+    if (!value || typeof value !== "object") return {};
+    const saved = value as Record<string, unknown>;
+    const preferences: Partial<ViewerPreferences> = {};
+    if (saved.theme === "light" || saved.theme === "dark") preferences.theme = saved.theme;
+    if (typeof saved.stats === "boolean") preferences.stats = saved.stats;
+    if (typeof saved.mathOpen === "boolean") preferences.mathOpen = saved.mathOpen;
+    for (const key of ["yaw", "pitch", "zoom", "rotate", "float"] as const) {
+      if (typeof saved[key] === "number" && Number.isFinite(saved[key])) preferences[key] = saved[key];
+    }
+    if (Array.isArray(saved.rotation) && saved.rotation.length === 4 && saved.rotation.every(part => typeof part === "number" && Number.isFinite(part))) preferences.rotation = saved.rotation as unknown as Quaternion;
+    return preferences;
+  } catch { return {}; }
+}
 
 function readLocation(): { design: DesignOptions; error: string } {
   const code = new URL(window.location.href).searchParams.get("code");
@@ -38,6 +57,9 @@ function readLocation(): { design: DesignOptions; error: string } {
   catch (error) { return { design: DEFAULT_DESIGN_OPTIONS, error: error instanceof Error ? error.message : String(error) }; }
 }
 const initial = readLocation();
+const savedViewer = readViewerPreferences();
+const { stats: savedStats, mathOpen: savedMathOpen, ...savedViewOptions } = savedViewer;
+document.documentElement.dataset.theme = savedViewer.theme ?? "light";
 
 function Noble({ innerRef, ...attributes }: { innerRef?: React.Ref<NoblePolyhedronElement>; [key: string]: string | React.Ref<NoblePolyhedronElement> | undefined }) {
   return createElement("noble-polyhedron", { ...attributes, ref: innerRef });
@@ -51,9 +73,9 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 
 function App() {
   const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname));
-  const [options, setOptions] = useState<WorkbenchOptions>({ ...DEFAULT_WORKBENCH_OPTIONS, ...initial.design });
-  const [stats, setStats] = useState(false);
-  const [mathOpen, setMathOpen] = useState(false);
+  const [options, setOptions] = useState<WorkbenchOptions>({ ...DEFAULT_WORKBENCH_OPTIONS, ...savedViewOptions, ...initial.design });
+  const [stats, setStats] = useState(savedStats ?? false);
+  const [mathOpen, setMathOpen] = useState(savedMathOpen ?? false);
   const [codeError, setCodeError] = useState(initial.error);
   const [parameterError, setParameterError] = useState("");
   const [identity, setIdentity] = useState("");
@@ -70,7 +92,25 @@ function App() {
   const regularSymbol = REGULAR_SYMBOLS[options.shape];
 
   useEffect(() => { document.documentElement.dataset.theme = options.theme; }, [options.theme]);
-  useEffect(() => { document.title = `${page.charAt(0).toUpperCase() + page.slice(1)} — Noble Forms`; }, [page]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      const viewer: ViewerPreferences = { theme: options.theme, yaw: options.yaw, pitch: options.pitch,
+        rotation: options.rotation, zoom: options.zoom, rotate: options.rotate, float: options.float, stats, mathOpen };
+      try { localStorage.setItem(VIEWER_STORAGE_KEY, JSON.stringify(viewer)); } catch { /* Storage may be disabled. */ }
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [options.theme, options.yaw, options.pitch, options.rotation, options.zoom, options.rotate, options.float, stats, mathOpen]);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.key.toLowerCase() !== "d") return;
+      if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable], [role="combobox"], [role="listbox"]')) return;
+      event.preventDefault();
+      setOptions(previous => ({ ...previous, theme: previous.theme === "light" ? "dark" : "light" }));
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+  useEffect(() => { document.title = `${page.charAt(0).toUpperCase() + page.slice(1)} — Noble Polyhedrons`; }, [page]);
   useLayoutEffect(() => {
     if (replacingDesign.current && hero.current) {
       if (options.rotation) hero.current.setAttribute("rotation", options.rotation.join(","));
@@ -180,27 +220,37 @@ function App() {
   };
   const snippet = `import "@noble-polyhedra/web-component";\n\n<noble-polyhedron\n${Object.entries(appearanceAttrs).filter(([, value]) => value !== undefined).map(([key, value]) => `  ${key}="${value}"`).join("\n")}\n></noble-polyhedron>`;
   const shareUrl = new URL("/", window.location.origin); shareUrl.searchParams.set("code", code);
-  const download = () => hero.current?.canvas.toBlob(blob => {
+  const download = () => {
+    if (!hero.current) return;
+    const canvas = document.createElement("canvas");
+    canvas.width = hero.current.canvas.width;
+    canvas.height = hero.current.canvas.height;
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    if (options.background !== "transparent") { context.fillStyle = options.background; context.fillRect(0, 0, canvas.width, canvas.height); }
+    context.drawImage(hero.current.canvas, 0, 0);
+    canvas.toBlob(blob => {
     if (!blob) return;
     const url = URL.createObjectURL(blob), link = document.createElement("a");
     link.href = url; link.download = `noble-${options.shape}.png`; link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-  }, "image/png");
+    }, "image/png");
+  };
 
-  return <div className="app-shell">
+  return <div className={`app-shell ${page === "workbench" ? "is-workbench" : ""} ${options.background === "transparent" ? "is-transparent" : ""}`} style={page === "workbench" ? { "--scene-background": options.background === "transparent" ? "var(--background)" : options.background, "--scene-color": options.color } as CSSProperties : undefined}>
     <header className="app-header">
-      <a className="brand-link" href="/" onClick={event => navClick(event, "workbench")}><div className="brand-mark">N</div><div className="min-w-0"><p className="font-heading text-sm font-bold tracking-tight">Noble Forms</p><p className="text-[10px] text-muted-foreground">Shape studio</p></div></a>
+      <div className="brand-lockup"><a className="brand-parent" href="https://jakiestfu.com/" target="_blank" rel="noopener noreferrer">JAKIESTFU</a><span className="brand-separator">/</span><a className="brand-product" href="/" onClick={event => navClick(event, "workbench")}>NOBLE POLYHEDRONS</a></div>
       <nav className="app-nav" aria-label="Main navigation">{(["workbench", "showcase", "research", "documentation"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>
-      <div className="header-actions">{page === "workbench" && <Button variant="outline" size="sm" onClick={() => copyText("link", shareUrl.toString())}><Share2 className="size-3.5" /><span className="share-label">{copied === "link" ? "Copied" : "Share"}</span></Button>}<Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} onClick={() => update({ theme: options.theme === "light" ? "dark" : "light" })}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
+      <div className="header-actions">{page === "workbench" && <Button variant="ghost" size="sm" onClick={() => copyText("link", shareUrl.toString())}><Share2 className="size-3.5" /><span className="share-label">{copied === "link" ? "Copied" : "Share"}</span></Button>}<Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={() => update({ theme: options.theme === "light" ? "dark" : "light" })}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
     </header>
 
     {page === "showcase" ? <Suspense fallback={<main className="content-page" aria-busy="true"><div className="content-inner"><p className="eyebrow">Curated forms</p><h1 className="section-title">Showcase</h1><p className="page-description">Loading forms…</p></div></main>}><Showcase theme={options.theme} onOpen={next => { replacingDesign.current = true; setOptions(next); setCodeError(""); setParameterError(""); const url = new URL("/", window.location.origin); url.searchParams.set("code", optionsToString(next)); window.history.pushState(null, "", url); setPage("workbench"); }} /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page" aria-busy="true"><p className="eyebrow">Documentation</p><h1 className="section-title">Loading guide…</h1></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
-        <div className="control-intro"><p className="eyebrow">Workbench</p><h1 className="font-heading text-xl font-bold tracking-tight">Make a form.</h1><p className="mt-1 text-xs text-muted-foreground">Form and appearance live in the share link.</p><Button className="mt-4 w-full" onClick={() => generate(randomSeed())}><Shuffle className="size-4" /> Surprise me</Button><div className="mt-4 space-y-2"><label htmlFor="identity" className="text-xs font-medium">Generate from text</label><div className="flex gap-2"><Input id="identity" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && identity) generate(identity); }} /><Button variant="outline" size="sm" disabled={!identity} onClick={() => generate(identity)}>Generate</Button></div><p className="text-[11px] text-muted-foreground">The same text makes the same design. Camera, motion, and theme stay as you set them.</p></div></div>
+        <div className="control-intro"><p className="eyebrow">Workbench / Design</p><h1 className="font-heading text-xl font-bold tracking-tight">Make a form.</h1><p className="mt-1 text-xs text-muted-foreground">Form and appearance live in the share link.</p><Button variant="ghost" className="mt-4 w-full justify-start" onClick={() => generate(randomSeed())}><Shuffle className="size-4" /> Surprise me</Button><div className="mt-4 space-y-2"><label htmlFor="identity" className="text-xs font-medium">Generate from text</label><div className="flex gap-2"><Input id="identity" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && identity) generate(identity); }} /><Button variant="ghost" size="sm" disabled={!identity} onClick={() => generate(identity)}>Generate</Button></div><p className="text-[11px] text-muted-foreground">The same text makes the same design. Camera, motion, and theme stay as you set them.</p></div></div>
 
         <Group title="Geometry">
-          <Control label="Form" value="← / →"><div className="flex items-center gap-2"><Button variant="outline" size="icon" className="size-9" aria-label="Previous form" title="Previous form (←)" onClick={() => stepShape(-1)}><ChevronLeft className="size-4" /></Button><div className="min-w-0 flex-1"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /></div><Button variant="outline" size="icon" className="size-9" aria-label="Next form" title="Next form (→)" onClick={() => stepShape(1)}><ChevronRight className="size-4" /></Button></div></Control>
-          <Control label="View"><div className="grid grid-cols-2 gap-1.5">{VIEWS.map(item => <Button key={item.id} variant={options.view === item.id ? "default" : "outline"} size="sm" className={item.id === "face-context" ? "col-span-2" : ""} onClick={() => update({ view: item.id, ...(item.id === "face" ? { pitch: 0, rotation: undefined } : {}) })}>{item.name}</Button>)}</div></Control>
+          <Control label="Form" value="← / →"><div className="flex items-center gap-2"><Button variant="ghost" size="icon" className="size-9" aria-label="Previous form" title="Previous form (←)" onClick={() => stepShape(-1)}><ChevronLeft className="size-4" /></Button><div className="min-w-0 flex-1"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /></div><Button variant="ghost" size="icon" className="size-9" aria-label="Next form" title="Next form (→)" onClick={() => stepShape(1)}><ChevronRight className="size-4" /></Button></div></Control>
+          <Control label="View"><div className="grid grid-cols-2 gap-1.5">{VIEWS.map(item => <Button key={item.id} variant="ghost" aria-pressed={options.view === item.id} size="sm" className={`${item.id === "face-context" ? "col-span-2" : ""} ${options.view === item.id ? "is-selected" : ""}`} onClick={() => update({ view: item.id, ...(item.id === "face" ? { pitch: 0, rotation: undefined } : {}) })}>{item.name}</Button>)}</div></Control>
           {(options.view === "face" || options.view === "face-context") && <Control label="Repeated face" value={`${options.faceIndex + 1} / ${poly.faces.length}`}><Slider min={0} max={poly.faces.length - 1} step={1} value={[options.faceIndex]} onValueChange={value => update({ faceIndex: sliderValue(value, 0) })} /></Control>}
           {family === "disphenoid" && <div className="grid grid-cols-3 gap-2">{(["a", "b", "c"] as const).map(key => <Control key={key} label={`Axis ${key.toUpperCase()}`}><Input type="number" min="0.1" max="3" step="0.05" value={options[key]} onChange={event => updateGeometry({ [key]: Number(event.target.value) })} /></Control>)}</div>}
           {family === "stephanoid" && <div className="space-y-3"><div className="grid grid-cols-3 gap-2">{(["n", "p", "q"] as const).map(key => <Control key={key} label={key === "n" ? "Rings" : `Step ${key.toUpperCase()}`}><Input type="number" min="1" step="1" value={options[key]} onChange={event => updateGeometry({ [key]: Number(event.target.value) })} /></Control>)}</div><Control label="Crown height" value={options.crownHeight.toFixed(2)}><Slider min={0.2} max={1.5} step={0.01} value={[options.crownHeight]} onValueChange={value => updateGeometry({ crownHeight: sliderValue(value, 0.7) })} /></Control></div>}
@@ -208,9 +258,9 @@ function App() {
         </Group>
 
         <Group title="Appearance">
-          <Control label="Palette"><div className="flex gap-2">{(Object.keys(PALETTES) as PaletteName[]).map(item => <Button key={item} variant="outline" size="icon" aria-label={`${item} palette`} title={item} className={options.palette === item ? "ring-2 ring-foreground ring-offset-2 ring-offset-card" : ""} onClick={() => choosePalette(item)}><span className="size-5 rounded-md" style={{ background: PALETTES[item].color }} /></Button>)}</div></Control>
+          <Control label="Palette"><div className="flex gap-2">{(Object.keys(PALETTES) as PaletteName[]).map(item => <Button key={item} variant="ghost" size="icon" aria-label={`${item} palette`} title={item} aria-pressed={options.palette === item} className={options.palette === item ? "is-selected" : ""} onClick={() => choosePalette(item)}><span className="size-5 rounded-sm" style={{ background: PALETTES[item].color }} /></Button>)}</div></Control>
           <div className="grid grid-cols-2 gap-3"><Control label="Facet color"><input aria-label="Facet color" type="color" className="color-input" value={options.color} onChange={event => update({ color: event.target.value })} /></Control><Control label="Background"><input aria-label="Background color" type="color" className="color-input" value={options.background === "transparent" ? PALETTES[options.palette].background : options.background} onChange={event => update({ background: event.target.value })} /></Control></div>
-          <Button variant={options.background === "transparent" ? "default" : "outline"} size="sm" className="w-full" aria-pressed={options.background === "transparent"} onClick={() => update({ background: options.background === "transparent" ? PALETTES[options.palette].background : "transparent" })}>Transparent background</Button>
+          <Button variant="ghost" size="sm" className={`w-full ${options.background === "transparent" ? "is-selected" : ""}`} aria-pressed={options.background === "transparent"} onClick={() => update({ background: options.background === "transparent" ? PALETTES[options.palette].background : "transparent" })}>Transparent background</Button>
         </Group>
 
         <Group title="Position & motion">
@@ -218,26 +268,25 @@ function App() {
           <Control label="Tilt" value={options.rotation ? "trackball" : options.pitch.toFixed(2)}><Slider min={-1.45} max={1.45} step={0.01} value={[options.pitch]} onValueChange={value => update({ pitch: sliderValue(value, 0), rotation: undefined })} /></Control>
           {options.rotation && <Button variant="ghost" size="sm" className="w-full" onClick={() => update({ rotation: undefined })}><RotateCcw className="size-3.5" /> Reset orientation</Button>}
           <Control label="Scale" value={options.zoom.toFixed(2)}><Slider min={0.5} max={1.5} step={0.01} value={[options.zoom]} onValueChange={value => update({ zoom: sliderValue(value, 1) })} /></Control>
-          <div className="space-y-4 rounded-lg border border-border bg-muted/30 p-3"><Control label="Auto rotate" value={options.rotate.toFixed(2)}><Slider min={0} max={1} step={0.01} value={[options.rotate]} onValueChange={value => update({ rotate: sliderValue(value, 0) })} /></Control><Control label="Float" value={options.float.toFixed(2)}><Slider min={0} max={1} step={0.01} value={[options.float]} onValueChange={value => update({ float: sliderValue(value, 0) })} /></Control></div>
+          <div className="space-y-4 border-t border-border pt-4"><Control label="Auto rotate" value={options.rotate.toFixed(2)}><Slider min={0} max={1} step={0.01} value={[options.rotate]} onValueChange={value => update({ rotate: sliderValue(value, 0) })} /></Control><Control label="Float" value={options.float.toFixed(2)}><Slider min={0} max={1} step={0.01} value={[options.float]} onValueChange={value => update({ float: sliderValue(value, 0) })} /></Control></div>
         </Group>
 
         <Group title="Share & inspect">
           <Control label="Design code"><textarea aria-label="Design code" className="code-input" rows={3} spellCheck={false} value={draftCode} onChange={event => setDraftCode(event.target.value)} onKeyDown={event => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") applyCode(); }} /></Control>
           {codeError && <p role="alert" className="text-xs text-red-600">{codeError}</p>}
-          <div className="flex gap-2"><Button variant="outline" size="sm" className="flex-1" onClick={applyCode}>Load code</Button><Button variant="outline" size="sm" className="flex-1" onClick={() => copyText("link", shareUrl.toString())}>{copied === "link" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied === "link" ? "Copied" : "Copy link"}</Button></div>
+          <div className="flex gap-2"><Button variant="ghost" size="sm" className="flex-1" onClick={applyCode}>Load code</Button><Button variant="ghost" size="sm" className="flex-1" onClick={() => copyText("link", shareUrl.toString())}>{copied === "link" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied === "link" ? "Copied" : "Copy link"}</Button></div>
           <div className="flex items-center justify-between gap-3"><div><label htmlFor="stats" className="text-xs font-medium">Renderer stats</label><p className="text-[11px] text-muted-foreground">Local display only; excluded from the code.</p></div><input id="stats" type="checkbox" className="size-4 accent-foreground" checked={stats} onChange={event => setStats(event.target.checked)} /></div>
         </Group>
       </aside>
 
       <main className="preview-panel">
-        <div className="preview-toolbar"><div className="min-w-0"><p className="eyebrow mb-1">Live preview <span className="mx-1">/</span> {String(shapeIndex + 1).padStart(3, "0")} of {SHAPES.length}</p><h2 className="truncate font-heading text-xl font-semibold tracking-tight">{poly.name}</h2></div><div className="preview-toolbar-actions">{regularSymbol && <div className="preview-symbol"><span>Schläfli</span><span className="font-mono">{REGULAR_SYMBOL_LABELS[options.shape]}</span></div>}<Button variant="outline" size="sm" onClick={download}><Download className="size-3.5" /> PNG</Button></div></div>
-        <div className={`preview-surface ${options.background === "transparent" ? "preview-transparent" : ""}`} style={options.background === "transparent" ? undefined : { backgroundColor: options.background }}>
-          <Noble innerRef={hero} {...appearanceAttrs} stats={stats ? "true" : undefined} className="preview-model" />
-          {options.background === "transparent" && <span className="preview-badge">Transparent</span>}
+        <div className="preview-toolbar"><div className="min-w-0"><p className="eyebrow mb-1">Live preview <span className="mx-1">/</span> {String(shapeIndex + 1).padStart(3, "0")} of {SHAPES.length}</p><h2 className="truncate font-heading text-xl font-semibold tracking-tight">{poly.name}</h2></div><div className="preview-toolbar-actions">{regularSymbol && <div className="preview-symbol"><span>Schläfli</span><span className="font-mono">{REGULAR_SYMBOL_LABELS[options.shape]}</span></div>}<Button variant="ghost" size="sm" onClick={download}><Download className="size-3.5" /> PNG</Button></div></div>
+        <div className="preview-surface">
+          <Noble innerRef={hero} {...appearanceAttrs} background="transparent" stats={stats ? "true" : undefined} className="preview-model" />
         </div>
-        <div className="preview-meta"><p>{poly.vertices.length} vertices <span>·</span> {poly.edges.length} edges <span>·</span> {poly.faces.length} faces</p><p>Drag to rotate <span>·</span> Scroll to zoom</p></div>
-        <details className="math-panel" onToggle={event => setMathOpen(event.currentTarget.open)}><summary><span>Form mathematics</span><span className="math-panel-summary-value">χ = V − E + F = {eulerCharacteristic(poly)}</span></summary>{mathOpen && <Suspense fallback={<p className="math-note p-4">Loading notation…</p>}><MathPanel poly={poly} regularSymbol={regularSymbol} /></Suspense>}</details>
-        <details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Embed this form</span><span className="text-xs text-muted-foreground">Web component</span></summary><div className="embed-content"><pre><code>{snippet}</code></pre><Button variant="outline" size="sm" onClick={() => copyText("embed", snippet)}>{copied === "embed" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied === "embed" ? "Copied" : "Copy code"}</Button></div></details>
+        <div className="preview-dock"><div className="preview-meta"><p>{poly.vertices.length} vertices <span>·</span> {poly.edges.length} edges <span>·</span> {poly.faces.length} faces</p><p>Drag to rotate <span>·</span> Scroll to zoom</p></div>
+          <details className="math-panel" open={mathOpen} onToggle={event => setMathOpen(event.currentTarget.open)}><summary><span>Form mathematics</span><span className="math-panel-summary-value">χ = V − E + F = {eulerCharacteristic(poly)}</span></summary>{mathOpen && <Suspense fallback={<p className="math-note p-4">Loading notation…</p>}><MathPanel poly={poly} regularSymbol={regularSymbol} /></Suspense>}</details>
+          <details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Embed this form</span><span className="text-xs text-muted-foreground">Web component</span></summary><div className="embed-content"><pre><code>{snippet}</code></pre><Button variant="ghost" size="sm" onClick={() => copyText("embed", snippet)}>{copied === "embed" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied === "embed" ? "Copied" : "Copy code"}</Button></div></details></div>
       </main>
     </div>}
   </div>;

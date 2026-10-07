@@ -129,7 +129,7 @@ const code = optionsToString(design);
 const restored = stringToOptions(code);
 ```
 
-The workbench stores that code in its URL's `code` parameter. It captures the form, view, palette, colors, selected face, and family dimensions. Camera position, animation, renderer stats, and light or dark mode remain local viewer settings.
+The workbench stores that code in its URL's `code` parameter. It captures the form, view, palette, colors, selected face, and family dimensions. Camera position, animation, renderer stats, and light or dark mode remain local viewer settings. The browser saves those viewer settings locally, and **D** toggles the theme when focus is outside an input.
 
 ## Forms and families
 
