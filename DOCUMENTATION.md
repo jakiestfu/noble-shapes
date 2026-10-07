@@ -9,7 +9,7 @@ Noble Forms provides a mathematical catalogue of **146 finite noble polyhedra** 
 The browser component uses WebGL2 when available and falls back to a CPU renderer. The Node package generates PNG files without a browser or native canvas dependency. Both share the same geometry, palettes, views, and image conventions.
 
 <Callout>
-  For a quick visual start, open the [Workbench](/). It produces an embeddable component snippet and a shareable design URL as you edit.
+  For a quick visual start, open the [Workbench](/). It produces copyable examples in several formats and a shareable design URL as you edit.
 </Callout>
 
 ## Installation
@@ -36,6 +36,8 @@ These are the workspace package names. To develop this repository itself, run `p
 Choose a code format and inspect the matching live form. The Preview control independently shows or hides the rendered result.
 
 <CodePreview example="web-component" />
+
+React 19 renders dashed custom-element tags directly. In a TypeScript React project, import `@noble-polyhedra/web-component/react` once to register the `<noble-polyhedron>` JSX props, then use the React example above. The component package does not require React for plain HTML or other frameworks.
 
 Drag to rotate and scroll to zoom. `stats` adds an overlay with frame rate, GPU timing when supported, canvas size, and mesh counts. The element also emits `noble-render` with the metrics in `event.detail`.
 

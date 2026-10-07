@@ -1,9 +1,10 @@
-import { createElement, lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { Check, ChevronLeft, ChevronRight, Code2, Copy, Download, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
 import { createPolyhedron, SHAPES, type ShapeId } from "@noble-polyhedra/core";
 import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, optionsToString, PALETTES, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-polyhedra/render";
 import "@noble-polyhedra/web-component";
+import "@noble-polyhedra/web-component/react";
 import type { NoblePolyhedronElement } from "@noble-polyhedra/web-component";
 import { Button } from "@/components/ui/button";
 import { CodePreview } from "@/components/code-preview";
@@ -12,12 +13,12 @@ import { LoadingState } from "@/components/loading-state";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { eulerCharacteristic, REGULAR_SYMBOL_LABELS, REGULAR_SYMBOLS } from "@/lib/shape-math";
+import { workbenchCodeFormats } from "@/lib/workbench-code";
 import { Research } from "@/pages/research";
 import "./style.css";
 
 const Showcase = lazy(() => import("@/pages/showcase").then(module => ({ default: module.Showcase })));
 const Documentation = lazy(() => import("@/pages/documentation").then(module => ({ default: module.Documentation })));
-const MathPanel = lazy(() => import("@/components/math-panel"));
 
 type Page = "workbench" | "showcase" | "research" | "documentation";
 const pageFromPath = (path: string): Page => {
@@ -33,7 +34,7 @@ const VIEWS: { id: RenderView; name: string }[] = [
 ];
 const sliderValue = (value: number | readonly number[], fallback: number): number => typeof value === "number" ? value : value[0] ?? fallback;
 const VIEWER_STORAGE_KEY = "noble-forms-viewer-v1";
-type ViewerPreferences = Pick<WorkbenchOptions, "theme" | "yaw" | "pitch" | "rotation" | "zoom" | "rotate" | "float"> & { stats: boolean; mathOpen: boolean };
+type ViewerPreferences = Pick<WorkbenchOptions, "theme" | "yaw" | "pitch" | "rotation" | "zoom" | "rotate" | "float"> & { stats: boolean };
 
 function readViewerPreferences(): Partial<ViewerPreferences> {
   try {
@@ -43,7 +44,6 @@ function readViewerPreferences(): Partial<ViewerPreferences> {
     const preferences: Partial<ViewerPreferences> = {};
     if (saved.theme === "light" || saved.theme === "dark") preferences.theme = saved.theme;
     if (typeof saved.stats === "boolean") preferences.stats = saved.stats;
-    if (typeof saved.mathOpen === "boolean") preferences.mathOpen = saved.mathOpen;
     for (const key of ["yaw", "pitch", "zoom", "rotate", "float"] as const) {
       if (typeof saved[key] === "number" && Number.isFinite(saved[key])) preferences[key] = saved[key];
     }
@@ -60,12 +60,9 @@ function readLocation(): { design: DesignOptions; error: string } {
 }
 const initial = readLocation();
 const savedViewer = readViewerPreferences();
-const { stats: savedStats, mathOpen: savedMathOpen, ...savedViewOptions } = savedViewer;
+const { stats: savedStats, ...savedViewOptions } = savedViewer;
 document.documentElement.dataset.theme = savedViewer.theme ?? "light";
 
-function Noble({ innerRef, ...attributes }: { innerRef?: React.Ref<NoblePolyhedronElement>; [key: string]: string | React.Ref<NoblePolyhedronElement> | undefined }) {
-  return createElement("noble-polyhedron", { ...attributes, ref: innerRef });
-}
 function Control({ label, value, children }: { label: string; value?: string; children: ReactNode }) {
   return <div className="space-y-2"><div className="flex items-center justify-between gap-3 text-xs font-medium"><span>{label}</span>{value && <span className="font-mono text-muted-foreground">{value}</span>}</div>{children}</div>;
 }
@@ -77,7 +74,6 @@ function App() {
   const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname));
   const [options, setOptions] = useState<WorkbenchOptions>({ ...DEFAULT_WORKBENCH_OPTIONS, ...savedViewOptions, ...initial.design });
   const [stats, setStats] = useState(savedStats ?? false);
-  const [mathOpen, setMathOpen] = useState(savedMathOpen ?? false);
   const [codeError, setCodeError] = useState(initial.error);
   const [parameterError, setParameterError] = useState("");
   const [identity, setIdentity] = useState("");
@@ -97,11 +93,11 @@ function App() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const viewer: ViewerPreferences = { theme: options.theme, yaw: options.yaw, pitch: options.pitch,
-        rotation: options.rotation, zoom: options.zoom, rotate: options.rotate, float: options.float, stats, mathOpen };
+        rotation: options.rotation, zoom: options.zoom, rotate: options.rotate, float: options.float, stats };
       try { localStorage.setItem(VIEWER_STORAGE_KEY, JSON.stringify(viewer)); } catch { /* Storage may be disabled. */ }
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [options.theme, options.yaw, options.pitch, options.rotation, options.zoom, options.rotate, options.float, stats, mathOpen]);
+  }, [options.theme, options.yaw, options.pitch, options.rotation, options.zoom, options.rotate, options.float, stats]);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.key.toLowerCase() !== "d") return;
@@ -220,7 +216,7 @@ function App() {
     b: family === "disphenoid" ? String(options.b) : undefined,
     c: family === "disphenoid" ? String(options.c) : undefined,
   };
-  const snippet = `<script type="module">\n  import "@noble-polyhedra/web-component";\n</script>\n\n<noble-polyhedron\n${Object.entries(appearanceAttrs).filter(([, value]) => value !== undefined).map(([key, value]) => `  ${key}="${value}"`).join("\n")}\n></noble-polyhedron>`;
+  const codeFormats = workbenchCodeFormats(options, appearanceAttrs);
   const shareUrl = new URL("/", window.location.origin); shareUrl.searchParams.set("code", code);
   const download = () => {
     if (!hero.current) return;
@@ -283,13 +279,11 @@ function App() {
       </aside>
 
       <main className="preview-panel">
-        <div className="preview-toolbar"><div className="min-w-0"><p className="eyebrow mb-1">Live preview <span className="mx-1">/</span> {String(shapeIndex + 1).padStart(3, "0")} of {SHAPES.length}</p><h2 className="truncate font-heading text-xl font-semibold tracking-tight">{poly.name}</h2></div><div className="preview-toolbar-actions">{regularSymbol && <div className="preview-symbol"><span>Schläfli</span><span className="font-mono">{REGULAR_SYMBOL_LABELS[options.shape]}</span></div>}<Button variant="ghost" size="sm" onClick={download}><Download className="size-3.5" /> PNG</Button></div></div>
+        <div className="preview-toolbar"><div className="preview-toolbar-title"><p className="eyebrow mb-1">Live preview <span className="mx-1">/</span> {String(shapeIndex + 1).padStart(3, "0")} of {SHAPES.length}</p><h2 className="truncate font-heading text-xl font-semibold tracking-tight">{poly.name}</h2></div><Button variant="ghost" size="sm" onClick={download}><Download className="size-3.5" /> PNG</Button><div className="preview-toolbar-math" aria-label="Form mathematics"><span>V {poly.vertices.length} <i>·</i> E {poly.edges.length} <i>·</i> F {poly.faces.length}</span><span>χ {eulerCharacteristic(poly)}</span>{regularSymbol && <span className="preview-symbol">{REGULAR_SYMBOL_LABELS[options.shape]}</span>}</div></div>
         <div className="preview-surface">
-          <Noble innerRef={hero} {...appearanceAttrs} background="transparent" stats={stats ? "true" : undefined} className="preview-model" />
+          <noble-polyhedron ref={hero} {...appearanceAttrs} background="transparent" stats={stats ? "true" : undefined} className="preview-model" />
         </div>
-        <div className="preview-dock"><div className="preview-meta"><p>{poly.vertices.length} vertices <span>·</span> {poly.edges.length} edges <span>·</span> {poly.faces.length} faces</p><p>Drag to rotate <span>·</span> Scroll to zoom</p></div>
-          <details className="math-panel" open={mathOpen} onToggle={event => setMathOpen(event.currentTarget.open)}><summary><span>Form mathematics</span><span className="math-panel-summary-value">χ = V − E + F = {eulerCharacteristic(poly)}</span></summary>{mathOpen && <Suspense fallback={<div className="math-loading" aria-busy="true"><LoadingState label="Loading notation" /></div>}><MathPanel poly={poly} regularSymbol={regularSymbol} /></Suspense>}</details>
-          <details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Embed this form</span><span className="text-xs text-muted-foreground">Web component</span></summary><div className="embed-content"><CodePreview code={snippet} language="html" compact /></div></details></div>
+        <div className="preview-dock"><details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Use this form</span><span className="text-xs text-muted-foreground">Code examples</span></summary><div className="embed-content"><CodePreview formats={codeFormats} compact /></div></details></div>
       </main>
     </div>}
   </div>;

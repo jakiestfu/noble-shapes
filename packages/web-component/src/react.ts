@@ -1,0 +1,43 @@
+import type { DetailedHTMLProps, HTMLAttributes } from "react";
+import type { ShapeId } from "@noble-polyhedra/core";
+import type { PaletteName, RenderView } from "@noble-polyhedra/render";
+import type { NoblePolyhedronElement } from "./index.js";
+
+type NoblePolyhedronProps = Omit<DetailedHTMLProps<HTMLAttributes<NoblePolyhedronElement>, NoblePolyhedronElement>, "color"> & {
+  shape?: ShapeId | "random";
+  seed?: string | number;
+  random?: string | boolean;
+  view?: RenderView;
+  palette?: PaletteName;
+  color?: string;
+  background?: string;
+  yaw?: string | number;
+  pitch?: string | number;
+  rotation?: string;
+  zoom?: string | number;
+  "face-index"?: string | number;
+  stats?: string | boolean;
+  rotate?: string | number;
+  float?: string | number;
+  n?: string | number;
+  p?: string | number;
+  q?: string | number;
+  "crown-height"?: string | number;
+  a?: string | number;
+  b?: string | number;
+  c?: string | number;
+  oninput?: (event: Event) => void;
+  onchange?: (event: Event) => void;
+  "onnoble-render"?: (event: CustomEvent<Record<string, unknown>>) => void;
+  "onnoble-error"?: (event: CustomEvent<unknown>) => void;
+};
+
+declare module "react" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "noble-polyhedron": NoblePolyhedronProps;
+    }
+  }
+}
+
+export {};

@@ -3,9 +3,12 @@
   "version": "0.1.0",
   "license": "MIT",
   "type": "module",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./react": { "types": "./dist/react.d.ts", "import": "./dist/react.js" }
+  },
   "files": ["dist"],
   "scripts": { "build": "tsc -p tsconfig.json" },
   "dependencies": { "@noble-polyhedra/core": "workspace:*", "@noble-polyhedra/render": "workspace:*" },
-  "devDependencies": { "typescript": "^5.9.0" }
+  "devDependencies": { "@types/react": "^19.3.0", "typescript": "^5.9.0" }
 }

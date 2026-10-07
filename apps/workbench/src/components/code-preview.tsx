@@ -12,10 +12,13 @@ export type CodeExample = { formats: CodeFormat[]; preview: PreviewScene };
 
 const SCRIPT = /\/\/[^\n]*|\/\*[\s\S]*?\*\/|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|`(?:\\.|[^`\\])*`|\b(?:import|export|from|const|let|var|new|return|await|async|function|if|else|type|interface|class|extends|true|false|null|undefined)\b|\b\d+(?:\.\d+)?\b|[{}()[\].,;:=<>+\-*/!?&|]/g;
 const MARKUP = /<!--[\s\S]*?-->|<\/?[\w-]+|\/?>|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[\w:-]+(?==)|[{}=]/g;
+const JSX = new RegExp(`${MARKUP.source}|${SCRIPT.source}`, "g");
 const SHELL = /#[^\n]*|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|--[\w-]+|\b(?:npm|pnpm|npx|node)\b|\b\d+(?:\.\d+)?\b/g;
 
 function tokenize(source: string, language: string): Token[] {
-  const pattern = ["html", "xml", "vue"].includes(language) ? MARKUP : ["sh", "bash", "shell"].includes(language) ? SHELL : SCRIPT;
+  const markup = ["html", "xml", "vue"].includes(language);
+  const jsx = ["jsx", "tsx"].includes(language);
+  const pattern = markup ? MARKUP : jsx ? JSX : ["sh", "bash", "shell"].includes(language) ? SHELL : SCRIPT;
   const tokens: Token[] = [];
   let cursor = 0;
   for (const match of source.matchAll(pattern)) {
@@ -27,7 +30,7 @@ function tokenize(source: string, language: string): Token[] {
     else if (/^["'`]/.test(text)) kind = "string";
     else if (/^\d/.test(text)) kind = "number";
     else if (text.startsWith("<") && /[\w]/.test(text)) kind = "tag";
-    else if (["html", "xml", "vue"].includes(language) && /^[\w:-]+$/.test(text) && source[index + text.length] === "=") kind = "attribute";
+    else if ((markup || jsx) && /^[\w:-]+$/.test(text) && source[index + text.length] === "=") kind = "attribute";
     else if (/^[{}()[\].,;:=<>+\-*/!?&|]+$/.test(text) || text === "/>") kind = "punctuation";
     else kind = "keyword";
     tokens.push({ text, kind });

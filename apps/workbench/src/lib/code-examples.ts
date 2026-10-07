@@ -29,16 +29,16 @@ form.setAttribute("view", "solid-wireframe");
 form.setAttribute("palette", "coral");
 form.style.cssText = "width: 360px; height: 360px";
 document.body.append(form);` },
-      { id: "react", label: "React", language: "tsx", code: `import { createElement } from "react";
-import "@noble-polyhedra/web-component";
+      { id: "react", label: "React", language: "tsx", code: `import "@noble-polyhedra/web-component";
+import "@noble-polyhedra/web-component/react";
 
 export function NobleForm() {
-  return createElement("noble-polyhedron", {
-    shape: "great-stellated-dodecahedron",
-    view: "solid-wireframe",
-    palette: "coral",
-    style: { width: 360, height: 360 },
-  });
+  return <noble-polyhedron
+    shape="great-stellated-dodecahedron"
+    view="solid-wireframe"
+    palette="coral"
+    style={{ width: 360, height: 360 }}
+  />;
 }` },
       { id: "vue", label: "Vue", language: "vue", code: `<!-- Mark noble-polyhedron as a custom element in Vue's compiler options. -->
 <script setup>
