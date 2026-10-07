@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, 
 import { createRoot } from "react-dom/client";
 import { Box, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, Copy, Download, FileImage, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
 import { createPolyhedron, polyhedronToGlb, SHAPES, type ShapeId } from "@noble-polyhedra/core";
-import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, optionsToString, PALETTES, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-polyhedra/render";
+import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, designForTheme, optionsToString, PALETTES, paletteColors, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-polyhedra/render";
 import "@noble-polyhedra/web-component";
 import "@noble-polyhedra/web-component/react";
 import type { NoblePolyhedronElement } from "@noble-polyhedra/web-component";
@@ -44,7 +44,7 @@ function sceneIsLight(background: string, theme: "light" | "dark"): boolean {
   return channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722 > 0.179;
 }
 const VIEWER_STORAGE_KEY = "noble-forms-viewer-v1";
-type ViewerPreferences = Pick<WorkbenchOptions, "theme" | "yaw" | "pitch" | "rotation" | "zoom" | "rotate" | "float"> & { stats: boolean };
+type ViewerPreferences = Pick<WorkbenchOptions, "theme" | "yaw" | "pitch" | "rotation" | "zoom" | "rotate" | "float"> & { stats: boolean; animationEnabled: boolean };
 
 function readViewerPreferences(): Partial<ViewerPreferences> {
   try {
@@ -54,6 +54,7 @@ function readViewerPreferences(): Partial<ViewerPreferences> {
     const preferences: Partial<ViewerPreferences> = {};
     if (saved.theme === "light" || saved.theme === "dark") preferences.theme = saved.theme;
     if (typeof saved.stats === "boolean") preferences.stats = saved.stats;
+    if (typeof saved.animationEnabled === "boolean") preferences.animationEnabled = saved.animationEnabled;
     for (const key of ["yaw", "pitch", "zoom", "rotate", "float"] as const) {
       if (typeof saved[key] === "number" && Number.isFinite(saved[key])) preferences[key] = saved[key];
     }
@@ -70,26 +71,48 @@ function readLocation(): { design: DesignOptions; error: string } {
 }
 const initial = readLocation();
 const savedViewer = readViewerPreferences();
-const { stats: savedStats, ...savedViewOptions } = savedViewer;
+const { stats: savedStats, animationEnabled: savedAnimationEnabled, ...savedViewOptions } = savedViewer;
+const legacyMotionDefaults = savedAnimationEnabled === undefined && savedViewer.rotate === 0 && savedViewer.float === 0
+  ? { rotate: 0.25, float: 0.25 } : {};
 document.documentElement.dataset.theme = savedViewer.theme ?? "light";
 
 function Control({ label, value, children }: { label: string; value?: string; children: ReactNode }) {
   return <div className="space-y-2"><div className="flex items-center justify-between gap-3 text-xs font-medium"><span>{label}</span>{value && <span className="font-mono text-muted-foreground">{value}</span>}</div>{children}</div>;
 }
-function Group({ title, children }: { title: string; children: ReactNode }) {
-  return <section className="control-group"><h3 className="control-group-title">{title}</h3><div className="space-y-4">{children}</div></section>;
+function Group({ id, title, expanded, onToggle, headerAction, children }: { id: string; title: string; expanded: boolean; onToggle: () => void; headerAction?: ReactNode; children: ReactNode }) {
+  return <section className={`control-group ${expanded ? "is-open" : ""}`}>
+    <div className="control-group-header"><h3><button type="button" className="control-group-toggle" aria-expanded={expanded} aria-controls={`${id}-controls`} onClick={onToggle}>{title}<ChevronDown aria-hidden="true" className="size-3.5" /></button></h3>{headerAction}</div>
+    <div id={`${id}-controls`} className="control-group-content" hidden={!expanded}><div className="space-y-4">{children}</div></div>
+  </section>;
+}
+
+function ColorControl({ label, value, onChange }: { label: string; value: string; onChange: (color: string) => void }) {
+  const [draft, setDraft] = useState(value.toUpperCase());
+  useEffect(() => setDraft(value.toUpperCase()), [value]);
+  const commit = () => {
+    const candidate = (draft.startsWith("#") ? draft : `#${draft}`).toLowerCase();
+    if (/^#[0-9a-f]{6}$/.test(candidate)) onChange(candidate);
+    else setDraft(value.toUpperCase());
+  };
+  return <div className="color-control"><span className="color-control-label">{label}</span><div className="color-field">
+    <label className="color-swatch" style={{ background: value }} title={`Choose ${label.toLowerCase()}`}><span className="sr-only">Choose {label.toLowerCase()}</span><input type="color" aria-label={`Choose ${label.toLowerCase()}`} value={value} onChange={event => onChange(event.target.value)} /></label>
+    <input aria-label={`${label} hex color`} value={draft} maxLength={7} spellCheck={false} onChange={event => setDraft(event.target.value)} onBlur={commit} onKeyDown={event => { if (event.key === "Enter") event.currentTarget.blur(); }} />
+  </div></div>;
 }
 
 function App() {
   const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname));
-  const [options, setOptions] = useState<WorkbenchOptions>({ ...DEFAULT_WORKBENCH_OPTIONS, ...savedViewOptions, ...initial.design });
+  const [options, setOptions] = useState<WorkbenchOptions>(() => designForTheme({ ...DEFAULT_WORKBENCH_OPTIONS, ...savedViewOptions, ...legacyMotionDefaults, ...initial.design }, savedViewOptions.theme ?? "light"));
   const [stats, setStats] = useState(savedStats ?? false);
+  const [animationEnabled, setAnimationEnabled] = useState(savedAnimationEnabled ?? !window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const [expandedSection, setExpandedSection] = useState("shape");
+  const [opaqueBackground, setOpaqueBackground] = useState(options.background === "transparent" ? paletteColors(options.palette, options.theme).background : options.background);
   const [codeError, setCodeError] = useState(initial.error);
   const [parameterError, setParameterError] = useState("");
   const [identity, setIdentity] = useState("");
   const [identityOpen, setIdentityOpen] = useState(false);
   const [copied, setCopied] = useState<"link" | "">("");
-  const code = useMemo(() => optionsToString(options), [options.shape, options.view, options.palette,
+  const code = useMemo(() => optionsToString(options), [options.shape, options.view, options.palette, options.paletteLinked,
     options.color, options.background, options.faceIndex, options.n, options.p, options.q,
     options.crownHeight, options.a, options.b, options.c]);
   const [draftCode, setDraftCode] = useState(code);
@@ -102,20 +125,21 @@ function App() {
   const lightScene = sceneIsLight(options.background, options.theme);
 
   useEffect(() => { document.documentElement.dataset.theme = options.theme; }, [options.theme]);
+  useEffect(() => { if (options.background !== "transparent") setOpaqueBackground(options.background); }, [options.background]);
   useEffect(() => {
     const timer = window.setTimeout(() => {
       const viewer: ViewerPreferences = { theme: options.theme, yaw: options.yaw, pitch: options.pitch,
-        rotation: options.rotation, zoom: options.zoom, rotate: options.rotate, float: options.float, stats };
+        rotation: options.rotation, zoom: options.zoom, rotate: options.rotate, float: options.float, stats, animationEnabled };
       try { localStorage.setItem(VIEWER_STORAGE_KEY, JSON.stringify(viewer)); } catch { /* Storage may be disabled. */ }
     }, 250);
     return () => window.clearTimeout(timer);
-  }, [options.theme, options.yaw, options.pitch, options.rotation, options.zoom, options.rotate, options.float, stats]);
+  }, [options.theme, options.yaw, options.pitch, options.rotation, options.zoom, options.rotate, options.float, stats, animationEnabled]);
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.key.toLowerCase() !== "d") return;
       if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable], [role="combobox"], [role="listbox"]')) return;
       event.preventDefault();
-      setOptions(previous => ({ ...previous, theme: previous.theme === "light" ? "dark" : "light" }));
+      setOptions(previous => { const theme = previous.theme === "light" ? "dark" : "light"; return designForTheme({ ...previous, theme }, theme); });
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -139,7 +163,7 @@ function App() {
     const onPopState = () => {
       const nextPage = pageFromPath(window.location.pathname);
       setPage(nextPage);
-      if (nextPage === "workbench") { const next = readLocation(); setOptions(previous => ({ ...previous, ...next.design })); setCodeError(next.error); }
+      if (nextPage === "workbench") { const next = readLocation(); setOptions(previous => ({ ...previous, ...designForTheme(next.design, previous.theme) })); setCodeError(next.error); }
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -172,6 +196,11 @@ function App() {
   };
 
   const update = (patch: Partial<WorkbenchOptions>) => { setOptions(previous => ({ ...previous, ...patch })); setCodeError(""); };
+  const toggleSection = (id: string) => setExpandedSection(current => current === id ? "" : id);
+  const toggleAnimation = () => {
+    if (!animationEnabled && options.rotate === 0 && options.float === 0) update({ rotate: 0.25, float: 0.25 });
+    setAnimationEnabled(enabled => !enabled);
+  };
   const updateGeometry = (patch: Partial<WorkbenchOptions>) => {
     try { const next = createPolyhedron({ ...options, ...patch }); update({ ...patch, faceIndex: Math.min(options.faceIndex, next.faces.length - 1) }); setParameterError(""); }
     catch (error) { setParameterError(error instanceof Error ? error.message : String(error)); }
@@ -198,24 +227,24 @@ function App() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [page, shapeIndex]);
-  const choosePalette = (palette: PaletteName) => update({ palette, color: PALETTES[palette].color,
-    background: options.background === "transparent" ? "transparent" : PALETTES[palette].background });
+  const choosePalette = (palette: PaletteName) => update({ palette, paletteLinked: true, ...paletteColors(palette, options.theme),
+    ...(options.background === "transparent" ? { background: "transparent" } : {}) });
   const applyCode = () => {
-    try { setOptions(previous => ({ ...previous, ...stringToOptions(draftCode.trim()) })); setCodeError(""); setParameterError(""); }
+    try { setOptions(previous => ({ ...previous, ...designForTheme(stringToOptions(draftCode.trim()), previous.theme) })); setCodeError(""); setParameterError(""); }
     catch (error) { setCodeError(error instanceof Error ? error.message : String(error)); }
   };
   const generateFromText = (seed: string) => {
-    setOptions(previous => ({ ...previous, ...randomOptions(seed) }));
+    setOptions(previous => ({ ...previous, ...designForTheme(randomOptions(seed), previous.theme) }));
     setCodeError(""); setParameterError("");
   };
   const surpriseMe = () => {
     const next = randomOptions(randomSeed());
     setOptions(previous => ({
       ...previous,
-      ...next,
+      ...designForTheme(next, previous.theme),
       view: previous.view,
       background: previous.background === "transparent" ? "transparent"
-        : next.background === "transparent" ? PALETTES[next.palette].background : next.background,
+        : paletteColors(next.palette, previous.theme).background,
     }));
     setCodeError(""); setParameterError("");
   };
@@ -229,8 +258,8 @@ function App() {
     background: options.background, yaw: String(options.yaw), pitch: String(options.pitch),
     rotation: options.rotation?.join(","), zoom: String(options.zoom),
     "face-index": options.view === "face" || options.view === "face-context" ? String(options.faceIndex) : undefined,
-    rotate: options.rotate > 0 ? String(options.rotate) : undefined,
-    float: options.float > 0 ? String(options.float) : undefined,
+    rotate: animationEnabled && options.rotate > 0 ? String(options.rotate) : undefined,
+    float: animationEnabled && options.float > 0 ? String(options.float) : undefined,
     n: family === "stephanoid" ? String(options.n) : undefined,
     p: family === "stephanoid" ? String(options.p) : undefined,
     q: family === "stephanoid" ? String(options.q) : undefined,
@@ -274,14 +303,15 @@ function App() {
     <header className="app-header">
       <div className="brand-lockup"><a className="brand-parent" href="https://jakiestfu.com/" target="_blank" rel="noopener noreferrer">JAKIESTFU</a><span className="brand-separator">/</span><a className="brand-product" href="/" onClick={event => navClick(event, "workbench")}>NOBLE POLYHEDRONS</a></div>
       <nav className="app-nav" aria-label="Main navigation">{(["workbench", "showcase", "research", "documentation"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>
-      <div className="header-actions">{page === "workbench" && <Button variant="ghost" size="sm" onClick={() => copyText("link", shareUrl.toString())}><Share2 className="size-3.5" /><span className="share-label">{copied === "link" ? "Copied" : "Share"}</span></Button>}<Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={() => update({ theme: options.theme === "light" ? "dark" : "light" })}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
+      <div className="header-actions">{page === "workbench" && <Button variant="ghost" size="sm" onClick={() => copyText("link", shareUrl.toString())}><Share2 className="size-3.5" /><span className="share-label">{copied === "link" ? "Copied" : "Share"}</span></Button>}<Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={() => setOptions(previous => { const theme = previous.theme === "light" ? "dark" : "light"; return designForTheme({ ...previous, theme }, theme); })}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
     </header>
 
     {page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
         <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Workbench</h1><p className="mt-1 text-xs text-muted-foreground">146 finite polyhedra · two infinite families</p></div>
 
-        <Group title="Shape">
+        <div className="control-accordion">
+        <Group id="shape" title="Shape" expanded={expandedSection === "shape"} onToggle={() => toggleSection("shape")}>
           <Control label="Polyhedron" value={`${shapeIndex + 1} / ${SHAPES.length}`}><div className="shape-selector"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /><div className="shape-step-links"><button type="button" className="shape-step-link" title="Previous shape (←)" onClick={() => stepShape(-1)}><ChevronLeft aria-hidden="true" /> Previous</button><button type="button" className="shape-step-link" title="Next shape (→)" onClick={() => stepShape(1)}>Next <ChevronRight aria-hidden="true" /></button></div></div></Control>
           <div className="design-actions">
             <div className="design-actions-head">
@@ -300,26 +330,32 @@ function App() {
           {parameterError && <p role="alert" className="text-xs text-red-600">{parameterError}</p>}
         </Group>
 
-        <Group title="Appearance">
-          <Control label="Palette"><div className="flex gap-2">{(Object.keys(PALETTES) as PaletteName[]).map(item => <Button key={item} variant="ghost" size="icon" aria-label={`${item} palette`} title={item} aria-pressed={options.palette === item} className={options.palette === item ? "is-selected" : ""} onClick={() => choosePalette(item)}><span className="size-5 rounded-sm" style={{ background: PALETTES[item].color }} /></Button>)}</div></Control>
-          <div className="grid grid-cols-2 gap-3"><Control label="Facet color"><input aria-label="Facet color" type="color" className="color-input" value={options.color} onChange={event => update({ color: event.target.value })} /></Control><Control label="Background"><input aria-label="Background color" type="color" className="color-input" value={options.background === "transparent" ? PALETTES[options.palette].background : options.background} onChange={event => update({ background: event.target.value })} /></Control></div>
-          <Button variant="ghost" size="sm" className={`w-full ${options.background === "transparent" ? "is-selected" : ""}`} aria-pressed={options.background === "transparent"} onClick={() => update({ background: options.background === "transparent" ? PALETTES[options.palette].background : "transparent" })}>Transparent background</Button>
+        <Group id="appearance" title="Appearance" expanded={expandedSection === "appearance"} onToggle={() => toggleSection("appearance")}>
+          <Control label="Palette" value={options.paletteLinked ? undefined : "Custom colors"}><div className="palette-grid">{(Object.keys(PALETTES) as PaletteName[]).map(item => { const colors = paletteColors(item, options.theme); return <button key={item} type="button" className="palette-choice" aria-label={`${PALETTES[item].name} palette`} aria-pressed={options.paletteLinked && options.palette === item} onClick={() => choosePalette(item)}><span className="palette-chip" style={{ background: colors.background }}><span style={{ background: colors.color }} /></span><span>{PALETTES[item].name}</span></button>; })}</div></Control>
+          <div className="color-controls"><ColorControl label="Facet color" value={options.color} onChange={color => update({ color, paletteLinked: false })} /><ColorControl label="Background" value={options.background === "transparent" ? opaqueBackground : options.background} onChange={background => update({ background, paletteLinked: false })} /></div>
+          <label className="control-check"><input type="checkbox" checked={options.background === "transparent"} onChange={() => update({ background: options.background === "transparent" ? options.paletteLinked ? paletteColors(options.palette, options.theme).background : opaqueBackground : "transparent" })} /><span>Transparent background</span></label>
         </Group>
 
-        <Group title="Position & motion">
+        <Group id="position" title="Position" expanded={expandedSection === "position"} onToggle={() => toggleSection("position")}>
           <Control label="Rotation" value={options.rotation ? "trackball" : options.yaw.toFixed(2)}><Slider min={-3.14} max={3.14} step={0.01} value={[options.yaw]} onValueChange={value => update({ yaw: sliderValue(value, 0), rotation: undefined })} /></Control>
           <Control label="Tilt" value={options.rotation ? "trackball" : options.pitch.toFixed(2)}><Slider min={-1.45} max={1.45} step={0.01} value={[options.pitch]} onValueChange={value => update({ pitch: sliderValue(value, 0), rotation: undefined })} /></Control>
           {options.rotation && <Button variant="ghost" size="sm" className="w-full" onClick={() => update({ rotation: undefined })}><RotateCcw className="size-3.5" /> Reset orientation</Button>}
           <Control label="Scale" value={options.zoom.toFixed(2)}><Slider min={0.5} max={1.5} step={0.01} value={[options.zoom]} onValueChange={value => update({ zoom: sliderValue(value, 1) })} /></Control>
-          <div className="space-y-4 border-t border-border pt-4"><Control label="Auto rotate" value={options.rotate.toFixed(2)}><Slider min={0} max={1} step={0.01} value={[options.rotate]} onValueChange={value => update({ rotate: sliderValue(value, 0) })} /></Control><Control label="Float" value={options.float.toFixed(2)}><Slider min={0} max={1} step={0.01} value={[options.float]} onValueChange={value => update({ float: sliderValue(value, 0) })} /></Control></div>
         </Group>
 
-        <Group title="Share & inspect">
+        <Group id="animation" title="Animation" expanded={expandedSection === "animation"} onToggle={() => toggleSection("animation")} headerAction={<button type="button" role="switch" aria-label="Animation" aria-checked={animationEnabled} className="animation-switch" onClick={toggleAnimation}><span /></button>}>
+          <p className="control-hint">Subtle motion, independent of the shared design.</p>
+          <Control label="Auto rotate" value={options.rotate.toFixed(2)}><Slider disabled={!animationEnabled} min={0} max={1} step={0.01} value={[options.rotate]} onValueChange={value => update({ rotate: sliderValue(value, 0) })} /></Control>
+          <Control label="Float" value={options.float.toFixed(2)}><Slider disabled={!animationEnabled} min={0} max={1} step={0.01} value={[options.float]} onValueChange={value => update({ float: sliderValue(value, 0) })} /></Control>
+        </Group>
+
+        <Group id="share" title="Share & inspect" expanded={expandedSection === "share"} onToggle={() => toggleSection("share")}>
           <Control label="Design code"><textarea aria-label="Design code" className="code-input" rows={3} spellCheck={false} value={draftCode} onChange={event => setDraftCode(event.target.value)} onKeyDown={event => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") applyCode(); }} /></Control>
           {codeError && <p role="alert" className="text-xs text-red-600">{codeError}</p>}
           <div className="flex gap-2"><Button variant="ghost" size="sm" className="flex-1" onClick={applyCode}>Load code</Button><Button variant="ghost" size="sm" className="flex-1" onClick={() => copyText("link", shareUrl.toString())}>{copied === "link" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied === "link" ? "Copied" : "Copy link"}</Button></div>
           <div className="flex items-center justify-between gap-3"><div><label htmlFor="stats" className="text-xs font-medium">Renderer stats</label><p className="text-[11px] text-muted-foreground">Local display only; excluded from the code.</p></div><input id="stats" type="checkbox" className="size-4 accent-foreground" checked={stats} onChange={event => setStats(event.target.checked)} /></div>
         </Group>
+        </div>
       </aside>
 
       <main className="preview-panel">

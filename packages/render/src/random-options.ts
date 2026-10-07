@@ -43,12 +43,12 @@ export function randomOptions(seed: string | number = randomSeed()): DesignOptio
   const crownHeight = between(0.5, 1.1);
   const a = between(0.7, 1.4), b = between(0.7, 1.4), c = between(0.7, 1.4);
   const faces = createPolyhedron({ shape, n, p, q, crownHeight, a, b, c }).faces.length;
-  const color = pick(colors.colors);
-  const background = next() < 0.18 ? "transparent" : pick(colors.backgrounds);
+  const color = colors.color;
+  const background = next() < 0.18 ? "transparent" : colors.background;
   // Preserve the face choice for existing identity seeds after removing camera draws.
   next(); if (view !== "face") next(); next();
   return {
-    shape, view, palette,
+    shape, view, palette, paletteLinked: true,
     color, background,
     faceIndex: Math.floor(next() * faces),
     n, p, q, crownHeight, a, b, c,

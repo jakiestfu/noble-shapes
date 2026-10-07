@@ -3,7 +3,7 @@ import { createGeometryCache } from "./geometry-cache.js";
 import { PALETTES } from "./palettes.js";
 import { resolveSceneOptions } from "./random-options.js";
 
-export type PaletteName = "aurora" | "coral" | "violet" | "gold";
+export type PaletteName = "aurora" | "coral" | "violet" | "gold" | "glacier" | "jade" | "rose" | "ember";
 export type RenderView = "solid" | "solid-wireframe" | "wireframe" | "face" | "face-context";
 /** Quaternion in [x, y, z, w] order. Overrides yaw and pitch when provided. */
 export type Quaternion = readonly [number, number, number, number];
@@ -43,7 +43,7 @@ export type SceneOptions = ShapeOptions & RenderOptions;
 export interface RenderedImage { width: number; height: number; data: Uint8ClampedArray<ArrayBuffer> }
 
 export const PALETTE_NAMES = Object.keys(PALETTES) as PaletteName[];
-export { PALETTES } from "./palettes.js";
+export { PALETTES, paletteColors } from "./palettes.js";
 export { randomOptions, randomSeed, resolveSceneOptions } from "./random-options.js";
 
 type RGB = readonly [number, number, number];
@@ -301,7 +301,7 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
   return { width, height, data: reduced };
 }
 
-export { optionsToString, stringToOptions, DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, type DesignOptions, type WorkbenchOptions } from "./options-code.js";
+export { optionsToString, stringToOptions, designForTheme, DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, type DesignOptions, type WorkbenchOptions } from "./options-code.js";
 
 export function renderScene(options: SceneOptions = {}): RenderedImage {
   const resolved = resolveSceneOptions(options);

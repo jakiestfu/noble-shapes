@@ -29,7 +29,7 @@ const code = optionsToString({ ...DEFAULT_WORKBENCH_OPTIONS, background: "transp
 const options = stringToOptions(code);
 ```
 
-Design codes begin with `np2_` and contain the form, view, palette, colors, optional transparent background, repeated face, and family dimensions. Decoding validates the version and geometry. Older `np1_` links still load; their viewer settings are ignored. The studio updates the `code` URL parameter when the design changes. Dragging, zooming, animation, and theme changes leave it alone. **Surprise me** and **Generate from text** change only the design, preserving local viewer settings.
+Design codes begin with `np3_` and contain the form, view, palette, whether its colors follow the viewer theme, optional custom colors or transparent background, repeated face, and family dimensions. Decoding validates the version and geometry. Older `np1_` and `np2_` links still load; `np1_` viewer settings are ignored. The studio updates the `code` URL parameter when the design changes. Dragging, zooming, animation, and theme changes leave it alone. **Surprise me** and **Generate from text** change only the design, preserving local viewer settings.
 
 An identity seed generates a design; a design code captures its form and appearance. Keep the seed if you want an avatar that stays tied to a username, or share a code if you want a snapshot that can be edited independently:
 

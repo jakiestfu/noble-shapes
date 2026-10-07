@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { inflateSync } from "node:zlib";
-import { clearRenderCaches, createGeometryCache, DEFAULT_WORKBENCH_OPTIONS, optionsToString, randomOptions, renderPolyhedron, renderScene, resolveSceneOptions, rotateVertex, stringToOptions } from "../packages/render/dist/index.js";
+import { clearRenderCaches, createGeometryCache, DEFAULT_WORKBENCH_OPTIONS, designForTheme, optionsToString, PALETTES, randomOptions, renderPolyhedron, renderScene, resolveSceneOptions, rotateVertex, stringToOptions } from "../packages/render/dist/index.js";
 import { renderPng } from "../packages/node/dist/index.js";
 import { createPolyhedron, SHAPES } from "../packages/core/dist/index.js";
 
@@ -69,13 +69,13 @@ test("cached meshes and backgrounds preserve pixels across camera, color, and al
 
 test("design codes capture only form and appearance and read older links", () => {
   const options = { ...DEFAULT_WORKBENCH_OPTIONS, shape: "stephanoid", view: "face-context",
-    palette: "gold", color: "#dace89", background: "transparent", yaw: -0.7, pitch: 0.33,
+    palette: "gold", paletteLinked: false, color: "#dace89", background: "transparent", yaw: -0.7, pitch: 0.33,
     rotation: [0, Math.sin(0.2), 0, Math.cos(0.2)], zoom: 1.19, faceIndex: 2,
     n: 7, p: 3, q: 1, crownHeight: 0.82, a: 1.21, b: 0.88, c: 1.03,
     rotate: 0.42, float: 0.31, theme: "dark" };
   const code = optionsToString(options);
   const { yaw, pitch, rotation, zoom, rotate, float, theme, ...design } = options;
-  assert.match(code, /^np2_[A-Za-z0-9_-]+$/);
+  assert.match(code, /^np3_[A-Za-z0-9_-]+$/);
   assert.deepEqual(stringToOptions(code), design);
   assert.equal(optionsToString(stringToOptions(code)), code);
   assert.equal(optionsToString({ ...options, yaw: 1, pitch: -0.5, zoom: 1.8, rotate: 1, float: 1, theme: "light" }), code);
@@ -83,8 +83,34 @@ test("design codes capture only form and appearance and read older links", () =>
     yaw, pitch, rotation, zoom, options.faceIndex, options.n, options.p, options.q,
     options.crownHeight, options.a, options.b, options.c, rotate, float, theme];
   assert.deepEqual(stringToOptions(`np1_${Buffer.from(JSON.stringify(oldTuple)).toString("base64url")}`), design);
-  assert.throws(() => stringToOptions("np3_invalid"), /Unsupported design code/);
+  const previousTuple = [options.shape, options.view, options.palette, options.color, options.background,
+    options.faceIndex, options.n, options.p, options.q, options.crownHeight, options.a, options.b, options.c];
+  assert.deepEqual(stringToOptions(`np2_${Buffer.from(JSON.stringify(previousTuple)).toString("base64url")}`), design);
+  assert.throws(() => stringToOptions("np4_invalid"), /Unsupported design code/);
   assert.throws(() => optionsToString({ ...options, color: "red" }), /invalid color/);
+});
+
+test("linked palettes follow the viewer theme without changing the shared design code", () => {
+  for (const [name, palette] of Object.entries(PALETTES)) {
+    const dark = { ...DEFAULT_WORKBENCH_OPTIONS, palette: name, paletteLinked: true,
+      color: palette.color, background: palette.background };
+    const code = optionsToString(dark);
+    const light = designForTheme(dark, "light");
+    assert.equal(light.color, palette.light.color);
+    assert.equal(light.background, palette.light.background);
+    assert.equal(optionsToString(light), code);
+    assert.deepEqual(designForTheme(light, "dark"), dark);
+    const custom = { ...light, color: "#123456", paletteLinked: false };
+    assert.equal(designForTheme(custom, "dark"), custom);
+    assert.notEqual(optionsToString(custom), code);
+  }
+  const transparent = { ...DEFAULT_WORKBENCH_OPTIONS, background: "transparent" };
+  assert.equal(designForTheme(transparent, "light").background, "transparent");
+  assert.equal(optionsToString(designForTheme(transparent, "light")), optionsToString(transparent));
+  const previous = [transparent.shape, transparent.view, transparent.palette, transparent.color, transparent.background,
+    transparent.faceIndex, transparent.n, transparent.p, transparent.q, transparent.crownHeight,
+    transparent.a, transparent.b, transparent.c];
+  assert.equal(stringToOptions(`np2_${Buffer.from(JSON.stringify(previous)).toString("base64url")}`).paletteLinked, true);
 });
 
 test("identity seeds generate complete reproducible designs separate from design codes", () => {

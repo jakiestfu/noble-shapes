@@ -118,7 +118,7 @@ const code = optionsToString(design);
 const restored = stringToOptions(code);
 ```
 
-The workbench stores that code in its URL's `code` parameter. It captures the shape, view, palette, colors, selected face, and family dimensions. Camera position, animation, renderer stats, and light or dark mode remain local viewer settings. The browser saves those viewer settings locally, and **D** toggles the theme when focus is outside an input. **Surprise me** shuffles the shape and colors while keeping the current view and transparent background setting. **From text** creates a complete design from a repeatable seed.
+The workbench stores that code in its URL's `code` parameter. It captures the shape, view, palette, whether colors follow the palette or are custom, selected face, and family dimensions. Each of the eight palettes has light and dark colors. Switching themes changes linked palette colors without changing the design code; editing either color keeps both colors fixed until a palette is selected again. Camera position, animation, renderer stats, and light or dark mode remain local viewer settings. The browser saves those viewer settings locally, and **D** toggles the theme when focus is outside an input. Animation defaults on at 0.25 rotate and float when reduced motion is not requested. **Surprise me** shuffles the shape and colors while keeping the current view and transparent background setting. **From text** creates a complete design from a repeatable seed.
 
 ## Forms and families
 
