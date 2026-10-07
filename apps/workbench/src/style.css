@@ -102,6 +102,9 @@ noble-polyhedron { display: block; }
 .code-input:focus { outline: 2px solid var(--ring); outline-offset: 1px; }
 .preview-panel { display: flex; min-height: 0; min-width: 0; flex-direction: column; overflow: hidden; border: 1px solid var(--border); border-radius: 17px; background: var(--card); }
 .preview-toolbar { display: flex; min-height: 80px; flex: none; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; }
+.preview-toolbar-actions { display: flex; flex: none; align-items: center; gap: 14px; }
+.preview-symbol { display: flex; align-items: center; gap: 8px; color: var(--muted-foreground); font-size: 11px; }
+.preview-symbol .font-mono { color: var(--foreground); font-size: 12px; }
 .preview-surface { position: relative; min-height: 0; flex: 1; overflow: hidden; background: #07131d; }
 .preview-transparent { background-color: var(--checker-light); background-image: linear-gradient(45deg, var(--checker-dark) 25%, transparent 25%), linear-gradient(-45deg, var(--checker-dark) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--checker-dark) 75%), linear-gradient(-45deg, transparent 75%, var(--checker-dark) 75%); background-position: 0 0, 0 12px, 12px -12px, -12px 0; background-size: 24px 24px; }
 .preview-surface noble-polyhedron { width: 100%; height: 100%; min-height: 0; aspect-ratio: auto; border-radius: 0; }
@@ -113,6 +116,14 @@ noble-polyhedron { display: block; }
 .embed-panel summary::-webkit-details-marker { display: none; }
 .embed-content { display: flex; max-height: 210px; flex-direction: column; align-items: flex-end; gap: 9px; overflow: auto; border-top: 1px solid var(--border); padding: 14px 20px; }
 .embed-content pre { width: 100%; overflow-x: auto; color: var(--muted-foreground); font: 11px/1.55 ui-monospace, SFMono-Regular, monospace; }
+.math-panel { flex: none; border-top: 1px solid var(--border); }
+.math-panel summary { display: flex; min-height: 43px; cursor: pointer; list-style: none; align-items: center; justify-content: space-between; gap: 14px; padding: 0 20px; font-size: 12px; font-weight: 600; }
+.math-panel summary::-webkit-details-marker { display: none; }
+.math-panel-summary-value { color: var(--muted-foreground); font-size: 13px; font-weight: 400; }
+.math-panel-content { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; border-top: 1px solid var(--border); padding: 18px 20px 20px; }
+.math-panel-content > div { min-width: 0; }
+.math-panel-content .katex { font-size: 18px; }
+.math-note { grid-column: 1 / -1; color: var(--muted-foreground); font-size: 11px; line-height: 1.5; }
 
 .content-page { min-height: 0; flex: 1; overflow-y: auto; padding: clamp(20px, 4vw, 52px) clamp(16px, 4vw, 52px) 72px; scrollbar-width: thin; }
 .content-inner { max-width: 1160px; margin: 0 auto; }
@@ -127,6 +138,9 @@ noble-polyhedron { display: block; }
 .showcase-number { position: absolute; top: 16px; left: 17px; color: #ffffffc9; font: 11px/1 ui-monospace, SFMono-Regular, monospace; letter-spacing: 0.12em; pointer-events: none; }
 .showcase-card-body { display: flex; min-height: 145px; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 18px 20px 20px; }
 .showcase-kicker { color: var(--muted-foreground); font: 10px/1.3 ui-monospace, SFMono-Regular, monospace; letter-spacing: 0.12em; text-transform: uppercase; }
+.showcase-heading-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 15px; }
+.showcase-symbol { color: var(--muted-foreground); }
+.showcase-symbol .katex { font-size: 18px; }
 .showcase-name { margin-top: 7px; font-size: 16px; font-weight: 700; letter-spacing: -0.03em; }
 .showcase-note { margin-top: 5px; color: var(--muted-foreground); font-size: 12px; line-height: 1.5; }
 
@@ -168,6 +182,7 @@ noble-polyhedron { display: block; }
 @media (max-width: 700px) {
   .research-grid, .video-layout { grid-template-columns: 1fr; }
   .video-copy { padding: 21px; }
+  .math-panel-content { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 530px) {
   .app-header { height: auto; min-height: 64px; flex-wrap: wrap; gap: 0; padding: 0 14px 9px; }
@@ -179,6 +194,9 @@ noble-polyhedron { display: block; }
   .preview-panel { min-height: 490px; }
   .preview-surface { min-height: 300px; }
   .preview-meta { align-items: flex-start; flex-direction: column; justify-content: center; gap: 1px; padding: 6px 16px; }
+  .preview-symbol > span:first-child { display: none; }
+  .math-panel summary { padding: 0 16px; }
+  .math-panel-content { grid-template-columns: 1fr; padding: 16px; }
   .showcase-grid { grid-template-columns: 1fr; gap: 14px; }
   .showcase-stage { height: 280px; }
   .page-count { display: none; }

@@ -1,4 +1,4 @@
-import { createElement, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createElement, lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { Check, Code2, Copy, Download, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
 import { createPolyhedron, SHAPES, type ShapeId } from "@noble-polyhedra/core";
@@ -10,9 +10,12 @@ import { FormPicker } from "@/components/form-picker";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { PALETTES, surpriseOptions } from "@/lib/random-options";
-import { Showcase } from "@/pages/showcase";
+import { eulerCharacteristic, REGULAR_SYMBOL_LABELS, REGULAR_SYMBOLS } from "@/lib/shape-math";
 import { Research } from "@/pages/research";
 import "./style.css";
+
+const Showcase = lazy(() => import("@/pages/showcase").then(module => ({ default: module.Showcase })));
+const MathPanel = lazy(() => import("@/components/math-panel"));
 
 type Page = "workbench" | "showcase" | "research";
 const pageFromPath = (path: string): Page => path.replace(/\/+$/, "") === "/showcase" ? "showcase" : path.replace(/\/+$/, "") === "/research" ? "research" : "workbench";
@@ -47,6 +50,7 @@ function App() {
   const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname));
   const [options, setOptions] = useState<WorkbenchOptions>(initial.options);
   const [stats, setStats] = useState(false);
+  const [mathOpen, setMathOpen] = useState(false);
   const [codeError, setCodeError] = useState(initial.error);
   const [parameterError, setParameterError] = useState("");
   const [copied, setCopied] = useState<"link" | "embed" | "">("");
@@ -57,6 +61,7 @@ function App() {
   const family = options.shape === "disphenoid" ? "disphenoid" : options.shape === "stephanoid" || options.shape === "antistephanoid" ? "stephanoid" : "finite";
   const poly = useMemo(() => createPolyhedron(options), [options.shape, options.n, options.p, options.q, options.crownHeight, options.a, options.b, options.c]);
   const shapeIndex = SHAPES.findIndex(item => item.id === options.shape);
+  const regularSymbol = REGULAR_SYMBOLS[options.shape];
 
   useEffect(() => { document.documentElement.dataset.theme = options.theme; }, [options.theme]);
   useEffect(() => { document.title = `${page === "workbench" ? "Workbench" : page === "showcase" ? "Showcase" : "Research"} — Noble Forms`; }, [page]);
@@ -163,7 +168,7 @@ function App() {
       <div className="header-actions">{page === "workbench" && <Button variant="outline" size="sm" onClick={() => copyText("link", shareUrl.toString())}><Share2 className="size-3.5" /><span className="share-label">{copied === "link" ? "Copied" : "Share"}</span></Button>}<Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} onClick={() => update({ theme: options.theme === "light" ? "dark" : "light" })}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
     </header>
 
-    {page === "showcase" ? <Showcase theme={options.theme} onOpen={next => { replacingDesign.current = true; setOptions(next); setCodeError(""); setParameterError(""); const url = new URL("/", window.location.origin); url.searchParams.set("code", optionsToString(next)); window.history.pushState(null, "", url); setPage("workbench"); }} /> : page === "research" ? <Research /> : <div className="app-layout">
+    {page === "showcase" ? <Suspense fallback={<main className="content-page" aria-busy="true"><div className="content-inner"><p className="eyebrow">Curated forms</p><h1 className="section-title">Showcase</h1><p className="page-description">Loading forms…</p></div></main>}><Showcase theme={options.theme} onOpen={next => { replacingDesign.current = true; setOptions(next); setCodeError(""); setParameterError(""); const url = new URL("/", window.location.origin); url.searchParams.set("code", optionsToString(next)); window.history.pushState(null, "", url); setPage("workbench"); }} /></Suspense> : page === "research" ? <Research /> : <div className="app-layout">
       <aside className="control-panel">
         <div className="control-intro"><p className="eyebrow">Workbench</p><h1 className="font-heading text-xl font-bold tracking-tight">Make a form.</h1><p className="mt-1 text-xs text-muted-foreground">Every adjustment lives in the share link.</p><Button className="mt-4 w-full" onClick={() => { replacingDesign.current = true; setOptions(surpriseOptions()); setCodeError(""); setParameterError(""); }}><Shuffle className="size-4" /> Surprise me</Button></div>
 
@@ -199,12 +204,13 @@ function App() {
       </aside>
 
       <main className="preview-panel">
-        <div className="preview-toolbar"><div className="min-w-0"><p className="eyebrow mb-1">Live preview <span className="mx-1">/</span> {String(shapeIndex + 1).padStart(3, "0")} of {SHAPES.length}</p><h2 className="truncate font-heading text-xl font-semibold tracking-tight">{poly.name}</h2></div><Button variant="outline" size="sm" onClick={download}><Download className="size-3.5" /> PNG</Button></div>
+        <div className="preview-toolbar"><div className="min-w-0"><p className="eyebrow mb-1">Live preview <span className="mx-1">/</span> {String(shapeIndex + 1).padStart(3, "0")} of {SHAPES.length}</p><h2 className="truncate font-heading text-xl font-semibold tracking-tight">{poly.name}</h2></div><div className="preview-toolbar-actions">{regularSymbol && <div className="preview-symbol"><span>Schläfli</span><span className="font-mono">{REGULAR_SYMBOL_LABELS[options.shape]}</span></div>}<Button variant="outline" size="sm" onClick={download}><Download className="size-3.5" /> PNG</Button></div></div>
         <div className={`preview-surface ${options.background === "transparent" ? "preview-transparent" : ""}`} style={options.background === "transparent" ? undefined : { backgroundColor: options.background }}>
           <Noble innerRef={hero} {...appearanceAttrs} stats={stats ? "true" : undefined} className="preview-model" />
           {options.background === "transparent" && <span className="preview-badge">Transparent</span>}
         </div>
         <div className="preview-meta"><p>{poly.vertices.length} vertices <span>·</span> {poly.edges.length} edges <span>·</span> {poly.faces.length} faces</p><p>Drag to rotate <span>·</span> Scroll to zoom</p></div>
+        <details className="math-panel" onToggle={event => setMathOpen(event.currentTarget.open)}><summary><span>Form mathematics</span><span className="math-panel-summary-value">χ = V − E + F = {eulerCharacteristic(poly)}</span></summary>{mathOpen && <Suspense fallback={<p className="math-note p-4">Loading notation…</p>}><MathPanel poly={poly} regularSymbol={regularSymbol} /></Suspense>}</details>
         <details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Embed this form</span><span className="text-xs text-muted-foreground">Web component</span></summary><div className="embed-content"><pre><code>{snippet}</code></pre><Button variant="outline" size="sm" onClick={() => copyText("embed", snippet)}>{copied === "embed" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied === "embed" ? "Copied" : "Copy code"}</Button></div></details>
       </main>
     </div>}

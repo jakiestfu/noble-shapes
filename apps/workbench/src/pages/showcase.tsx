@@ -3,7 +3,9 @@ import { ArrowUpRight } from "lucide-react";
 import { SHAPES, type ShapeId } from "@noble-polyhedra/core";
 import { DEFAULT_WORKBENCH_OPTIONS, type PaletteName, type WorkbenchOptions } from "@noble-polyhedra/render";
 import { Button } from "@/components/ui/button";
+import { MathText } from "@/components/math-text";
 import { PALETTES } from "@/lib/random-options";
+import { REGULAR_SYMBOLS } from "@/lib/shape-math";
 
 type Favorite = { shape: ShapeId; palette: PaletteName; yaw: number; pitch: number; note: string };
 
@@ -25,7 +27,7 @@ export function Showcase({ theme, onOpen }: { theme: WorkbenchOptions["theme"]; 
           {createElement("noble-polyhedron", { shape: favorite.shape, view: "solid-wireframe", palette: favorite.palette, color: palette.color, background: palette.background, yaw: String(favorite.yaw), pitch: String(favorite.pitch), className: "showcase-model", "aria-label": name })}
           <span className="showcase-number">{String(index + 1).padStart(2, "0")}</span>
         </div>
-        <div className="showcase-card-body"><div><p className="showcase-kicker">Kepler–Poinsot solid</p><h2 className="showcase-name">{name}</h2><p className="showcase-note">{favorite.note}</p></div>
+        <div className="showcase-card-body"><div><p className="showcase-kicker">Kepler–Poinsot solid</p><div className="showcase-heading-row"><h2 className="showcase-name">{name}</h2><MathText className="showcase-symbol" tex={REGULAR_SYMBOLS[favorite.shape]!} /></div><p className="showcase-note">{favorite.note}</p></div>
           <Button variant="outline" size="sm" onClick={() => onOpen({ ...DEFAULT_WORKBENCH_OPTIONS, shape: favorite.shape, palette: favorite.palette, color: palette.color, background: palette.background, yaw: favorite.yaw, pitch: favorite.pitch, theme })}>Open in workbench <ArrowUpRight className="size-3.5" /></Button>
         </div>
       </article>;
