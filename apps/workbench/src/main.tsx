@@ -1,6 +1,6 @@
 import { createElement, lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { Check, Code2, Copy, Download, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Code2, Copy, Download, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
 import { createPolyhedron, SHAPES, type ShapeId } from "@noble-polyhedra/core";
 import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, optionsToString, PALETTES, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-polyhedra/render";
 import "@noble-polyhedra/web-component";
@@ -128,6 +128,22 @@ function App() {
     if (shape === "antistephanoid") Object.assign(patch, { n: 5, p: 2, q: 1 });
     update(patch); setParameterError("");
   };
+  const stepShape = (direction: -1 | 1) => {
+    const next = SHAPES[(shapeIndex + direction + SHAPES.length) % SHAPES.length];
+    if (next) chooseShape(next.id);
+  };
+  useEffect(() => {
+    if (page !== "workbench") return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable], [role="combobox"], [role="listbox"], [role="slider"], [data-slot="combobox-content"]')) return;
+      event.preventDefault();
+      stepShape(event.key === "ArrowLeft" ? -1 : 1);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [page, shapeIndex]);
   const choosePalette = (palette: PaletteName) => update({ palette, color: PALETTES[palette].color,
     background: options.background === "transparent" ? "transparent" : PALETTES[palette].background });
   const applyCode = () => {
@@ -179,7 +195,7 @@ function App() {
         <div className="control-intro"><p className="eyebrow">Workbench</p><h1 className="font-heading text-xl font-bold tracking-tight">Make a form.</h1><p className="mt-1 text-xs text-muted-foreground">Form and appearance live in the share link.</p><Button className="mt-4 w-full" onClick={() => generate(randomSeed())}><Shuffle className="size-4" /> Surprise me</Button><div className="mt-4 space-y-2"><label htmlFor="identity" className="text-xs font-medium">Generate from text</label><div className="flex gap-2"><Input id="identity" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && identity) generate(identity); }} /><Button variant="outline" size="sm" disabled={!identity} onClick={() => generate(identity)}>Generate</Button></div><p className="text-[11px] text-muted-foreground">The same text makes the same design. Camera, motion, and theme stay as you set them.</p></div></div>
 
         <Group title="Geometry">
-          <Control label="Form"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /></Control>
+          <Control label="Form" value="← / →"><div className="flex items-center gap-2"><Button variant="outline" size="icon" className="size-9" aria-label="Previous form" title="Previous form (←)" onClick={() => stepShape(-1)}><ChevronLeft className="size-4" /></Button><div className="min-w-0 flex-1"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /></div><Button variant="outline" size="icon" className="size-9" aria-label="Next form" title="Next form (→)" onClick={() => stepShape(1)}><ChevronRight className="size-4" /></Button></div></Control>
           <Control label="View"><div className="grid grid-cols-2 gap-1.5">{VIEWS.map(item => <Button key={item.id} variant={options.view === item.id ? "default" : "outline"} size="sm" className={item.id === "face-context" ? "col-span-2" : ""} onClick={() => update({ view: item.id, ...(item.id === "face" ? { pitch: 0, rotation: undefined } : {}) })}>{item.name}</Button>)}</div></Control>
           {(options.view === "face" || options.view === "face-context") && <Control label="Repeated face" value={`${options.faceIndex + 1} / ${poly.faces.length}`}><Slider min={0} max={poly.faces.length - 1} step={1} value={[options.faceIndex]} onValueChange={value => update({ faceIndex: sliderValue(value, 0) })} /></Control>}
           {family === "disphenoid" && <div className="grid grid-cols-3 gap-2">{(["a", "b", "c"] as const).map(key => <Control key={key} label={`Axis ${key.toUpperCase()}`}><Input type="number" min="0.1" max="3" step="0.05" value={options[key]} onChange={event => updateGeometry({ [key]: Number(event.target.value) })} /></Control>)}</div>}

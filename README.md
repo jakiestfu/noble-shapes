@@ -16,7 +16,7 @@ pnpm test
 pnpm render:examples
 ```
 
-The full-screen studio has a searchable form picker, a separate **Surprise me** action, light and dark modes, and a shareable URL. The URL stores the form and appearance. Camera position, zoom, animation, theme, and renderer stats are local viewer settings. The homepage is the workbench, with separate Showcase and Research pages.
+The full-screen studio has a searchable form picker, previous and next form buttons, a separate **Surprise me** action, light and dark modes, and a shareable URL. Left and Right Arrow also step through forms when focus is outside text fields, sliders, and the picker. The URL stores the form and appearance. Camera position, zoom, animation, theme, and renderer stats are local viewer settings. The homepage is the workbench, with separate Showcase and Research pages.
 
 The workbench's **Form mathematics** section uses KaTeX on demand to show the selected form's computed vertex, edge, and face counts and Euler characteristic, `χ = V − E + F`. The nine regular forms also show their Schläfli symbols; those symbols do not apply to the rest of the noble catalogue. Counts follow abstract face cycles, so visible self-intersections do not add vertices or edges. The four Showcase favorites display their Schläfli symbols alongside their names.
 
