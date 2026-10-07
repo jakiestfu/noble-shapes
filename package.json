@@ -1,12 +1,12 @@
 {
-  "name": "noble-polyhedra",
+  "name": "noble-shapes-workspace",
   "private": true,
   "packageManager": "pnpm@11.3.0",
   "type": "module",
   "scripts": {
-    "build": "pnpm -r --filter './packages/**' build && pnpm --filter @noble-polyhedra/workbench build",
-    "dev": "pnpm --filter @noble-polyhedra/workbench dev",
-    "test": "pnpm build && pnpm --filter @noble-polyhedra/workbench typecheck && node --test tests/*.test.mjs",
+    "build": "node scripts/check-product.mjs && pnpm -r --filter './packages/**' build && pnpm --filter @noble-shapes/workbench build",
+    "dev": "pnpm --filter @noble-shapes/workbench dev",
+    "test": "pnpm build && pnpm --filter @noble-shapes/workbench typecheck && node --test tests/*.test.mjs",
     "bench": "pnpm -r --filter './packages/**' build && node scripts/benchmark.mjs",
     "render:examples": "node scripts/render-examples.mjs",
     "render:showcase": "pnpm -r --filter './packages/**' build && node scripts/render-showcase.mjs"

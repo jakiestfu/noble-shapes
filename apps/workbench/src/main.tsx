@@ -1,11 +1,11 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
 import { Box, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, Copy, Download, FileImage, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
-import { createPolyhedron, polyhedronToGlb, SHAPES, type ShapeId } from "@noble-polyhedra/core";
-import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, designForTheme, optionsToString, PALETTES, paletteColors, randomOptions, randomSeed, stringToOptions, type DesignOptions, type MaterialName, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-polyhedra/render";
-import "@noble-polyhedra/web-component";
-import "@noble-polyhedra/web-component/react";
-import type { NoblePolyhedronElement } from "@noble-polyhedra/web-component";
+import { createPolyhedron, polyhedronToGlb, SHAPES, type ShapeId } from "@noble-shapes/core";
+import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, designForTheme, optionsToString, PALETTES, paletteColors, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-shapes/render";
+import "noble-shapes/web-component";
+import "noble-shapes/react";
+import type { NobleShapeElement } from "noble-shapes/web-component";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CodePreview } from "@/components/code-preview";
@@ -16,6 +16,7 @@ import { Slider } from "@/components/ui/slider";
 import { eulerCharacteristic, REGULAR_SYMBOLS } from "@/lib/shape-math";
 import { workbenchCodeFormats } from "@/lib/workbench-code";
 import { Research } from "@/pages/research";
+import { PRODUCT } from "@/lib/resources";
 import "./style.css";
 
 const Showcase = lazy(() => import("@/pages/showcase").then(module => ({ default: module.Showcase })));
@@ -42,13 +43,13 @@ function sceneIsLight(background: string, theme: "light" | "dark"): boolean {
   });
   return channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722 > 0.179;
 }
-const THEME_STORAGE_KEY = "noble-polyhedra-theme";
+const THEME_STORAGE_KEY = "noble-shapes-theme";
 const OLD_VIEWER_STORAGE_KEY = "noble-forms-viewer-v1";
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
 function readThemePreference(): "light" | "dark" | undefined {
   try {
-    const value = localStorage.getItem(THEME_STORAGE_KEY);
+    const value = localStorage.getItem(THEME_STORAGE_KEY) ?? localStorage.getItem("noble-polyhedra-theme");
     return value === "light" || value === "dark" ? value : undefined;
   } catch { return undefined; }
 }
@@ -74,7 +75,7 @@ function Control({ label, value, children }: { label: string; value?: string; ch
 function Group({ id, title, expanded, onToggle, headerAction, children }: { id: string; title: string; expanded: boolean; onToggle: () => void; headerAction?: ReactNode; children: ReactNode }) {
   return <section className={`control-group ${expanded ? "is-open" : ""}`}>
     <div className="control-group-header"><button type="button" className="control-group-hit" aria-label={`${expanded ? "Collapse" : "Expand"} ${title}`} aria-expanded={expanded} aria-controls={`${id}-controls`} onClick={onToggle} /><h3>{title}</h3>{headerAction}<ChevronDown aria-hidden="true" className="control-group-chevron size-3.5" /></div>
-    <div id={`${id}-controls`} className="control-group-content" hidden={!expanded}><div className="space-y-4">{children}</div></div>
+    <div id={`${id}-controls`} className="control-group-content" hidden={!expanded}><div className="control-group-body space-y-4">{children}</div></div>
   </section>;
 }
 
@@ -98,6 +99,7 @@ function App() {
   const [stats, setStats] = useState(false);
   const [animationEnabled, setAnimationEnabled] = useState(!reducedMotion.matches);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(() => new Set(["shape"]));
+  const accordionRef = useRef<HTMLDivElement>(null);
   const [opaqueBackground, setOpaqueBackground] = useState(options.background === "transparent" ? paletteColors(options.palette, options.theme).background : options.background);
   const [codeError, setCodeError] = useState(initial.error);
   const [parameterError, setParameterError] = useState("");
@@ -109,7 +111,7 @@ function App() {
     options.color, options.background, options.faceIndex, options.n, options.p, options.q,
     options.crownHeight, options.a, options.b, options.c]);
   const [draftCode, setDraftCode] = useState(code);
-  const hero = useRef<NoblePolyhedronElement>(null);
+  const hero = useRef<NobleShapeElement>(null);
   const replacingDesign = useRef(false);
   const hasThemeOverride = useRef(savedTheme !== undefined);
   const family = options.shape === "disphenoid" ? "disphenoid" : options.shape === "stephanoid" || options.shape === "antistephanoid" ? "stephanoid" : "finite";
@@ -117,6 +119,25 @@ function App() {
   const shapeIndex = SHAPES.findIndex(item => item.id === options.shape);
   const regularSymbol = REGULAR_SYMBOLS[options.shape];
   const lightScene = sceneIsLight(options.background, options.theme);
+
+  useLayoutEffect(() => {
+    const accordion = accordionRef.current;
+    if (!accordion) return;
+    const groups = Array.from(accordion.querySelectorAll<HTMLElement>(".control-group"));
+    const measure = () => {
+      const required = groups.reduce((height, group) => {
+        const header = group.querySelector<HTMLElement>(".control-group-header")!;
+        const body = group.querySelector<HTMLElement>(".control-group-body")!;
+        return height + header.offsetHeight + (group.classList.contains("is-open") ? body.scrollHeight : 0);
+      }, 0);
+      accordion.dataset.constrained = required > accordion.clientHeight + 1 ? "true" : "false";
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(accordion);
+    for (const group of groups) observer.observe(group.querySelector<HTMLElement>(".control-group-body")!);
+    measure();
+    return () => observer.disconnect();
+  }, [expandedSections]);
 
   useEffect(() => { document.documentElement.dataset.theme = options.theme; }, [options.theme]);
   useEffect(() => {
@@ -146,7 +167,10 @@ function App() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [options.theme]);
-  useEffect(() => { document.title = `${page.charAt(0).toUpperCase() + page.slice(1)} — Noble Polyhedrons`; }, [page]);
+  useEffect(() => {
+    document.title = `${page.charAt(0).toUpperCase() + page.slice(1)} — ${PRODUCT.name}`;
+    document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute("href", `${PRODUCT.url}${pathForPage(page)}`);
+  }, [page]);
   useLayoutEffect(() => {
     if (replacingDesign.current && hero.current) {
       if (options.rotation) hero.current.setAttribute("rotation", options.rotation.join(","));
@@ -249,15 +273,21 @@ function App() {
   const choosePalette = (palette: PaletteName) => update({ palette, paletteLinked: true, ...paletteColors(palette, options.theme),
     ...(options.background === "transparent" ? { background: "transparent" } : {}) });
   const applyCode = () => {
-    try { setOptions(previous => ({ ...previous, ...designForTheme(stringToOptions(draftCode.trim()), previous.theme) })); setCodeError(""); setParameterError(""); }
+    try {
+      const decoded = stringToOptions(draftCode.trim());
+      setOptions(previous => ({ ...previous, ...designForTheme(decoded, previous.theme) }));
+      setCodeError(""); setParameterError("");
+    }
     catch (error) { setCodeError(error instanceof Error ? error.message : String(error)); }
   };
   const generateFromText = (seed: string) => {
-    setOptions(previous => ({ ...previous, ...designForTheme(randomOptions(seed), previous.theme) }));
+    const next = randomOptions(seed);
+    setOptions(previous => ({ ...previous, ...designForTheme(next, previous.theme) }));
     setCodeError(""); setParameterError("");
   };
   const surpriseMe = () => {
-    const next = randomOptions(randomSeed());
+    const seed = randomSeed();
+    const next = randomOptions(seed);
     setOptions(previous => ({
       ...previous,
       ...designForTheme(next, previous.theme),
@@ -295,14 +325,15 @@ function App() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   const downloadPng = () => {
-    if (!hero.current) return;
+    const source = hero.current?.canvas;
+    if (!source) return;
     const canvas = document.createElement("canvas");
-    canvas.width = hero.current.canvas.width;
-    canvas.height = hero.current.canvas.height;
+    canvas.width = source.width;
+    canvas.height = source.height;
     const context = canvas.getContext("2d");
     if (!context) return;
     if (options.background !== "transparent") { context.fillStyle = options.background; context.fillRect(0, 0, canvas.width, canvas.height); }
-    context.drawImage(hero.current.canvas, 0, 0);
+    context.drawImage(source, 0, 0);
     canvas.toBlob(blob => {
       if (blob) saveBlob(blob, "png");
     }, "image/png");
@@ -314,22 +345,22 @@ function App() {
   const downloadGeometry = () => {
     const parameters = family === "disphenoid" ? { a: options.a, b: options.b, c: options.c }
       : family === "stephanoid" ? { n: options.n, p: options.p, q: options.q, crownHeight: options.crownHeight } : {};
-    const data = { format: "noble-polyhedra/geometry-v1", parameters, ...poly };
+    const data = { format: "noble-shapes/geometry-v1", parameters, ...poly };
     saveBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), "json");
   };
 
   return <div className={`app-shell ${page === "workbench" ? "is-workbench" : ""} ${options.background === "transparent" ? "is-transparent" : ""}`} style={page === "workbench" ? { "--scene-background": options.background === "transparent" ? "var(--background)" : options.background, "--scene-color": options.color } as CSSProperties : undefined}>
     <header className="app-header">
-      <div className="brand-lockup"><a className="brand-parent" href="https://jakiestfu.com/" target="_blank" rel="noopener noreferrer">JAKIESTFU</a><span className="brand-separator">/</span><a className="brand-product" href="/" onClick={event => navClick(event, "workbench")}>NOBLE POLYHEDRONS</a></div>
+      <div className="brand-lockup"><a className="brand-product" href="/" onClick={event => navClick(event, "workbench")}>{PRODUCT.name}</a><a className="brand-byline" href={PRODUCT.author.url} target="_blank" rel="noopener noreferrer">by {PRODUCT.author.name}</a></div>
       <nav className="app-nav" aria-label="Main navigation">{(["workbench", "showcase", "research", "documentation"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>
-      <div className="header-actions">{page !== "workbench" && <Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button>}</div>
+      <div className="header-actions"><Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
     </header>
 
     {page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
         <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Workbench</h1><p className="mt-1 text-xs text-muted-foreground">146 finite polyhedra · two infinite families</p></div>
 
-        <div className="control-accordion">
+        <div className="control-accordion" ref={accordionRef}>
         <Group id="shape" title="Shape" expanded={expandedSections.has("shape")} onToggle={() => toggleSection("shape")}>
           <Control label="Polyhedron" value={`${shapeIndex + 1} / ${SHAPES.length}`}><div className="shape-selector"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /><div className="shape-step-links"><button type="button" className="shape-step-link" title="Previous shape (←)" onClick={() => stepShape(-1)}><ChevronLeft aria-hidden="true" /> Previous</button><button type="button" className="shape-step-link" title="Next shape (→)" onClick={() => stepShape(1)}>Next <ChevronRight aria-hidden="true" /></button></div></div></Control>
           <div className="design-actions">
@@ -351,7 +382,6 @@ function App() {
         </Group>
 
         <Group id="appearance" title="Appearance" expanded={expandedSections.has("appearance")} onToggle={() => toggleSection("appearance")}>
-          <Control label="Material"><div className="material-options">{(["studio", "clay", "marble"] as MaterialName[]).map(material => <Button key={material} variant="ghost" aria-pressed={options.material === material} size="sm" className={options.material === material ? "is-selected" : ""} onClick={() => update({ material })}>{material === "studio" ? "Studio" : material === "clay" ? "Clay" : "Marble"}</Button>)}</div></Control>
           <Control label="Palette" value={options.paletteLinked ? undefined : "Custom colors"}><div className="palette-grid">{(Object.keys(PALETTES) as PaletteName[]).map(item => { const colors = paletteColors(item, options.theme); return <button key={item} type="button" className="palette-choice" aria-label={`${PALETTES[item].name} palette`} aria-pressed={options.paletteLinked && options.palette === item} onClick={() => choosePalette(item)}><span className="palette-chip" aria-hidden="true" style={{ background: `linear-gradient(90deg, ${colors.color} 50%, ${colors.background} 50%)` }} /><span>{PALETTES[item].name}</span></button>; })}</div></Control>
           <div className="color-controls"><ColorControl label="Facet color" value={options.color} onChange={color => update({ color, paletteLinked: false })} /><ColorControl label="Background" value={options.background === "transparent" ? opaqueBackground : options.background} onChange={background => update({ background, paletteLinked: false })} /></div>
           <label className="control-check"><input type="checkbox" checked={options.background === "transparent"} onChange={() => update({ background: options.background === "transparent" ? options.paletteLinked ? paletteColors(options.palette, options.theme).background : opaqueBackground : "transparent" })} /><span>Transparent background</span></label>
@@ -383,7 +413,6 @@ function App() {
         <div className={`preview-toolbar ${lightScene ? "is-light-scene" : ""}`}>
           <h2 className="preview-toolbar-title truncate font-heading text-lg font-semibold tracking-tight">{poly.name}</h2>
           <div className="preview-toolbar-actions">
-            <Button variant="ghost" size="icon" className="preview-theme-icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button>
             <Button variant="ghost" size="sm" className="preview-share" aria-label={copied === "link" ? "Link copied" : "Share design"} onClick={() => copyText("link", shareUrl.toString())}>{copied === "link" ? <Check className="size-3.5" /> : <Share2 className="size-3.5" />}<span>{copied === "link" ? "Copied" : "Share"}</span></Button>
             <DropdownMenu>
               <DropdownMenuTrigger className="preview-export-trigger"><Download className="size-3.5" /> Export <ChevronDown className="size-3" /></DropdownMenuTrigger>
@@ -404,7 +433,7 @@ function App() {
           </div>
         </div>
         <div className="preview-surface">
-          <noble-polyhedron ref={hero} {...appearanceAttrs} background="transparent" stats={stats ? "true" : undefined} className="preview-model" />
+          <noble-shape ref={hero} {...appearanceAttrs} background="transparent" stats={stats ? "true" : undefined} className="preview-model" />
         </div>
         <div className="preview-dock"><details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Use this shape</span><span className="text-xs text-muted-foreground">Code examples</span></summary><div className="embed-content"><CodePreview formats={codeFormats} compact /></div></details></div>
       </main>

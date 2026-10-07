@@ -1,12 +1,16 @@
 {
-  "name": "@noble-polyhedra/node",
+  "name": "@noble-shapes/node",
   "version": "0.1.0",
   "license": "MIT",
+  "homepage": "https://nobleshap.es",
   "type": "module",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "exports": {
+    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
+    "./cli": "./dist/cli.js"
+  },
   "bin": { "noble-render": "./dist/cli.js" },
   "files": ["dist"],
   "scripts": { "build": "tsc -p tsconfig.json" },
-  "dependencies": { "@noble-polyhedra/core": "workspace:*", "@noble-polyhedra/render": "workspace:*" },
+  "dependencies": { "@noble-shapes/core": "workspace:*", "@noble-shapes/render": "workspace:*" },
   "devDependencies": { "typescript": "^5.9.0", "@types/node": "^24.0.0" }
 }

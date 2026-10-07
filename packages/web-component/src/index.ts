@@ -1,5 +1,5 @@
-import { createGeometryCache, randomOptions, randomSeed, renderPolyhedron, type DesignOptions, type Quaternion, type RenderedImage, type RenderTimings, type SceneOptions } from "@noble-polyhedra/render";
-import { seededDefaults } from "@noble-polyhedra/core";
+import { createGeometryCache, randomOptions, randomSeed, renderPolyhedron, type DesignOptions, type Quaternion, type RenderedImage, type RenderTimings, type SceneOptions } from "@noble-shapes/render";
+import { seededDefaults } from "@noble-shapes/core";
 import { createGpuRenderer, type GpuRenderer } from "./gpu-renderer.js";
 
 const numericAttribute = (element: Element, name: string): number | undefined => {
@@ -539,13 +539,21 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   };
 }
 
-export function defineNoblePolyhedron(tagName = "noble-polyhedron"): void {
+export function defineNobleShape(tagName = "noble-shape"): void {
   if (typeof customElements === "undefined") return;
-  if (!customElements.get(tagName)) customElements.define(tagName, NoblePolyhedronElement);
+  if (!customElements.get(tagName)) customElements.define(tagName, tagName === "noble-shape" ? NoblePolyhedronElement : class extends NoblePolyhedronElement {});
 }
 
+/** Kept for existing embeds that use the original element name. */
+export function defineNoblePolyhedron(tagName = "noble-polyhedron"): void {
+  defineNobleShape(tagName);
+}
+
+export { NoblePolyhedronElement as NobleShapeElement };
+
+defineNobleShape();
 defineNoblePolyhedron();
 
 declare global {
-  interface HTMLElementTagNameMap { "noble-polyhedron": NoblePolyhedronElement }
+  interface HTMLElementTagNameMap { "noble-shape": NoblePolyhedronElement; "noble-polyhedron": NoblePolyhedronElement }
 }

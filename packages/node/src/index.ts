@@ -1,6 +1,6 @@
 import { deflateSync } from "node:zlib";
 import { writeFile } from "node:fs/promises";
-import { renderScene, type RenderedImage, type SceneOptions } from "@noble-polyhedra/render";
+import { renderScene, type RenderedImage, type SceneOptions } from "@noble-shapes/render";
 
 const signature = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10]);
 const crcTable = Uint32Array.from({ length: 256 }, (_, index) => {

@@ -1,4 +1,5 @@
-import type { WorkbenchOptions } from "@noble-polyhedra/render";
+import { PRODUCT } from "@/lib/resources";
+import type { WorkbenchOptions } from "noble-shapes/render";
 import type { CodeFormat } from "@/components/code-preview";
 
 export function workbenchCodeFormats(options: WorkbenchOptions, attributes: Record<string, string | undefined>): CodeFormat[] {
@@ -23,12 +24,12 @@ export function workbenchCodeFormats(options: WorkbenchOptions, attributes: Reco
   const cliOptions = Object.entries(scene).map(([key, value]) => `  --${cliKeys[key] ?? key} ${typeof value === "string" ? JSON.stringify(value) : Array.isArray(value) ? value.join(",") : value}`).join(" \\\n");
 
   return [
-    { id: "html", label: "HTML", language: "html", code: `<script type="module">\n  import "@noble-polyhedra/web-component";\n</script>\n\n<noble-polyhedron\n${htmlAttributes}\n  style="width: 360px; height: 360px"\n></noble-polyhedron>` },
-    { id: "javascript", label: "JavaScript", language: "js", code: `import "@noble-polyhedra/web-component";\n\nconst form = document.createElement("noble-polyhedron");\n${setAttributes}\nform.style.cssText = "width: 360px; height: 360px";\ndocument.body.append(form);` },
-    { id: "typescript", label: "TypeScript", language: "ts", code: `import "@noble-polyhedra/web-component";\nimport type { NoblePolyhedronElement } from "@noble-polyhedra/web-component";\n\nconst form: NoblePolyhedronElement = document.createElement("noble-polyhedron");\n${setAttributes}\nform.style.cssText = "width: 360px; height: 360px";\ndocument.body.append(form);` },
-    { id: "react", label: "React", language: "tsx", code: `import "@noble-polyhedra/web-component";\nimport "@noble-polyhedra/web-component/react";\n\nexport function NobleForm() {\n  return (\n    <noble-polyhedron\n${jsxAttributes}\n      style={{ width: 360, height: 360 }}\n    />\n  );\n}` },
-    { id: "vue", label: "Vue", language: "vue", code: `<!-- Configure Vue to treat noble-polyhedron as a custom element. -->\n<script setup lang="ts">\nimport "@noble-polyhedra/web-component";\n</script>\n\n<template>\n  <noble-polyhedron\n${vueAttributes}\n    style="width: 360px; height: 360px"\n  />\n</template>` },
-    { id: "node", label: "Node", language: "js", code: `import { savePng } from "@noble-polyhedra/node";\n\nawait savePng("form.png", {\n${nodeOptions}\n});` },
-    { id: "cli", label: "CLI", language: "sh", code: `npm exec -- noble-render \\\n  --out form.png \\\n${cliOptions}` },
+    { id: "html", label: "HTML", language: "html", code: `<script type="module">\n  import "${PRODUCT.packages.main}/web-component";\n</script>\n\n<noble-shape\n${htmlAttributes}\n  style="width: 360px; height: 360px"\n></noble-shape>` },
+    { id: "javascript", label: "JavaScript", language: "js", code: `import "${PRODUCT.packages.main}/web-component";\n\nconst form = document.createElement("noble-shape");\n${setAttributes}\nform.style.cssText = "width: 360px; height: 360px";\ndocument.body.append(form);` },
+    { id: "typescript", label: "TypeScript", language: "ts", code: `import "${PRODUCT.packages.main}/web-component";\nimport type { NobleShapeElement } from "${PRODUCT.packages.main}/web-component";\n\nconst form: NobleShapeElement = document.createElement("noble-shape");\n${setAttributes}\nform.style.cssText = "width: 360px; height: 360px";\ndocument.body.append(form);` },
+    { id: "react", label: "React", language: "tsx", code: `import "${PRODUCT.packages.main}/web-component";\nimport "${PRODUCT.packages.main}/react";\n\nexport function NobleForm() {\n  return (\n    <noble-shape\n${jsxAttributes}\n      style={{ width: 360, height: 360 }}\n    />\n  );\n}` },
+    { id: "vue", label: "Vue", language: "vue", code: `<!-- Configure Vue to treat noble-shape as a custom element. -->\n<script setup lang="ts">\nimport "${PRODUCT.packages.main}/web-component";\n</script>\n\n<template>\n  <noble-shape\n${vueAttributes}\n    style="width: 360px; height: 360px"\n  />\n</template>` },
+    { id: "node", label: "Node", language: "js", code: `import { savePng } from "${PRODUCT.packages.main}/node";\n\nawait savePng("form.png", {\n${nodeOptions}\n});` },
+    { id: "cli", label: "CLI", language: "sh", code: `npm exec -- ${PRODUCT.packages.main} \\\n  --out form.png \\\n${cliOptions}` },
   ];
 }

@@ -1,6 +1,6 @@
 import { createElement, isValidElement, useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, Copy, Eye } from "lucide-react";
-import { renderScene, type SceneOptions } from "@noble-polyhedra/render";
+import { renderScene, type SceneOptions } from "@noble-shapes/render";
 import { Toggle, ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 type Token = { text: string; kind?: "keyword" | "string" | "comment" | "number" | "tag" | "attribute" | "punctuation" };
@@ -69,7 +69,7 @@ function RasterPreview({ options }: { options: SceneOptions }) {
 function PreviewPane({ scene }: { scene: PreviewScene }) {
   return <div className={`code-preview-visual ${scene.kind === "raster" && scene.options.background === "transparent" ? "is-transparent" : ""}`} style={scene.kind === "component" ? { background: scene.background } : undefined}>
     {scene.kind === "component"
-      ? createElement("noble-polyhedron", { ...scene.attributes, style: { width: "100%", height: "100%" }, "aria-label": "Interactive polyhedron preview" })
+      ? createElement("noble-shape", { ...scene.attributes, style: { width: "100%", height: "100%" }, "aria-label": "Interactive polyhedron preview" })
       : <RasterPreview options={scene.options} />}
     <span className="code-preview-caption">{scene.caption}</span>
   </div>;

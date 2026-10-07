@@ -93,15 +93,17 @@ test("design codes capture only form and appearance and read older links", () =>
   assert.throws(() => optionsToString({ ...options, material: "glass" }), /invalid material/);
 });
 
-test("materials change the surface and survive a design code and Node PNG", () => {
+test("Studio is the only renderer material; older design codes use it", () => {
   const scene = { shape: "dodecahedron", view: "solid", background: "transparent", width: 80, height: 80 };
-  assert.deepEqual(renderScene({ ...scene, material: "studio" }).data, renderScene({ ...scene, material: "cel" }).data);
-  assert.notDeepEqual(renderScene({ ...scene, material: "clay" }).data, renderScene({ ...scene, material: "studio" }).data);
-  assert.notDeepEqual(renderScene({ ...scene, material: "marble" }).data, renderScene({ ...scene, material: "studio" }).data);
-  checkPngPixels({ ...scene, material: "clay" });
-  checkPngPixels({ ...scene, material: "marble" });
-  const design = { ...DEFAULT_WORKBENCH_OPTIONS, material: "marble" };
-  assert.equal(stringToOptions(optionsToString(design)).material, "marble");
+  checkPngPixels({ ...scene, material: "studio" });
+  assert.throws(() => renderScene({ ...scene, material: "clay" }), /Unknown material/);
+  assert.throws(() => renderScene({ ...scene, material: "marble" }), /Unknown material/);
+  const code = optionsToString(DEFAULT_WORKBENCH_OPTIONS);
+  const tuple = JSON.parse(Buffer.from(code.slice(4), "base64url").toString());
+  for (const oldMaterial of ["cel", "clay", "marble"]) {
+    const oldCode = `np4_${Buffer.from(JSON.stringify([...tuple.slice(0, 14), oldMaterial])).toString("base64url")}`;
+    assert.equal(stringToOptions(oldCode).material, "studio");
+  }
 });
 
 test("linked palettes follow the viewer theme without changing the shared design code", () => {

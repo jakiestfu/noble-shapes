@@ -1,6 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
-import { SHAPES, type ShapeId } from "@noble-polyhedra/core";
-import { DEFAULT_DESIGN_OPTIONS, optionsToString, PALETTES, type PaletteName } from "@noble-polyhedra/render";
+import { SHAPES, type ShapeId } from "@noble-shapes/core";
+import { DEFAULT_DESIGN_OPTIONS, optionsToString, PALETTES, type PaletteName } from "@noble-shapes/render";
 import { MathText } from "@/components/math-text";
 import { REGULAR_SYMBOLS } from "@/lib/shape-math";
 import scenes from "@/lib/showcase-scenes.json";

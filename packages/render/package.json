@@ -1,11 +1,12 @@
 {
-  "name": "@noble-polyhedra/render",
+  "name": "@noble-shapes/render",
   "version": "0.1.0",
   "license": "MIT",
+  "homepage": "https://nobleshap.es",
   "type": "module",
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
   "files": ["dist"],
   "scripts": { "build": "tsc -p tsconfig.json" },
-  "dependencies": { "@noble-polyhedra/core": "workspace:*" },
+  "dependencies": { "@noble-shapes/core": "workspace:*" },
   "devDependencies": { "typescript": "^5.9.0" }
 }

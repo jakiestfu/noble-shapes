@@ -1,4 +1,4 @@
-import { createPolyhedron, SHAPES, type ShapeId } from "@noble-polyhedra/core";
+import { createPolyhedron, SHAPES, type ShapeId } from "@noble-shapes/core";
 import type { MaterialName, PaletteName, Quaternion, RenderView } from "./index.js";
 import { PALETTES, paletteColors } from "./palettes.js";
 
@@ -84,7 +84,7 @@ function parseTuple(value: unknown, checkGeometry: boolean, version: 1 | 2 | 3 |
   const selected = PALETTES[palette as PaletteName];
   const linked = (selected.color === color && (selected.background === background || background === "transparent"))
     || (selected.light.color === color && (selected.light.background === background || background === "transparent"));
-  const options: DesignOptions = { shape: shape as ShapeId, view: view as RenderView, material: version === 4 && value[14] !== "cel" ? value[14] as MaterialName : "studio", palette: palette as PaletteName,
+  const options: DesignOptions = { shape: shape as ShapeId, view: view as RenderView, material: "studio", palette: palette as PaletteName,
     paletteLinked: version < 3 ? linked : value[13] as boolean, color, background, faceIndex, n, p, q, crownHeight, a, b, c };
   if (checkGeometry && faceIndex >= createPolyhedron(options).faces.length) throw new Error("Design code selects a face outside this form");
   return options;

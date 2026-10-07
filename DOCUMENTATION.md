@@ -4,7 +4,7 @@ Build a noble polyhedron into a page, generate an image in Node, or use the geom
 
 ## Introduction
 
-Noble Forms provides a mathematical catalogue of **146 finite noble polyhedra** and generators for the disphenoid and stephanoid families. A noble polyhedron has equivalent vertices and equivalent faces under its symmetries. The packages keep the mathematical face cycles separate from the renderer, so you can inspect geometry as well as draw it.
+Noble Shapes provides a mathematical catalogue of **146 finite noble polyhedra** and generators for the disphenoid and stephanoid families. A noble polyhedron has equivalent vertices and equivalent faces under its symmetries. The packages keep the mathematical face cycles separate from the renderer, so you can inspect geometry as well as draw it.
 
 The browser component uses WebGL2 when available and falls back to a CPU renderer. The Node package generates PNG files without a browser or native canvas dependency. Both share the same geometry, palettes, views, and image conventions.
 
@@ -14,20 +14,19 @@ The browser component uses WebGL2 when available and falls back to a CPU rendere
 
 ## Installation
 
-Install the package for the surface you need. The Node package provides the `noble-render` command; the component package registers the browser element.
+Install `noble-shapes` for the geometry, renderers, web component, and command line tool:
 
 ```sh
-npm install @noble-polyhedra/web-component
-npm install @noble-polyhedra/node
+npm install noble-shapes
 ```
 
-For direct access to shape data and browser independent rendering APIs:
+Import `noble-shapes` for the browser-safe geometry and rendering API. Use `noble-shapes/core`, `noble-shapes/render`, `noble-shapes/web-component`, `noble-shapes/react`, or `noble-shapes/node` for a specific surface. The smaller packages can also be installed independently:
 
 ```sh
-npm install @noble-polyhedra/core @noble-polyhedra/render
+npm install @noble-shapes/core @noble-shapes/render
 ```
 
-These are the workspace package names. To develop this repository itself, run `pnpm install` and `pnpm dev` from the root.
+To develop this repository itself, run `pnpm install` and `pnpm dev` from the root.
 
 ## Usage
 
@@ -37,17 +36,13 @@ Choose a code format and inspect the matching live form. The Preview control ind
 
 <CodePreview example="web-component" />
 
-React 19 renders dashed custom-element tags directly. In a TypeScript React project, import `@noble-polyhedra/web-component/react` once to register the `<noble-polyhedron>` JSX props, then use the React example above. The component package does not require React for plain HTML or other frameworks.
+React 19 renders dashed custom-element tags directly. In a TypeScript React project, import `noble-shapes/react` once to register the `<noble-shape>` JSX props, then use the React example above. The component package does not require React for plain HTML or other frameworks.
 
 Drag to rotate and scroll to zoom. `stats` adds an overlay with frame rate, GPU timing when supported, canvas size, and mesh counts. The element also emits `noble-render` with the metrics in `event.detail`.
 
 Use `view="solid"` for facets, `solid-wireframe` for facets and visible edges, `wireframe` for all edges, `face` for one repeated face, or `face-context` to highlight one face over the full wireframe. Set `face-index="0"` to choose the face in the two face views. The `background` attribute accepts a six-digit hex color or `transparent`.
 
-Set `material="studio"` for the original directional facet lighting, `material="clay"` for softer matte lighting, or `material="marble"` for a procedural mineral pattern fixed to the shape as it rotates. Material, view, and color are independent, so all three work with the edge overlay or an isolated face. The Node renderer accepts the same `material` option and the CLI accepts `--material marble`. Older `material="cel"` embeds and share links still use the original Studio look. Clay uses broad directional light and fill light; it does not cast shadows between faces.
-
-### Effects architecture
-
-The shape material is chosen separately from its edges and background. Marble runs in the WebGL2 fragment shader in browsers, with matching procedural math in the Node renderer. This leaves room for future mesh materials, such as refraction, without changing the geometry or face study views. [Shader Effects](https://github.com/shader-effects-inc/shaders) offers WebGPU effects that could supply an optional background layer. Its canvas effects are separate from the current WebGL2 mesh renderer; refractive shapes would also need mesh normals, scene depth, and background sampling. The core and Node renderers have no WebGPU dependency.
+Studio is the single surface style in browser and Node renders. The view controls independently show facets, edges, or a repeated face. Older design codes with other material names open with Studio.
 
 `rotate` and `float` accept values from `0` to `1` and stay deliberately subtle. The component fills its CSS size at the browser's device pixel ratio. A browser without WebGL2 uses the CPU fallback.
 
@@ -66,30 +61,29 @@ The workbench's **Export** menu downloads the current view as PNG, the polyhedro
 For a 3D export in Node or JavaScript, use `polyhedronToGlb` from the core package:
 
 ```ts
-import { createPolyhedron, polyhedronToGlb } from "@noble-polyhedra/core";
+import { createPolyhedron, polyhedronToGlb } from "noble-shapes/core";
 
 const glb = polyhedronToGlb(createPolyhedron({ shape: "cube" }), "#5ce0d3");
 ```
 
 ### Command line
 
-Installing `@noble-polyhedra/node` adds the `noble-render` command to your project:
+Installing `noble-shapes` adds the `noble-shapes` command to your project (`noble-render` remains an alias):
 
 ```sh
-npm exec -- noble-render --out avatar.png --shape great-icosahedron --palette violet --width 512 --height 512
-npm exec -- noble-render --out crown.png --shape stephanoid --n 7 --p 3 --q 1 --crown-height 0.7
-npm exec -- noble-render --out user.png --random a-user-name --view face-context --face-index 0
-npm exec -- noble-render --out marble.png --shape great-dodecahedron --view solid-wireframe --material marble
+npm exec -- noble-shapes --out avatar.png --shape great-icosahedron --palette violet --width 512 --height 512
+npm exec -- noble-shapes --out crown.png --shape stephanoid --n 7 --p 3 --q 1 --crown-height 0.7
+npm exec -- noble-shapes --out user.png --random a-user-name --view face-context --face-index 0
 ```
 
-Run `npm exec -- noble-render --help` for the short option list. Camera controls include `--yaw`, `--pitch`, `--zoom`, and `--rotation x,y,z,w`.
+Run `npm exec -- noble-shapes --help` for the short option list. Camera controls include `--yaw`, `--pitch`, `--zoom`, and `--rotation x,y,z,w`.
 
 ### JavaScript API
 
-Use `@noble-polyhedra/core` to inspect ordered face cycles, vertices, and edges. The shape list supplies IDs and display names.
+Use `noble-shapes/core` to inspect ordered face cycles, vertices, and edges. The shape list supplies IDs and display names.
 
 ```ts
-import { createPolyhedron, SHAPES } from "@noble-polyhedra/core";
+import { createPolyhedron, SHAPES } from "noble-shapes/core";
 
 const form = createPolyhedron({ shape: "small-stellated-dodecahedron" });
 console.log(form.name, form.vertices.length, form.edges.length, form.faces.length);
@@ -99,7 +93,7 @@ console.log(SHAPES.find(({ id }) => id === form.id)?.name);
 The render package returns an RGBA image that you can use with a canvas, image encoder, or other pipeline:
 
 ```ts
-import { renderScene } from "@noble-polyhedra/render";
+import { renderScene } from "noble-shapes/render";
 
 const image = renderScene({ shape: "cube", palette: "gold", width: 256, height: 256 });
 console.log(image.width, image.height, image.data); // Uint8ClampedArray RGBA
@@ -112,13 +106,13 @@ For an already constructed polyhedron, use `renderPolyhedron(form, options)`. `c
 `random` uses a string as a deterministic identity seed. The same string chooses the same form and appearance in the component, Node renderer, and render package. Explicit options win over generated options.
 
 ```html
-<noble-polyhedron random="a-user-name" shape="cube"></noble-polyhedron>
+<noble-shape random="a-user-name" shape="cube"></noble-shape>
 ```
 
 A bare `random` attribute creates a fresh design that stays stable for that element until the attribute changes. For a complete, editable snapshot, encode design options into a code:
 
 ```ts
-import { randomOptions, optionsToString, stringToOptions } from "@noble-polyhedra/render";
+import { randomOptions, optionsToString, stringToOptions } from "noble-shapes/render";
 
 const design = randomOptions("a-user-name");
 const code = optionsToString(design);
@@ -132,7 +126,7 @@ The workbench stores that code in its URL's `code` parameter when the design dif
 `SHAPES` contains the 146 finite forms as well as `disphenoid`, `stephanoid`, and `antistephanoid`. The latter two are prismatic and antiprismatic members of the stephanoid family. Use `a`, `b`, and `c` for disphenoid axis lengths, or `n`, `p`, `q`, and `crownHeight` for crowns.
 
 ```ts
-import { createPolyhedron } from "@noble-polyhedra/core";
+import { createPolyhedron } from "noble-shapes/core";
 
 const crown = createPolyhedron({ shape: "stephanoid", n: 7, p: 3, q: 1, crownHeight: 0.7 });
 ```
@@ -147,7 +141,6 @@ The repository also includes a CLI benchmark that measures geometry generation, 
 
 ```sh
 pnpm bench --shape cube
-pnpm bench --shape cube --material marble
 pnpm bench --shape stephanoid --n 31 --p 11 --q 3
 pnpm bench --all --output benchmark.json
 ```

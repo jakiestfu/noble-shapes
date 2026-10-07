@@ -1,4 +1,4 @@
-import type { Polyhedron, ShapeId } from "@noble-polyhedra/core";
+import type { Polyhedron, ShapeId } from "@noble-shapes/core";
 
 /** Schläfli notation applies to these regular solids, including the four regular stars. */
 export const REGULAR_SYMBOLS: Partial<Record<ShapeId, string>> = {

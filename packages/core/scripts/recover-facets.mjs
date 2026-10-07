@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Reconstruct catalogue face cycles from orbit coordinates and symmetry.
-// Build @noble-polyhedra/core first, then run with an ID or --all.
+// Build @noble-shapes/core first, then run with an ID or --all.
 import { FINITE_SPECS, finiteOrbitData } from "../dist/finite.js";
 
 const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];

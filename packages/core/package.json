@@ -1,7 +1,8 @@
 {
-  "name": "@noble-polyhedra/core",
+  "name": "@noble-shapes/core",
   "version": "0.1.0",
   "license": "MIT",
+  "homepage": "https://nobleshap.es",
   "type": "module",
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
   "files": ["dist"],

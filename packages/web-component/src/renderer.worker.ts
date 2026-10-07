@@ -1,5 +1,5 @@
-import { seededDefaults } from "@noble-polyhedra/core";
-import { createGeometryCache, renderPolyhedron, type RenderTimings, type SceneOptions } from "@noble-polyhedra/render";
+import { seededDefaults } from "@noble-shapes/core";
+import { createGeometryCache, renderPolyhedron, type RenderTimings, type SceneOptions } from "@noble-shapes/render";
 
 const geometry = createGeometryCache(4);
 

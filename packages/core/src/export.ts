@@ -88,7 +88,7 @@ export function polyhedronToGlb(polyhedron: Polyhedron, color = "#5ce0d3"): Uint
   accessors.push({ bufferView: lineView, componentType: 5125, count: lines.length, type: "SCALAR" });
   primitives.push({ attributes: { POSITION: 0 }, indices: accessors.length - 1, material: 1, mode: 1 });
   const document = {
-    asset: { version: "2.0", generator: "@noble-polyhedra/core" },
+    asset: { version: "2.0", generator: "@noble-shapes/core" },
     scene: 0, scenes: [{ nodes: [0] }], nodes: [{ name: polyhedron.name, mesh: 0 }],
     meshes: [{ name: polyhedron.name, primitives, extras: {
       shapeId: polyhedron.id, family: polyhedron.family, faceCycles: polyhedron.faces,

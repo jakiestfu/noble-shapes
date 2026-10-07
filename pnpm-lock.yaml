@@ -20,13 +20,13 @@ importers:
       '@base-ui/react':
         specifier: ^1.8.0
         version: 1.8.0(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      '@noble-polyhedra/core':
+      '@noble-shapes/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@noble-polyhedra/render':
+      '@noble-shapes/render':
         specifier: workspace:*
         version: link:../../packages/render
-      '@noble-polyhedra/web-component':
+      '@noble-shapes/web-component':
         specifier: workspace:*
         version: link:../../packages/web-component
       class-variance-authority:
@@ -41,6 +41,9 @@ importers:
       lucide-react:
         specifier: ^1.52.0
         version: 1.52.0(@types/react@19.3.0)(react@19.3.0)
+      noble-shapes:
+        specifier: workspace:*
+        version: link:../../packages/noble-shapes
       react:
         specifier: ^19.3.0
         version: 19.3.0
@@ -88,12 +91,31 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
-  packages/node:
+  packages/noble-shapes:
     dependencies:
-      '@noble-polyhedra/core':
+      '@noble-shapes/core':
         specifier: workspace:*
         version: link:../core
-      '@noble-polyhedra/render':
+      '@noble-shapes/node':
+        specifier: workspace:*
+        version: link:../node
+      '@noble-shapes/render':
+        specifier: workspace:*
+        version: link:../render
+      '@noble-shapes/web-component':
+        specifier: workspace:*
+        version: link:../web-component
+    devDependencies:
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
+  packages/node:
+    dependencies:
+      '@noble-shapes/core':
+        specifier: workspace:*
+        version: link:../core
+      '@noble-shapes/render':
         specifier: workspace:*
         version: link:../render
     devDependencies:
@@ -106,7 +128,7 @@ importers:
 
   packages/render:
     dependencies:
-      '@noble-polyhedra/core':
+      '@noble-shapes/core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -116,10 +138,10 @@ importers:
 
   packages/web-component:
     dependencies:
-      '@noble-polyhedra/core':
+      '@noble-shapes/core':
         specifier: workspace:*
         version: link:../core
-      '@noble-polyhedra/render':
+      '@noble-shapes/render':
         specifier: workspace:*
         version: link:../render
     devDependencies:

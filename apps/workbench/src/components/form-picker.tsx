@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { SHAPES, type ShapeId } from "@noble-polyhedra/core";
+import { SHAPES, type ShapeId } from "@noble-shapes/core";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
 

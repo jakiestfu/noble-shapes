@@ -1,6 +1,14 @@
-# Noble Polyhedra
+# Noble Shapes
 
 A TypeScript workspace for deterministic images of noble polyhedra. It includes an independently generated finite catalogue, examples of the two infinite families, a shared browser and Node image renderer, a native web component, and an interactive workbench.
+
+Visit [nobleshap.es](https://nobleshap.es) for the workbench. The installable package is `noble-shapes`:
+
+```sh
+npm install noble-shapes
+```
+
+The package exposes browser-safe geometry and rendering functions from its root, with `noble-shapes/core`, `noble-shapes/render`, `noble-shapes/web-component`, `noble-shapes/react`, and `noble-shapes/node` subpaths. Each layer is also published individually as `@noble-shapes/<package>`. Product name, site URL, author link, and package names are recorded in [product.config.json](product.config.json).
 
 ## Start
 
@@ -23,7 +31,7 @@ The workbench's **Form mathematics** section uses KaTeX on demand to show the se
 ## Share a complete design
 
 ```ts
-import { DEFAULT_WORKBENCH_OPTIONS, optionsToString, stringToOptions } from "@noble-polyhedra/render";
+import { DEFAULT_WORKBENCH_OPTIONS, optionsToString, stringToOptions } from "noble-shapes/render";
 
 const code = optionsToString({ ...DEFAULT_WORKBENCH_OPTIONS, background: "transparent" });
 const options = stringToOptions(code);
@@ -34,7 +42,7 @@ Design codes begin with `np4_` and contain the form, view, material, palette, wh
 An identity seed generates a design; a design code captures its form and appearance. Keep the seed if you want an avatar that stays tied to a username, or share a code if you want a snapshot that can be edited independently:
 
 ```ts
-import { optionsToString, randomOptions } from "@noble-polyhedra/render";
+import { optionsToString, randomOptions } from "noble-shapes/render";
 
 const design = randomOptions("foobar");
 const code = optionsToString(design);
@@ -42,14 +50,14 @@ const code = optionsToString(design);
 
 ## Use the web component
 
-Install `@noble-polyhedra/web-component` in a bundled web project and import it once:
+Install `noble-shapes` in a bundled web project and import the component once:
 
 ```ts
-import "@noble-polyhedra/web-component";
+import "noble-shapes/web-component";
 ```
 
 ```html
-<noble-polyhedron
+<noble-shape
   shape="small-stellated-dodecahedron"
   palette="aurora"
   view="face-context"
@@ -59,16 +67,16 @@ import "@noble-polyhedra/web-component";
   float="0.5"
   yaw="0.6"
   pitch="0.72"
-></noble-polyhedron>
+></noble-shape>
 ```
 
-For a deterministic avatar, use `<noble-polyhedron random="foobar"></noble-polyhedron>`. The same string produces the same form and appearance across embeds and Node. A bare `random` attribute, or `element.random = true`, makes a fresh design that remains stable for that element until `random` changes. Any explicit attribute wins over the generated value: `<noble-polyhedron random="foobar" shape="cube" color="#aabbcc"></noble-polyhedron>`. Camera and motion stay at their defaults unless you set them explicitly. The older `seed` attribute controls only legacy defaults and is distinct from `random` and the URL design code.
+For a deterministic avatar, use `<noble-shape random="foobar"></noble-shape>`. The same string produces the same form and appearance across embeds and Node. A bare `random` attribute, or `element.random = true`, makes a fresh design that remains stable for that element until `random` changes. Any explicit attribute wins over the generated value: `<noble-shape random="foobar" shape="cube" color="#aabbcc"></noble-shape>`. Camera and motion stay at their defaults unless you set them explicitly. The older `seed` attribute controls only legacy defaults and is distinct from `random` and the URL design code.
 
 Drag the image to rotate; scroll to zoom. Named shapes include the five Platonic solids and the four Kepler–Poinsot solids: `small-stellated-dodecahedron`, `great-dodecahedron`, `great-stellated-dodecahedron`, and `great-icosahedron`. `disphenoid`, `stephanoid`, and `antistephanoid` cover the families. Families accept `a`, `b`, `c` (disphenoid) or `n`, `p`, `q`, `crown-height` (stephanoids). The `color` attribute accepts a six-digit hex color; `background` accepts a six-digit hex color or `transparent`.
 
 The `view` attribute selects `solid` (shaded mesh), `solid-wireframe` (shaded with visible abstract edges, the default), `wireframe` (all edges), `face` (one isolated repeated face), or `face-context` (one face highlighted over the complete wireframe). `face-index` selects which congruent face to inspect.
 
-The `material` attribute selects `studio` (the original directional facet lighting), `clay` (softer matte lighting), or `marble` (object-space mineral veins). It works in the browser and Node renderers, independently of the view. The previous `cel` value remains an alias for `studio`. In the workbench, **Whole shape** and **Show edges** control the solid views separately.
+Studio is the single surface style in the workbench, browser component, and Node renderer. Views and edge overlays are independent of the surface style. Older shared design codes that specify another material open with Studio.
 
 Drag with a mouse or touch pointer for screen-space 3D trackball rotation. The resulting `rotation` attribute is a unit quaternion in `x,y,z,w` order, so an adjusted view can be copied into another embed. Changing `yaw` or `pitch` in the workbench resets the trackball orientation. The browser renders every frame at the canvas's CSS size multiplied by the window's device pixel ratio, including during dragging and animation. The optional `stats` attribute (or `element.stats = true` property) displays completed draw FPS (zero while idle), mesh preparation, GPU submission and asynchronous GPU timer time when supported, time from input to GPU submission, canvas dimensions, pixel count, geometry counts, quality, and backend. The `noble-render` event exposes the same metrics in `event.detail`.
 
@@ -77,7 +85,7 @@ Set `rotate` and `float` from `0` (off) to `1` for subtle pickup motion. At `rot
 ## Render in Node
 
 ```ts
-import { savePng } from "@noble-polyhedra/node";
+import { savePng } from "noble-shapes/node";
 
 await savePng("avatar.png", {
   random: "foobar",
@@ -93,7 +101,7 @@ await savePng("avatar.png", {
 The command-line renderer is also available after building:
 
 ```sh
-node packages/node/dist/cli.js --random foobar --shape stephanoid --palette coral --out crown.png
+node packages/noble-shapes/dist/cli.js --random foobar --shape stephanoid --palette coral --out crown.png
 ```
 
 The Node package writes PNG with Node's built-in compression. The browser uses WebGL2 by default, with the CPU renderer in a worker when WebGL2 is unavailable or its context is lost. Both use the same geometry, face ordering, colors, lighting, and even-odd face fill rule; GPU antialiasing can differ by a few pixel values. No browser or native canvas dependency is required for Node image generation. The workbench uses local shadcn/ui components with neutral light and dark themes based on `jakiestfu-next/packages/ui`.
@@ -102,7 +110,6 @@ The Node package writes PNG with Node's built-in compression. The browser uses W
 
 ```sh
 pnpm bench --shape cube
-pnpm bench --shape cube --material marble
 pnpm bench --shape cube --width 1788 --height 818 --samples 15 --warmup 5
 pnpm bench --shape stephanoid --n 31 --p 11 --q 3
 pnpm bench --family all

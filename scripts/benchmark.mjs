@@ -24,7 +24,7 @@ const VALUES = new Set(["shape", "family", "width", "height", "quality", "view",
   "output", "compare", "seed", "n", "p", "q", "crown-height", "a", "b", "c", "background", "palette", "color", "material", "yaw", "pitch", "zoom", "face-index"]);
 
 function usage() {
-  return `Noble Polyhedra CPU benchmark
+  return `Noble Shapes CPU benchmark
 
   pnpm bench --shape cube
   pnpm bench --all
@@ -40,7 +40,7 @@ Options:
   --width N --height N     Output pixels (default: 512 single, 256 suite)
   --quality 1|2            Internal supersampling (default: 2)
   --view NAME              solid, solid-wireframe, wireframe, face, face-context
-  --material NAME          studio, clay, marble (default: studio)
+  --material NAME          studio (default: studio)
   --samples N --warmup N   Timed samples and untimed warmups (defaults: 15/5 single, 5/3 suite)
   --seed TEXT              Used with --shape random
   --n --p --q --crown-height --a --b --c  Family geometry parameters for --shape

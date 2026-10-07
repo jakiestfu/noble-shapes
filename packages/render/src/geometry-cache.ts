@@ -1,4 +1,4 @@
-import { createPolyhedron, type Polyhedron, type ShapeOptions } from "@noble-polyhedra/core";
+import { createPolyhedron, type Polyhedron, type ShapeOptions } from "@noble-shapes/core";
 
 /** Reuse geometry while camera, palette, view, and dimensions change. */
 export function createGeometryCache(maxEntries = 8): {

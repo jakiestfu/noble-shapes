@@ -1,4 +1,4 @@
-import { createPolyhedron, SHAPES } from "@noble-polyhedra/core";
+import { createPolyhedron, SHAPES } from "@noble-shapes/core";
 import type { DesignOptions } from "./options-code.js";
 import { PALETTES } from "./palettes.js";
 import type { PaletteName, RenderView, SceneOptions } from "./index.js";
@@ -48,7 +48,7 @@ export function randomOptions(seed: string | number = randomSeed()): DesignOptio
   // Preserve the face choice for existing identity seeds after removing camera draws.
   next(); if (view !== "face") next(); next();
   const faceIndex = Math.floor(next() * faces);
-  const material = pick(["studio", "clay", "marble"] as const);
+  const material = "studio" as const;
   return {
     shape, view, material, palette, paletteLinked: true,
     color, background,

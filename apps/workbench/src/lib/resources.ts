@@ -1,5 +1,8 @@
-/** Set this when the Noble Forms repository is ready to share. */
-export const PROJECT_GITHUB_URL: string | null = null;
+import product from "../../../../product.config.json";
+
+export const PRODUCT = product;
+/** Set githubUrl in product.config.json when the repository is ready to share. */
+export const PROJECT_GITHUB_URL: string | null = PRODUCT.githubUrl;
 
 export const RESEARCH_LINKS = {
   paper: "https://arxiv.org/abs/2607.28711",

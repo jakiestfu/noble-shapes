@@ -1,6 +1,6 @@
 import type { DetailedHTMLProps, HTMLAttributes } from "react";
-import type { ShapeId } from "@noble-polyhedra/core";
-import type { MaterialName, PaletteName, RenderView } from "@noble-polyhedra/render";
+import type { ShapeId } from "@noble-shapes/core";
+import type { MaterialName, PaletteName, RenderView } from "@noble-shapes/render";
 import type { NoblePolyhedronElement } from "./index.js";
 
 type NoblePolyhedronProps = Omit<DetailedHTMLProps<HTMLAttributes<NoblePolyhedronElement>, NoblePolyhedronElement>, "color"> & {
@@ -36,6 +36,7 @@ type NoblePolyhedronProps = Omit<DetailedHTMLProps<HTMLAttributes<NoblePolyhedro
 declare module "react" {
   namespace JSX {
     interface IntrinsicElements {
+      "noble-shape": NoblePolyhedronProps;
       "noble-polyhedron": NoblePolyhedronProps;
     }
   }
