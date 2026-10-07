@@ -41,6 +41,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   }
 
   readonly #canvas: HTMLCanvasElement;
+  readonly #backdrop: HTMLCanvasElement;
   readonly #message: HTMLDivElement;
   readonly #stats: HTMLOutputElement;
   #observer?: ResizeObserver;
@@ -68,16 +69,20 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     const shadow = this.attachShadow({ mode: "open" });
     shadow.innerHTML = `<style>
       :host { display: block; position: relative; min-height: 180px; aspect-ratio: 1; overflow: hidden; border-radius: inherit; touch-action: none; }
-      canvas { display: block; width: 100%; height: 100%; cursor: grab; }
-      canvas:active { cursor: grabbing; }
-      canvas.floating { animation: pickup-float 3.6s ease-in-out infinite; will-change: transform; }
-      @keyframes pickup-float { 0%, 100% { transform: translateY(var(--float-distance)) scale(1.04); } 50% { transform: translateY(calc(-1 * var(--float-distance))) scale(1.04); } }
-      @media (prefers-reduced-motion: reduce) { canvas.floating { animation: none; transform: none; } }
+      canvas { display: block; width: 100%; height: 100%; }
+      canvas.backdrop { position: absolute; inset: 0; pointer-events: none; }
+      canvas.backdrop[hidden] { display: none; }
+      canvas.scene { position: relative; cursor: grab; }
+      canvas.scene:active { cursor: grabbing; }
+      canvas.scene.floating { animation: pickup-float 3.6s ease-in-out infinite; will-change: transform; }
+      @keyframes pickup-float { 0%, 100% { transform: translateY(var(--float-distance)); } 50% { transform: translateY(calc(-1 * var(--float-distance))); } }
+      @media (prefers-reduced-motion: reduce) { canvas.scene.floating { animation: none; transform: none; } }
       .message { position: absolute; inset: auto 12px 12px; padding: 9px 11px; border-radius: 9px; background: #241723e8; color: #ffe0d9; font: 12px/1.45 system-ui, sans-serif; display: none; }
       .stats { position: absolute; z-index: 2; top: 12px; right: 12px; min-width: 132px; padding: 8px 10px; border: 1px solid #ffffff35; border-radius: 8px; background: #111827df; color: #f8fafc; font: 10px/1.45 ui-monospace, SFMono-Regular, monospace; text-align: left; pointer-events: none; white-space: pre; box-shadow: 0 4px 18px #0003; }
       .stats[hidden] { display: none; }
-    </style><canvas part="canvas" aria-label="Interactive noble polyhedron"></canvas><output class="stats" part="stats" aria-label="Renderer statistics" hidden></output><div class="message" part="error" role="status"></div>`;
-    this.#canvas = shadow.querySelector("canvas")!;
+    </style><canvas class="backdrop" aria-hidden="true" hidden></canvas><canvas class="scene" part="canvas" aria-label="Interactive noble polyhedron"></canvas><output class="stats" part="stats" aria-label="Renderer statistics" hidden></output><div class="message" part="error" role="status"></div>`;
+    this.#backdrop = shadow.querySelector("canvas.backdrop")!;
+    this.#canvas = shadow.querySelector("canvas.scene")!;
     this.#message = shadow.querySelector(".message")!;
     this.#stats = shadow.querySelector(".stats")!;
   }
@@ -212,7 +217,16 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   #updateFloat(): void {
     const enabled = this.float > 0 && !this.#motionPreference?.matches;
     this.#canvas.classList.toggle("floating", enabled);
+    this.#backdrop.hidden = !enabled;
+    if (enabled) this.#copyBackdrop();
     if (enabled) this.#canvas.style.setProperty("--float-distance", `${Math.min(MAX_FLOAT_DISTANCE, this.clientHeight * 0.012) * this.float}px`);
+  }
+
+  #copyBackdrop(): void {
+    if (this.#backdrop.hidden) return;
+    if (this.#backdrop.width !== this.#canvas.width) this.#backdrop.width = this.#canvas.width;
+    if (this.#backdrop.height !== this.#canvas.height) this.#backdrop.height = this.#canvas.height;
+    this.#backdrop.getContext("2d")?.drawImage(this.#canvas, 0, 0);
   }
 
   #schedule(): void {
@@ -294,6 +308,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     const context = this.#canvas.getContext("2d", { alpha: true });
     if (!context) throw new Error("Canvas 2D is unavailable");
     context.putImageData(new ImageData(new Uint8ClampedArray(image.data), image.width, image.height), 0, 0);
+    this.#copyBackdrop();
     const now = performance.now();
     this.#drawTimes.push(now);
     this.#metrics = { renderMs, presentMs: now - start, latencyMs: now - request.requestedAt,
