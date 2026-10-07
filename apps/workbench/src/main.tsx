@@ -14,10 +14,14 @@ import { Research } from "@/pages/research";
 import "./style.css";
 
 const Showcase = lazy(() => import("@/pages/showcase").then(module => ({ default: module.Showcase })));
+const Documentation = lazy(() => import("@/pages/documentation").then(module => ({ default: module.Documentation })));
 const MathPanel = lazy(() => import("@/components/math-panel"));
 
-type Page = "workbench" | "showcase" | "research";
-const pageFromPath = (path: string): Page => path.replace(/\/+$/, "") === "/showcase" ? "showcase" : path.replace(/\/+$/, "") === "/research" ? "research" : "workbench";
+type Page = "workbench" | "showcase" | "research" | "documentation";
+const pageFromPath = (path: string): Page => {
+  const normalized = path.replace(/\/+$/, "");
+  return normalized === "/showcase" || normalized === "/research" || normalized === "/documentation" ? normalized.slice(1) as Page : "workbench";
+};
 const pathForPage = (page: Page): string => page === "workbench" ? "/" : `/${page}`;
 
 const VIEWS: { id: RenderView; name: string }[] = [
@@ -66,7 +70,7 @@ function App() {
   const regularSymbol = REGULAR_SYMBOLS[options.shape];
 
   useEffect(() => { document.documentElement.dataset.theme = options.theme; }, [options.theme]);
-  useEffect(() => { document.title = `${page === "workbench" ? "Workbench" : page === "showcase" ? "Showcase" : "Research"} — Noble Forms`; }, [page]);
+  useEffect(() => { document.title = `${page.charAt(0).toUpperCase() + page.slice(1)} — Noble Forms`; }, [page]);
   useLayoutEffect(() => {
     if (replacingDesign.current && hero.current) {
       if (options.rotation) hero.current.setAttribute("rotation", options.rotation.join(","));
@@ -186,11 +190,11 @@ function App() {
   return <div className="app-shell">
     <header className="app-header">
       <a className="brand-link" href="/" onClick={event => navClick(event, "workbench")}><div className="brand-mark">N</div><div className="min-w-0"><p className="font-heading text-sm font-bold tracking-tight">Noble Forms</p><p className="text-[10px] text-muted-foreground">Shape studio</p></div></a>
-      <nav className="app-nav" aria-label="Main navigation">{(["workbench", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>
+      <nav className="app-nav" aria-label="Main navigation">{(["workbench", "showcase", "research", "documentation"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>
       <div className="header-actions">{page === "workbench" && <Button variant="outline" size="sm" onClick={() => copyText("link", shareUrl.toString())}><Share2 className="size-3.5" /><span className="share-label">{copied === "link" ? "Copied" : "Share"}</span></Button>}<Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} onClick={() => update({ theme: options.theme === "light" ? "dark" : "light" })}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
     </header>
 
-    {page === "showcase" ? <Suspense fallback={<main className="content-page" aria-busy="true"><div className="content-inner"><p className="eyebrow">Curated forms</p><h1 className="section-title">Showcase</h1><p className="page-description">Loading forms…</p></div></main>}><Showcase theme={options.theme} onOpen={next => { replacingDesign.current = true; setOptions(next); setCodeError(""); setParameterError(""); const url = new URL("/", window.location.origin); url.searchParams.set("code", optionsToString(next)); window.history.pushState(null, "", url); setPage("workbench"); }} /></Suspense> : page === "research" ? <Research /> : <div className="app-layout">
+    {page === "showcase" ? <Suspense fallback={<main className="content-page" aria-busy="true"><div className="content-inner"><p className="eyebrow">Curated forms</p><h1 className="section-title">Showcase</h1><p className="page-description">Loading forms…</p></div></main>}><Showcase theme={options.theme} onOpen={next => { replacingDesign.current = true; setOptions(next); setCodeError(""); setParameterError(""); const url = new URL("/", window.location.origin); url.searchParams.set("code", optionsToString(next)); window.history.pushState(null, "", url); setPage("workbench"); }} /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page" aria-busy="true"><p className="eyebrow">Documentation</p><h1 className="section-title">Loading guide…</h1></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
         <div className="control-intro"><p className="eyebrow">Workbench</p><h1 className="font-heading text-xl font-bold tracking-tight">Make a form.</h1><p className="mt-1 text-xs text-muted-foreground">Form and appearance live in the share link.</p><Button className="mt-4 w-full" onClick={() => generate(randomSeed())}><Shuffle className="size-4" /> Surprise me</Button><div className="mt-4 space-y-2"><label htmlFor="identity" className="text-xs font-medium">Generate from text</label><div className="flex gap-2"><Input id="identity" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && identity) generate(identity); }} /><Button variant="outline" size="sm" disabled={!identity} onClick={() => generate(identity)}>Generate</Button></div><p className="text-[11px] text-muted-foreground">The same text makes the same design. Camera, motion, and theme stay as you set them.</p></div></div>
 
