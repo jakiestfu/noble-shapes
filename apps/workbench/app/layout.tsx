@@ -4,10 +4,17 @@ import product from "../../../product.config.json";
 import "../src/style.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || product.url;
+const description = "Explore, customize, and render 146 noble polyhedra and two infinite families.";
+const defaultImage = `${siteUrl}/api/image/default`;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: { default: product.name, template: `%s — ${product.name}` },
-  description: "Explore, customize, and render 146 noble polyhedra and two infinite families.",
+  description,
+  openGraph: {
+    type: "website", siteName: product.name, title: product.name, description, url: siteUrl,
+    images: [{ url: defaultImage, width: 1200, height: 630, alt: "A noble polyhedron rendered by Noble Shapes" }],
+  },
+  twitter: { card: "summary_large_image", title: product.name, description, images: [defaultImage] },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

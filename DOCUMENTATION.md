@@ -121,6 +121,8 @@ const restored = stringToOptions(code);
 
 The workbench stores that code in its URL's `code` parameter when the design differs from the default. Visiting `/` without a code starts from the default design and viewer settings. A shared `?code=` link loads its design. The code captures the shape, view, material, palette, whether colors follow the palette or are custom, selected face, and family dimensions. Each of the eight palettes has light and dark colors. Switching themes changes linked palette colors without changing the design code; editing either color keeps both colors fixed until a palette is selected again. Camera position, animation, and renderer stats are temporary viewer settings. The theme follows the device's color preference until changed, then saves that choice locally; **D** toggles it when focus is outside an input. Animation defaults on at 0.25 rotate and float when reduced motion is not requested. **Surprise me** shuffles the shape and colors while keeping the current view and transparent background setting. **From text** creates a complete design from a repeatable seed.
 
+On nobleshap.es, social previews of shared designs use the same code. The Open Graph image is a 1200 × 630 PNG served from `/api/image/<code>`; `/api/image/default` renders the default design. Ordinary visits still load the static workbench.
+
 ## Forms and families
 
 `SHAPES` contains the 146 finite forms as well as `disphenoid`, `stephanoid`, and `antistephanoid`. The latter two are prismatic and antiprismatic members of the stephanoid family. Use `a`, `b`, and `c` for disphenoid axis lengths, or `n`, `p`, `q`, and `crownHeight` for crowns.

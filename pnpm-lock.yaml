@@ -26,6 +26,9 @@ importers:
       '@noble-shapes/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@noble-shapes/node':
+        specifier: workspace:*
+        version: link:../../packages/node
       '@noble-shapes/render':
         specifier: workspace:*
         version: link:../../packages/render
