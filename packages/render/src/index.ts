@@ -2,6 +2,8 @@ import { createPolyhedron, seededDefaults, type Polyhedron, type ShapeOptions, t
 
 export type PaletteName = "aurora" | "coral" | "violet" | "gold";
 export type RenderView = "solid" | "solid-wireframe" | "wireframe" | "face" | "face-context";
+/** Quaternion in [x, y, z, w] order. Overrides yaw and pitch when provided. */
+export type Quaternion = readonly [number, number, number, number];
 export interface RenderOptions {
   width?: number;
   height?: number;
@@ -10,6 +12,7 @@ export interface RenderOptions {
   background?: string;
   yaw?: number;
   pitch?: number;
+  rotation?: Quaternion;
   zoom?: number;
   edgeWidth?: number;
   /** Shaded mesh, full wireframe, or one repeated face. */
@@ -41,11 +44,21 @@ function parseHex(value: string): RGB {
   return [0, 2, 4].map(i => parseInt(hex.slice(i, i + 2), 16)) as unknown as RGB;
 }
 
-function rotate(v: Vec3, yaw: number, pitch: number): Vec3 {
+export function rotateVertex(v: Vec3, yaw: number, pitch: number, quaternion?: Quaternion): Vec3 {
+  if (quaternion) {
+    const [qx, qy, qz, qw] = quaternion;
+    const ix = qw * v[0] + qy * v[2] - qz * v[1];
+    const iy = qw * v[1] + qz * v[0] - qx * v[2];
+    const iz = qw * v[2] + qx * v[1] - qy * v[0];
+    const iw = -qx * v[0] - qy * v[1] - qz * v[2];
+    return [ix * qw + iw * -qx + iy * -qz - iz * -qy,
+      iy * qw + iw * -qy + iz * -qx - ix * -qz,
+      iz * qw + iw * -qz + ix * -qy - iy * -qx];
+  }
   const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
-  const x = v[0] * cy - v[1] * sy;
-  const y = v[0] * sy + v[1] * cy;
-  return [x, y * cp - v[2] * sp, y * sp + v[2] * cp];
+  const x = v[0] * cy + v[2] * sy;
+  const z = -v[0] * sy + v[2] * cy;
+  return [x, v[1] * cp - z * sp, v[1] * sp + z * cp];
 }
 
 function faceNormal(a: Vec3, b: Vec3, c: Vec3): Vec3 {
@@ -60,15 +73,6 @@ const subtract = (a: Vec3, b: Vec3): Vec3 => [a[0] - b[0], a[1] - b[1], a[2] - b
 const dot = (a: Vec3, b: Vec3): number => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const cross = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 const unit = (v: Vec3): Vec3 => { const n = Math.hypot(...v); return [v[0] / n, v[1] / n, v[2] / n]; };
-
-function insideEvenOdd(x: number, y: number, polygon: readonly Point[]): boolean {
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const a = polygon[i]!, b = polygon[j]!;
-    if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) inside = !inside;
-  }
-  return inside;
-}
 
 function put(data: Uint8ClampedArray, index: number, color: RGB, alpha = 255): void {
   data[index] = color[0]; data[index + 1] = color[1]; data[index + 2] = color[2]; data[index + 3] = alpha;
@@ -88,6 +92,8 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
   const view: RenderView = options.view ?? "solid-wireframe";
   if (!["solid", "solid-wireframe", "wireframe", "face", "face-context"].includes(view)) throw new Error(`Unknown render view: ${view}`);
   const yaw = options.yaw ?? 0.55, pitch = options.pitch ?? (view === "face" ? 0 : 0.72);
+  const rotation = options.rotation;
+  if (rotation && (rotation.length !== 4 || rotation.some(value => !Number.isFinite(value)) || Math.abs(Math.hypot(...rotation) - 1) > 0.01)) throw new Error("Rotation must be a unit quaternion [x, y, z, w]");
   const zoom = options.zoom ?? 1;
   if (!(Number.isFinite(zoom) && zoom > 0 && zoom <= 4)) throw new Error("Zoom must be between 0 and 4");
   const faceIndex = options.faceIndex ?? 0;
@@ -108,8 +114,8 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
     });
     const faceRadius = Math.max(...face.map(i => Math.hypot(local[i]![0], local[i]![1])));
     radius = Math.min(w, h) * 0.38 * zoom / faceRadius;
-    transformed = local.map(point => rotate(point, yaw, pitch));
-  } else transformed = polyhedron.vertices.map(v => rotate(v, yaw, pitch));
+    transformed = local.map(point => rotateVertex(point, yaw, pitch, rotation));
+  } else transformed = polyhedron.vertices.map(v => rotateVertex(v, yaw, pitch, rotation));
   const points: Point[] = transformed.map(v => ({ x: w / 2 + v[0] * radius, y: h / 2 - v[1] * radius, z: v[2] }));
   const data = new Uint8ClampedArray(w * h * 4);
   const depth = new Float32Array(w * h);
@@ -146,14 +152,25 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
     const maxX = Math.min(w - 1, Math.ceil(Math.max(...polygon.map(p => p.x))));
     const minY = Math.max(0, Math.floor(Math.min(...polygon.map(p => p.y))));
     const maxY = Math.min(h - 1, Math.ceil(Math.max(...polygon.map(p => p.y))));
-    for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) {
-      const px = x + 0.5, py = y + 0.5;
-      if (!insideEvenOdd(px, py, polygon)) continue;
-      const worldX = (px - w / 2) / radius;
+    for (let y = minY; y <= maxY; y++) {
+      const py = y + 0.5;
+      const intersections: number[] = [];
+      for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        const p0 = polygon[j]!, p1 = polygon[i]!;
+        if ((p0.y > py) !== (p1.y > py)) intersections.push(p0.x + (p1.x - p0.x) * (py - p0.y) / (p1.y - p0.y));
+      }
+      intersections.sort((left, right) => left - right);
       const worldY = -(py - h / 2) / radius;
-      const z = (planeD - normal[0] * worldX - normal[1] * worldY) / normal[2];
-      const index = y * w + x;
-      if (z > depth[index]! + 1e-5) { depth[index] = z; put(data, index * 4, color); }
+      for (let span = 0; span + 1 < intersections.length; span += 2) {
+        const startX = Math.max(minX, Math.ceil(intersections[span]! - 0.5));
+        const endX = Math.min(maxX, Math.ceil(intersections[span + 1]! - 0.5) - 1);
+        for (let x = startX; x <= endX; x++) {
+          const worldX = (x + 0.5 - w / 2) / radius;
+          const z = (planeD - normal[0] * worldX - normal[1] * worldY) / normal[2];
+          const index = y * w + x;
+          if (z > depth[index]! + 1e-5) { depth[index] = z; put(data, index * 4, color); }
+        }
+      }
     }
   }
 
@@ -168,14 +185,14 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
     const maxX = Math.min(w - 1, Math.ceil(Math.max(a.x, b.x) + edgeRadius + 1));
     const minY = Math.max(0, Math.floor(Math.min(a.y, b.y) - edgeRadius - 1));
     const maxY = Math.min(h - 1, Math.ceil(Math.max(a.y, b.y) + edgeRadius + 1));
-    for (let y = minY; y <= maxY; y++) for (let x = minX; x <= maxX; x++) {
+    const paint = (x: number, y: number): void => {
       const t = clamp(((x + 0.5 - a.x) * dx + (y + 0.5 - a.y) * dy) / lengthSquared);
       const distance = Math.hypot(x + 0.5 - (a.x + t * dx), y + 0.5 - (a.y + t * dy));
       const coverage = clamp(edgeRadius + 0.5 - distance);
-      if (coverage <= 0) continue;
+      if (coverage <= 0) return;
       const index = y * w + x;
       const z = a.z + t * (b.z - a.z);
-      if (testDepth && z + 0.008 < depth[index]!) continue;
+      if (testDepth && z + 0.008 < depth[index]!) return;
       const offset = index * 4;
       const underlying: RGB = [data[offset]!, data[offset + 1]!, data[offset + 2]!];
       const alpha = coverage * opacity;
@@ -184,6 +201,22 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
         underlying[1] * (1 - alpha) + edgeColor[1] * alpha,
         underlying[2] * (1 - alpha) + edgeColor[2] * alpha,
       ]);
+    };
+    // Visit only a narrow strip around the segment, including rounded caps.
+    // The coverage and depth formulas stay identical to the full box traversal.
+    const band = Math.ceil((edgeRadius + 0.5) * Math.SQRT2 + 1);
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      for (let x = minX; x <= maxX; x++) {
+        const t = clamp((x + 0.5 - a.x) / dx);
+        const centerY = a.y + t * dy;
+        for (let y = Math.max(minY, Math.floor(centerY - band)); y <= Math.min(maxY, Math.ceil(centerY + band)); y++) paint(x, y);
+      }
+    } else {
+      for (let y = minY; y <= maxY; y++) {
+        const t = clamp((y + 0.5 - a.y) / dy);
+        const centerX = a.x + t * dx;
+        for (let x = Math.max(minX, Math.floor(centerX - band)); x <= Math.min(maxX, Math.ceil(centerX + band)); x++) paint(x, y);
+      }
     }
   };
   if (view === "solid-wireframe") for (const [ia, ib] of polyhedron.edges) drawEdge(ia, ib, 1, true);

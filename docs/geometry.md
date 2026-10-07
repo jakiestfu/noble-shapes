@@ -1,6 +1,6 @@
-# Geometry model and catalogue roadmap
+# Geometry model and catalogue
 
-Hill's 2026 classification establishes 146 finite nonprismatic noble polyhedra up to similarity, plus the disphenoid and stephanoid families under the paper's definition. A noble polyhedron has one vertex orbit and one face orbit under its symmetry group. The core therefore stores vertices, ordered face cycles, and abstract edges as separate data; display pixels are derived from those cycles.
+Hill's 2026 classification establishes 146 finite nonprismatic noble polyhedra up to similarity, plus the disphenoid and stephanoid families under the paper's definition. All 146 finite forms and both parameterized families are implemented in core. A noble polyhedron has one vertex orbit and one face orbit under its symmetry group. The core exposes vertices, ordered face cycles, and abstract edges separately; display pixels are derived from those cycles.
 
 ## Current generation
 
@@ -8,6 +8,7 @@ Hill's 2026 classification establishes 146 finite nonprismatic noble polyhedra u
 - The dodecahedron is generated as the dual vertex orbit of the icosahedron.
 - The small stellated dodecahedron and great dodecahedron use the five-vertex neighbor rings of the icosahedral orbit, connected at steps two and one respectively.
 - The great stellated dodecahedron uses deeper five-vertex planes in the dodecahedral orbit, connected at step two. The great icosahedron uses the long-edge equilateral triangle orbit of the icosahedral vertices.
+- The other 137 finite forms use octahedral or icosahedral Coxeter-group actions on a generating point and one independently recovered face cycle. The group generates all vertices and faces; complete meshes are not stored. See [the catalogue notes](../packages/core/CATALOGUE.md) for the numerical faceting search and provenance.
 - Disphenoids use three positive axis lengths.
 - Stephanoids use Hill's `PC(n,p,q)` and `AC(n,p,q)` generating quadrilaterals, then symmetry translates. The admissibility inequalities and common-factor exclusion are enforced.
 
@@ -15,13 +16,10 @@ Hill's 2026 classification establishes 146 finite nonprismatic noble polyhedra u
 
 Many noble faces self-cross and many polyhedra have intersecting surfaces. The renderer projects each planar face and evaluates even-odd containment per pixel. A depth buffer resolves the closest face at each pixel. It uses two-sided lighting. The shaded edge view shows visible abstract edges; the wireframe views show all edges; face studies display one of the repeated congruent faces. Antialiasing comes from twofold supersampling. This produces a useful visual interpretation without claiming that a self-crossing face has a unique mathematical interior.
 
-## Expanding to the 146
+## Catalogue validation and limits
 
-1. Implement reusable tetrahedral, octahedral, and icosahedral point-group actions, including rotations and reflections.
-2. Represent each orbit type by its generator parameters and constraints. Evaluate the algebraic parameter roots described in the paper, keeping precision and tolerance explicit.
-3. Derive and record a compact generating face cycle for each catalogue entry, then generate its orbit with the relevant group. The 146 examples require distinct descriptors even with shared group machinery.
-4. Validate each entry's vertex, edge, and face counts against Appendix A; verify coplanarity, two-face edge incidence, connectedness, vertex transitivity, and face transitivity.
-5. Add comparison images and independent numerical checks against published figures, while keeping GPL source code and model files out of this MIT package.
-6. Add export styles such as SVG only after visibility and self-crossing semantics are specified for that style.
+Each finite entry is checked for the published V/E/F counts, coplanarity, a common vertex sphere, two-face edge incidence, and a single connected vertex figure. A separate Node script reconstructs every stored face seed from the vertex orbit and plane-adjacency search. The tests are numerical checks of the implemented realizations; the claim that these exhaust all forms rests on Hill's classification.
+
+Nine familiar solids have descriptive API names. Eleven other forms use descriptive IDs because several facetings have the same inradius, while Hill assigns their final suffix by the order of discovery in the original enumeration. `CATALOGUE_ID_CANDIDATES` records possible paper IDs for those forms. The implementation also corrects three Appendix B approximate coordinates using the paper's own minimal polynomials; details and a likely face-type typo are documented in [the catalogue notes](../packages/core/CATALOGUE.md). No GPL source code or model files were used to construct these entries.
 
 Reference: [Connor Hill, *The complete set of noble polyhedra*](https://arxiv.org/pdf/2607.28711), especially §§2–4 and Appendices A–B.

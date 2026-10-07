@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { inflateSync } from "node:zlib";
-import { renderScene } from "../packages/render/dist/index.js";
+import { renderScene, rotateVertex } from "../packages/render/dist/index.js";
 import { renderPng } from "../packages/node/dist/index.js";
+import { SHAPES } from "../packages/core/dist/index.js";
 
 function checkPngPixels(options) {
   const image = renderScene(options), png = renderPng(options);
@@ -28,5 +29,26 @@ function checkPngPixels(options) {
 test("Node PNG contains exactly the shared renderer's pixels in every study view", () => {
   for (const view of ["solid", "solid-wireframe", "wireframe", "face", "face-context"]) {
     checkPngPixels({ shape: "great-stellated-dodecahedron", view, palette: "gold", width: 72, height: 72, yaw: 0.55, pitch: view === "face" ? 0 : 0.72 });
+  }
+  checkPngPixels({ shape: "great-dodecahedron", view: "face-context", width: 72, height: 72,
+    rotation: [0.18, 0.32, -0.07, Math.sqrt(1 - 0.18 ** 2 - 0.32 ** 2 - 0.07 ** 2)] });
+});
+
+test("horizontal and vertical drag axes turn the 3D form toward the pointer", () => {
+  const front = [0, 0, 1];
+  const right = rotateVertex(front, Math.PI / 2, 0);
+  const down = rotateVertex(front, 0, Math.PI / 2);
+  assert.ok(right[0] > 0.999 && Math.abs(right[1]) < 1e-12);
+  assert.ok(down[1] < -0.999 && Math.abs(down[0]) < 1e-12);
+  const quaternion = [0, Math.sin(Math.PI / 4), 0, Math.cos(Math.PI / 4)];
+  const trackballRight = rotateVertex(front, 0, 0, quaternion);
+  assert.ok(trackballRight[0] > 0.999 && Math.abs(trackballRight[2]) < 1e-12);
+});
+
+test("the Node renderer produces an image for every finite form", () => {
+  for (const { id, family } of SHAPES) {
+    if (family !== "Finite") continue;
+    const png = renderPng({ shape: id, view: "solid", width: 32, height: 32, quality: 1 });
+    assert.deepEqual([...png.subarray(0, 8)], [137, 80, 78, 71, 13, 10, 26, 10], id);
   }
 });

@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": { "jsx": "react-jsx", "module": "ESNext", "moduleResolution": "Bundler", "baseUrl": ".", "paths": { "@/*": ["./src/*"] }, "noEmit": true },
+  "include": ["src", "vite.config.ts"]
+}

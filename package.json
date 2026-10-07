@@ -6,7 +6,7 @@
   "scripts": {
     "build": "pnpm -r --filter './packages/**' build && pnpm --filter @noble-polyhedra/workbench build",
     "dev": "pnpm --filter @noble-polyhedra/workbench dev",
-    "test": "pnpm build && node --test tests/*.test.mjs",
+    "test": "pnpm build && pnpm --filter @noble-polyhedra/workbench typecheck && node --test tests/*.test.mjs",
     "render:examples": "node scripts/render-examples.mjs"
   },
   "devDependencies": {

@@ -1,3 +1,7 @@
+import { FINITE_SPECS, generateFinite, KNOWN_FINITE_IDS } from "./finite.js";
+import type { FiniteSpecId } from "./finite.js";
+
+export { CATALOGUE_SOURCE, CATALOGUE_ID_CANDIDATES, KNOWN_FINITE_IDS } from "./finite.js";
 export type Vec3 = readonly [number, number, number];
 export type ShapeId =
   | "tetrahedron"
@@ -11,7 +15,8 @@ export type ShapeId =
   | "great-icosahedron"
   | "disphenoid"
   | "stephanoid"
-  | "antistephanoid";
+  | "antistephanoid"
+  | FiniteSpecId;
 
 export interface Polyhedron {
   readonly id: ShapeId;
@@ -49,10 +54,15 @@ export const SHAPES: readonly { id: ShapeId; name: string; family: string }[] = 
   { id: "great-dodecahedron", name: "Great dodecahedron", family: "Finite" },
   { id: "great-stellated-dodecahedron", name: "Great stellated dodecahedron", family: "Finite" },
   { id: "great-icosahedron", name: "Great icosahedron", family: "Finite" },
+  ...FINITE_SPECS.map(({ id, name }) => ({ id, name, family: "Finite" })),
   { id: "disphenoid", name: "Disphenoid", family: "Infinite family" },
   { id: "stephanoid", name: "Prismatic stephanoid", family: "Infinite family" },
   { id: "antistephanoid", name: "Antiprismatic stephanoid", family: "Infinite family" },
 ];
+
+/** Known and constructible counts are intentionally separate while the catalogue grows. */
+export const KNOWN_FINITE_COUNT = KNOWN_FINITE_IDS.length;
+export const IMPLEMENTED_FINITE_COUNT = SHAPES.filter(shape => shape.family === "Finite").length;
 
 export function hashSeed(seed: string | number): number {
   const value = String(seed);
@@ -71,7 +81,7 @@ export function seededDefaults(seed: string | number = "noble"): {
   pitch: number;
 } {
   const hash = hashSeed(seed);
-  const shapes: ShapeId[] = ["small-stellated-dodecahedron", "great-stellated-dodecahedron", "great-dodecahedron", "great-icosahedron", "icosahedron", "dodecahedron", "stephanoid", "antistephanoid", "cube", "octahedron", "disphenoid", "tetrahedron"];
+  const shapes = SHAPES.map(shape => shape.id);
   const palettes = ["aurora", "coral", "violet", "gold"] as const;
   return {
     shape: shapes[hash % shapes.length]!,
@@ -300,6 +310,11 @@ export function createPolyhedron(options: ShapeOptions = {}): Polyhedron {
     case "disphenoid": return disphenoid(options);
     case "stephanoid": return stephanoid(options);
     case "antistephanoid": return antistephanoid(options);
-    default: throw new Error(`Unknown shape: ${String(shape)}`);
+    default: {
+      const specification = FINITE_SPECS.find(item => item.id === shape);
+      if (!specification) throw new Error(`Unknown shape: ${String(shape)}`);
+      const geometry = generateFinite(specification);
+      return complete(specification.id, specification.name, geometry.vertices, geometry.faces, "finite");
+    }
   }
 }
