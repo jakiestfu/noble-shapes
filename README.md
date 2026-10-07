@@ -16,7 +16,7 @@ pnpm test
 pnpm render:examples
 ```
 
-The full-screen studio has a searchable form picker, a separate **Surprise me** action, light and dark modes, and a shareable URL. Every visual control is encoded in the URL; the renderer stats toggle is local to the browser. The homepage is the workbench, with separate Showcase and Research pages.
+The full-screen studio has a searchable form picker, a separate **Surprise me** action, light and dark modes, and a shareable URL. The URL stores the form and appearance. Camera position, zoom, animation, theme, and renderer stats are local viewer settings. The homepage is the workbench, with separate Showcase and Research pages.
 
 The workbench's **Form mathematics** section uses KaTeX on demand to show the selected form's computed vertex, edge, and face counts and Euler characteristic, `χ = V − E + F`. The nine regular forms also show their Schläfli symbols; those symbols do not apply to the rest of the noble catalogue. Counts follow abstract face cycles, so visible self-intersections do not add vertices or edges. The four Showcase favorites display their Schläfli symbols alongside their names.
 
@@ -29,9 +29,9 @@ const code = optionsToString({ ...DEFAULT_WORKBENCH_OPTIONS, background: "transp
 const options = stringToOptions(code);
 ```
 
-Design codes begin with `np1_` and contain the form, view, palette, colors, optional transparent background, orientation, zoom, repeated face, family dimensions, motion, and studio theme. Decoding validates the version and geometry. The studio writes the code to the `code` URL parameter as controls change; pasting a code into the sidebar restores it. **Surprise me** randomizes the visual options and creates a new code. **Generate from text** makes the same design for the same input, then saves the complete design in the URL. Renderer stats are intentionally excluded.
+Design codes begin with `np2_` and contain the form, view, palette, colors, optional transparent background, repeated face, and family dimensions. Decoding validates the version and geometry. Older `np1_` links still load; their viewer settings are ignored. The studio updates the `code` URL parameter when the design changes. Dragging, zooming, animation, and theme changes leave it alone. **Surprise me** and **Generate from text** change only the design, preserving local viewer settings.
 
-An identity seed generates a design; a design code captures its exact options. Keep the seed if you want an avatar that stays tied to a username, or share a code if you want a snapshot that can be edited independently:
+An identity seed generates a design; a design code captures its form and appearance. Keep the seed if you want an avatar that stays tied to a username, or share a code if you want a snapshot that can be edited independently:
 
 ```ts
 import { optionsToString, randomOptions } from "@noble-polyhedra/render";
@@ -62,13 +62,13 @@ import "@noble-polyhedra/web-component";
 ></noble-polyhedron>
 ```
 
-For a deterministic avatar, use `<noble-polyhedron random="foobar"></noble-polyhedron>`. The same string produces the same static appearance across embeds and Node; the element also uses its generated motion settings. A bare `random` attribute, or `element.random = true`, makes a fresh design that remains stable for that element until `random` changes. Any explicit attribute wins over the generated value: `<noble-polyhedron random="foobar" shape="cube" color="#aabbcc" rotate="0"></noble-polyhedron>`. To disable generated motion, specify `rotate="0"` or `float="0"`. The older `seed` attribute controls only legacy defaults and is distinct from `random` and the URL design code.
+For a deterministic avatar, use `<noble-polyhedron random="foobar"></noble-polyhedron>`. The same string produces the same form and appearance across embeds and Node. A bare `random` attribute, or `element.random = true`, makes a fresh design that remains stable for that element until `random` changes. Any explicit attribute wins over the generated value: `<noble-polyhedron random="foobar" shape="cube" color="#aabbcc"></noble-polyhedron>`. Camera and motion stay at their defaults unless you set them explicitly. The older `seed` attribute controls only legacy defaults and is distinct from `random` and the URL design code.
 
 Drag the image to rotate; scroll to zoom. Named shapes include the five Platonic solids and the four Kepler–Poinsot solids: `small-stellated-dodecahedron`, `great-dodecahedron`, `great-stellated-dodecahedron`, and `great-icosahedron`. `disphenoid`, `stephanoid`, and `antistephanoid` cover the families. Families accept `a`, `b`, `c` (disphenoid) or `n`, `p`, `q`, `crown-height` (stephanoids). The `color` attribute accepts a six-digit hex color; `background` accepts a six-digit hex color or `transparent`.
 
 The `view` attribute selects `solid` (shaded mesh), `solid-wireframe` (shaded with visible abstract edges, the default), `wireframe` (all edges), `face` (one isolated repeated face), or `face-context` (one face highlighted over the complete wireframe). `face-index` selects which congruent face to inspect.
 
-Drag with a mouse or touch pointer for screen-space 3D trackball rotation. The resulting `rotation` attribute is a unit quaternion in `x,y,z,w` order, so an adjusted view can be copied into another embed. Changing `yaw` or `pitch` in the workbench resets the trackball orientation. During a drag the browser renders a smaller frame on a worker, then produces a full-resolution frame on release. The optional `stats` attribute (or `element.stats = true` property) displays completed draw FPS (zero while idle), render and presentation times, input-to-image latency, canvas dimensions, pixel count, geometry counts, quality, and backend. The `noble-render` event exposes the same metrics in `event.detail`.
+Drag with a mouse or touch pointer for screen-space 3D trackball rotation. The resulting `rotation` attribute is a unit quaternion in `x,y,z,w` order, so an adjusted view can be copied into another embed. Changing `yaw` or `pitch` in the workbench resets the trackball orientation. The browser renders every frame at the canvas's CSS size multiplied by the window's device pixel ratio, including during dragging and animation. The optional `stats` attribute (or `element.stats = true` property) displays completed draw FPS (zero while idle), render and presentation times, input-to-image latency, canvas dimensions, pixel count, geometry counts, quality, and backend. The `noble-render` event exposes the same metrics in `event.detail`.
 
 Set `rotate` and `float` from `0` (off) to `1` for subtle pickup motion. At `rotate="1"`, the model turns around its vertical axis at 0.35 radians per second (one revolution in about 18 seconds). At `float="1"`, the image bobs by up to 8 pixels in each direction over a 3.6-second cycle; smaller components use a proportionally smaller distance. Both values default to `0` and can also be set through `element.rotate` and `element.float`. Dragging pauses the automatic turn and resumes it from the dragged orientation. Motion pauses when the user prefers reduced motion.
 

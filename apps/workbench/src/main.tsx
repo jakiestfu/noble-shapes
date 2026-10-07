@@ -2,7 +2,7 @@ import { createElement, lazy, Suspense, useEffect, useLayoutEffect, useMemo, use
 import { createRoot } from "react-dom/client";
 import { Check, Code2, Copy, Download, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
 import { createPolyhedron, SHAPES, type ShapeId } from "@noble-polyhedra/core";
-import { DEFAULT_WORKBENCH_OPTIONS, optionsToString, PALETTES, randomOptions, randomSeed, stringToOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-polyhedra/render";
+import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, optionsToString, PALETTES, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-polyhedra/render";
 import "@noble-polyhedra/web-component";
 import type { NoblePolyhedronElement } from "@noble-polyhedra/web-component";
 import { Button } from "@/components/ui/button";
@@ -27,11 +27,11 @@ const VIEWS: { id: RenderView; name: string }[] = [
 ];
 const sliderValue = (value: number | readonly number[], fallback: number): number => typeof value === "number" ? value : value[0] ?? fallback;
 
-function readLocation(): { options: WorkbenchOptions; error: string } {
+function readLocation(): { design: DesignOptions; error: string } {
   const code = new URL(window.location.href).searchParams.get("code");
-  if (!code) return { options: DEFAULT_WORKBENCH_OPTIONS, error: "" };
-  try { return { options: stringToOptions(code), error: "" }; }
-  catch (error) { return { options: DEFAULT_WORKBENCH_OPTIONS, error: error instanceof Error ? error.message : String(error) }; }
+  if (!code) return { design: DEFAULT_DESIGN_OPTIONS, error: "" };
+  try { return { design: stringToOptions(code), error: "" }; }
+  catch (error) { return { design: DEFAULT_DESIGN_OPTIONS, error: error instanceof Error ? error.message : String(error) }; }
 }
 const initial = readLocation();
 
@@ -47,14 +47,16 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 
 function App() {
   const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname));
-  const [options, setOptions] = useState<WorkbenchOptions>(initial.options);
+  const [options, setOptions] = useState<WorkbenchOptions>({ ...DEFAULT_WORKBENCH_OPTIONS, ...initial.design });
   const [stats, setStats] = useState(false);
   const [mathOpen, setMathOpen] = useState(false);
   const [codeError, setCodeError] = useState(initial.error);
   const [parameterError, setParameterError] = useState("");
   const [identity, setIdentity] = useState("");
   const [copied, setCopied] = useState<"link" | "embed" | "">("");
-  const code = useMemo(() => optionsToString(options), [options]);
+  const code = useMemo(() => optionsToString(options), [options.shape, options.view, options.palette,
+    options.color, options.background, options.faceIndex, options.n, options.p, options.q,
+    options.crownHeight, options.a, options.b, options.c]);
   const [draftCode, setDraftCode] = useState(code);
   const hero = useRef<NoblePolyhedronElement>(null);
   const replacingDesign = useRef(false);
@@ -83,7 +85,7 @@ function App() {
     const onPopState = () => {
       const nextPage = pageFromPath(window.location.pathname);
       setPage(nextPage);
-      if (nextPage === "workbench") { const next = readLocation(); replacingDesign.current = true; setOptions(next.options); setCodeError(next.error); }
+      if (nextPage === "workbench") { const next = readLocation(); setOptions(previous => ({ ...previous, ...next.design })); setCodeError(next.error); }
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -121,7 +123,7 @@ function App() {
     catch (error) { setParameterError(error instanceof Error ? error.message : String(error)); }
   };
   const chooseShape = (shape: ShapeId) => {
-    const patch: Partial<WorkbenchOptions> = { shape, faceIndex: 0, rotation: undefined };
+    const patch: Partial<WorkbenchOptions> = { shape, faceIndex: 0 };
     if (shape === "stephanoid") Object.assign(patch, { n: 5, p: 3, q: 1 });
     if (shape === "antistephanoid") Object.assign(patch, { n: 5, p: 2, q: 1 });
     update(patch); setParameterError("");
@@ -129,8 +131,12 @@ function App() {
   const choosePalette = (palette: PaletteName) => update({ palette, color: PALETTES[palette].color,
     background: options.background === "transparent" ? "transparent" : PALETTES[palette].background });
   const applyCode = () => {
-    try { replacingDesign.current = true; setOptions(stringToOptions(draftCode.trim())); setCodeError(""); setParameterError(""); }
+    try { setOptions(previous => ({ ...previous, ...stringToOptions(draftCode.trim()) })); setCodeError(""); setParameterError(""); }
     catch (error) { setCodeError(error instanceof Error ? error.message : String(error)); }
+  };
+  const generate = (seed: string) => {
+    setOptions(previous => ({ ...previous, ...randomOptions(seed) }));
+    setCodeError(""); setParameterError("");
   };
   const copyText = async (kind: "link" | "embed", text: string) => {
     await navigator.clipboard.writeText(text); setCopied(kind);
@@ -170,7 +176,7 @@ function App() {
 
     {page === "showcase" ? <Suspense fallback={<main className="content-page" aria-busy="true"><div className="content-inner"><p className="eyebrow">Curated forms</p><h1 className="section-title">Showcase</h1><p className="page-description">Loading forms…</p></div></main>}><Showcase theme={options.theme} onOpen={next => { replacingDesign.current = true; setOptions(next); setCodeError(""); setParameterError(""); const url = new URL("/", window.location.origin); url.searchParams.set("code", optionsToString(next)); window.history.pushState(null, "", url); setPage("workbench"); }} /></Suspense> : page === "research" ? <Research /> : <div className="app-layout">
       <aside className="control-panel">
-        <div className="control-intro"><p className="eyebrow">Workbench</p><h1 className="font-heading text-xl font-bold tracking-tight">Make a form.</h1><p className="mt-1 text-xs text-muted-foreground">Every adjustment lives in the share link.</p><Button className="mt-4 w-full" onClick={() => { replacingDesign.current = true; setOptions(randomOptions(randomSeed())); setCodeError(""); setParameterError(""); }}><Shuffle className="size-4" /> Surprise me</Button><div className="mt-4 space-y-2"><label htmlFor="identity" className="text-xs font-medium">Generate from text</label><div className="flex gap-2"><Input id="identity" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && identity) { replacingDesign.current = true; setOptions(randomOptions(identity)); setCodeError(""); setParameterError(""); } }} /><Button variant="outline" size="sm" disabled={!identity} onClick={() => { replacingDesign.current = true; setOptions(randomOptions(identity)); setCodeError(""); setParameterError(""); }}>Generate</Button></div><p className="text-[11px] text-muted-foreground">The same text makes the same design. Your share link saves the full design.</p></div></div>
+        <div className="control-intro"><p className="eyebrow">Workbench</p><h1 className="font-heading text-xl font-bold tracking-tight">Make a form.</h1><p className="mt-1 text-xs text-muted-foreground">Form and appearance live in the share link.</p><Button className="mt-4 w-full" onClick={() => generate(randomSeed())}><Shuffle className="size-4" /> Surprise me</Button><div className="mt-4 space-y-2"><label htmlFor="identity" className="text-xs font-medium">Generate from text</label><div className="flex gap-2"><Input id="identity" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && identity) generate(identity); }} /><Button variant="outline" size="sm" disabled={!identity} onClick={() => generate(identity)}>Generate</Button></div><p className="text-[11px] text-muted-foreground">The same text makes the same design. Camera, motion, and theme stay as you set them.</p></div></div>
 
         <Group title="Geometry">
           <Control label="Form"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /></Control>

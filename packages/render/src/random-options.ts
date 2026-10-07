@@ -1,5 +1,5 @@
 import { createPolyhedron, SHAPES } from "@noble-polyhedra/core";
-import { DEFAULT_WORKBENCH_OPTIONS, type WorkbenchOptions } from "./options-code.js";
+import type { DesignOptions } from "./options-code.js";
 import { PALETTES } from "./palettes.js";
 import type { PaletteName, RenderView, SceneOptions } from "./index.js";
 
@@ -11,8 +11,8 @@ export function randomSeed(): string {
   return [...bytes].map(value => value.toString(16).padStart(8, "0")).join("");
 }
 
-/** A complete, deterministic visual state from an application-provided identity. */
-export function randomOptions(seed: string | number = randomSeed()): WorkbenchOptions {
+/** A deterministic form and appearance from an application-provided identity. */
+export function randomOptions(seed: string | number = randomSeed()): DesignOptions {
   const input = String(seed);
   let stateA = 0x9e3779b9, stateB = 0x243f6a88, stateC = 0xb7e15162, stateD = 0xdeadbeef;
   for (let i = 0; i < input.length; i++) {
@@ -43,15 +43,15 @@ export function randomOptions(seed: string | number = randomSeed()): WorkbenchOp
   const crownHeight = between(0.5, 1.1);
   const a = between(0.7, 1.4), b = between(0.7, 1.4), c = between(0.7, 1.4);
   const faces = createPolyhedron({ shape, n, p, q, crownHeight, a, b, c }).faces.length;
+  const color = pick(colors.colors);
+  const background = next() < 0.18 ? "transparent" : pick(colors.backgrounds);
+  // Preserve the face choice for existing identity seeds after removing camera draws.
+  next(); if (view !== "face") next(); next();
   return {
-    ...DEFAULT_WORKBENCH_OPTIONS, shape, view, palette,
-    color: pick(colors.colors), background: next() < 0.18 ? "transparent" : pick(colors.backgrounds),
-    yaw: between(-1.5, 1.5), pitch: view === "face" ? 0 : between(0.2, 1.05),
-    rotation: undefined, zoom: between(0.82, 1.16), faceIndex: Math.floor(next() * faces),
+    shape, view, palette,
+    color, background,
+    faceIndex: Math.floor(next() * faces),
     n, p, q, crownHeight, a, b, c,
-    rotate: next() < 0.4 ? 0 : between(0.18, 0.58),
-    float: next() < 0.4 ? 0 : between(0.2, 0.7),
-    theme: next() < 0.5 ? "light" : "dark",
   };
 }
 

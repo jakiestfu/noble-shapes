@@ -1,4 +1,4 @@
-import { randomOptions, randomSeed, renderScene, type Quaternion, type RenderedImage, type SceneOptions, type WorkbenchOptions } from "@noble-polyhedra/render";
+import { randomOptions, randomSeed, renderScene, type DesignOptions, type Quaternion, type RenderedImage, type SceneOptions } from "@noble-polyhedra/render";
 import { createPolyhedron, seededDefaults } from "@noble-polyhedra/core";
 
 const numericAttribute = (element: Element, name: string): number | undefined => {
@@ -54,6 +54,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   #lastMotionDraw = 0;
   #motionAngle = 0;
   #motionPreference?: MediaQueryList;
+  #pixelRatioMedia?: MediaQueryList;
   #timer = 0;
   #version = 0;
   #busy = false;
@@ -63,7 +64,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   #lastPointer?: { x: number; y: number };
   #drawTimes: number[] = [];
   #randomKey?: string;
-  #randomBase?: WorkbenchOptions;
+  #randomBase?: DesignOptions;
   #metrics = { renderMs: 0, presentMs: 0, latencyMs: 0, width: 0, height: 0, vertices: 0, edges: 0, faces: 0, quality: 2 };
 
   constructor() {
@@ -113,6 +114,8 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     } catch { this.#worker = undefined; }
     this.#motionPreference = window.matchMedia?.("(prefers-reduced-motion: reduce)");
     this.#motionPreference?.addEventListener("change", this.#motionPreferenceChanged);
+    this.#watchPixelRatio();
+    window.addEventListener("resize", this.#windowResize);
     this.#updateFloat();
     this.#syncMotion();
     this.#syncStatsTimer();
@@ -131,6 +134,9 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     this.#lastMotionTime = 0;
     this.#motionPreference?.removeEventListener("change", this.#motionPreferenceChanged);
     this.#motionPreference = undefined;
+    this.#pixelRatioMedia?.removeEventListener("change", this.#pixelRatioChanged);
+    this.#pixelRatioMedia = undefined;
+    window.removeEventListener("resize", this.#windowResize);
     clearInterval(this.#timer);
     this.#worker?.terminate();
     this.#worker = undefined;
@@ -174,26 +180,20 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     if (value === false) this.removeAttribute("random");
     else this.setAttribute("random", value === true ? "" : value);
   }
-  get rotate(): number { return this.hasAttribute("rotate") ? motionAmount(this, "rotate") : this.#generatedOptions()?.rotate ?? 0; }
+  get rotate(): number { return motionAmount(this, "rotate"); }
   set rotate(value: number) {
     const amount = Number(value);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      if (this.hasAttribute("random")) this.setAttribute("rotate", "0");
-      else this.removeAttribute("rotate");
-    }
+    if (!Number.isFinite(amount) || amount <= 0) this.removeAttribute("rotate");
     else this.setAttribute("rotate", String(Math.min(1, amount)));
   }
-  get float(): number { return this.hasAttribute("float") ? motionAmount(this, "float") : this.#generatedOptions()?.float ?? 0; }
+  get float(): number { return motionAmount(this, "float"); }
   set float(value: number) {
     const amount = Number(value);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      if (this.hasAttribute("random")) this.setAttribute("float", "0");
-      else this.removeAttribute("float");
-    }
+    if (!Number.isFinite(amount) || amount <= 0) this.removeAttribute("float");
     else this.setAttribute("float", String(Math.min(1, amount)));
   }
 
-  #generatedOptions(): WorkbenchOptions | undefined {
+  #generatedOptions(): DesignOptions | undefined {
     const value = this.getAttribute("random");
     if (value === null) return undefined;
     if (this.#randomKey !== value || !this.#randomBase) {
@@ -204,7 +204,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   }
 
   #baseRotation(): Quaternion {
-    const defaults = this.#generatedOptions() ?? seededDefaults(this.getAttribute("seed") ?? "noble");
+    const defaults = seededDefaults(this.getAttribute("seed") ?? "noble");
     const faceView = (this.getAttribute("view") ?? this.#generatedOptions()?.view) === "face";
     return parseRotation(this.getAttribute("rotation")) ?? multiply(
       axisRotation(1, 0, 0, numericAttribute(this, "pitch") ?? (faceView ? 0 : defaults.pitch)),
@@ -220,6 +220,14 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     this.#syncMotion();
     this.#schedule();
   };
+
+  #windowResize = (): void => this.#schedule();
+  #pixelRatioChanged = (): void => { this.#watchPixelRatio(); this.#schedule(); };
+  #watchPixelRatio(): void {
+    this.#pixelRatioMedia?.removeEventListener("change", this.#pixelRatioChanged);
+    this.#pixelRatioMedia = window.matchMedia?.(`(resolution: ${window.devicePixelRatio || 1}dppx)`);
+    this.#pixelRatioMedia?.addEventListener("change", this.#pixelRatioChanged);
+  }
 
   #syncMotion(): void {
     if (this.isConnected && this.#visible && this.rotate > 0 && !this.#motionPreference?.matches) {
@@ -266,14 +274,9 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   }
 
   #options(): SceneOptions {
-    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    const pixelRatio = window.devicePixelRatio || 1;
     const bounds = this.getBoundingClientRect();
     const rotating = this.rotate > 0 && !this.#motionPreference?.matches;
-    const scale = this.#dragging ? 0.45 : rotating ? 0.8 : 1;
-    const max = this.#dragging ? 320 : rotating ? 560 : 800;
-    const rawWidth = Math.max(1, bounds.width * pixelRatio * scale);
-    const rawHeight = Math.max(1, bounds.height * pixelRatio * scale);
-    const fit = Math.min(1, max / Math.max(rawWidth, rawHeight));
     const generated = this.#generatedOptions();
     const shape = (this.getAttribute("shape") ?? generated?.shape ?? "random") as SceneOptions["shape"];
     const geometry = {
@@ -290,15 +293,15 @@ export class NoblePolyhedronElement extends HTMLElementBase {
       palette: this.getAttribute("palette") as SceneOptions["palette"] ?? generated?.palette,
       color: this.getAttribute("color") ?? generated?.color,
       background: this.getAttribute("background") ?? generated?.background,
-      width: Math.max(1, Math.round(rawWidth * fit)),
-      height: Math.max(1, Math.round(rawHeight * fit)),
-      yaw: numericAttribute(this, "yaw") ?? generated?.yaw,
-      pitch: numericAttribute(this, "pitch") ?? ((this.getAttribute("view") ?? generated?.view) === "face" ? 0 : generated?.pitch),
+      width: Math.max(1, Math.round(bounds.width * pixelRatio)),
+      height: Math.max(1, Math.round(bounds.height * pixelRatio)),
+      yaw: numericAttribute(this, "yaw"),
+      pitch: numericAttribute(this, "pitch") ?? ((this.getAttribute("view") ?? generated?.view) === "face" ? 0 : undefined),
       rotation: rotating ? this.#currentRotation() : parseRotation(this.getAttribute("rotation")),
-      zoom: numericAttribute(this, "zoom") ?? generated?.zoom,
+      zoom: numericAttribute(this, "zoom"),
       view: this.getAttribute("view") as SceneOptions["view"] ?? generated?.view,
       faceIndex: explicitFaceIndex ?? (generated ? generated.faceIndex % createPolyhedron(geometry).faces.length : undefined),
-      quality: this.#dragging || rotating ? 1 : 2,
+      quality: 2,
     };
   }
 
@@ -414,7 +417,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
 
   #wheel = (event: WheelEvent): void => {
     event.preventDefault();
-    const zoom = numericAttribute(this, "zoom") ?? this.#generatedOptions()?.zoom ?? 1;
+    const zoom = numericAttribute(this, "zoom") ?? 1;
     this.setAttribute("zoom", String(Math.max(0.4, Math.min(2.5, zoom * (event.deltaY > 0 ? 0.94 : 1.06)))));
     this.dispatchEvent(new Event("change", { bubbles: true }));
   };

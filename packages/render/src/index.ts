@@ -24,7 +24,7 @@ export interface RenderOptions {
   view?: RenderView;
   /** Select one of the congruent faces for the face study views. */
   faceIndex?: number;
-  /** Internal supersampling. 1 is useful during pointer interaction; 2 is the default. */
+  /** Internal supersampling. The web component uses 2 at rest and during motion. */
   quality?: 1 | 2;
 }
 export type SceneOptions = ShapeOptions & RenderOptions;
@@ -82,9 +82,9 @@ function put(data: Uint8ClampedArray, index: number, color: RGB, alpha = 255): v
 /** Shared, dependency-free orthographic rasterizer with a per-pixel depth buffer. */
 export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions = {}): RenderedImage {
   const width = Math.round(options.width ?? 512), height = Math.round(options.height ?? 512);
-  if (!(width > 0 && height > 0 && width <= 4096 && height <= 4096)) throw new Error("Image dimensions must be 1–4096 pixels");
+  if (!(width > 0 && height > 0 && width <= 8192 && height <= 8192)) throw new Error("Image dimensions must be 1–8192 pixels");
   const quality = options.quality ?? 2;
-  if (width * height * quality * quality > 16_000_000) throw new Error("Image size exceeds the renderer's pixel budget");
+  if (width * height * quality * quality > 64_000_000) throw new Error("Image size exceeds the renderer's pixel budget");
   const w = width * quality, h = height * quality;
   const palette = PALETTES[options.palette ?? "aurora"];
   if (!palette) throw new Error(`Unknown palette: ${options.palette}`);
@@ -251,7 +251,7 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
   return { width, height, data: reduced };
 }
 
-export { optionsToString, stringToOptions, DEFAULT_WORKBENCH_OPTIONS, type WorkbenchOptions } from "./options-code.js";
+export { optionsToString, stringToOptions, DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, type DesignOptions, type WorkbenchOptions } from "./options-code.js";
 
 export function renderScene(options: SceneOptions = {}): RenderedImage {
   const resolved = resolveSceneOptions(options);
