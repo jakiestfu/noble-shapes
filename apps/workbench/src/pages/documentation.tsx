@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Content from "../../../../DOCUMENTATION.md";
+import Catalogue from "../../../../CATALOGUE.md";
 import source from "virtual:documentation-source";
+import { MdxCodeBlock } from "@/components/code-preview";
 
 type Heading = { id: string; label: string; level: 2 | 3 };
 
@@ -35,6 +37,6 @@ export function Documentation() {
 
   return <main ref={scroller} className="content-page docs-page"><div className="docs-layout">
     <aside className="docs-sidebar" aria-label="Documentation contents"><p className="docs-sidebar-title">On this page</p><nav className="docs-nav" aria-label="Documentation sections">{headings.map(heading => <a key={heading.id} href={`#${heading.id}`} data-level={heading.level} className={`docs-nav-link ${active === heading.id ? "is-active" : ""}`} aria-current={active === heading.id ? "location" : undefined} onClick={() => setActive(heading.id)}>{heading.label}</a>)}</nav></aside>
-    <article className="docs-article prose prose-neutral docs-prose"><Content components={{ Callout }} /></article>
+    <article className="docs-article prose prose-neutral docs-prose"><Content components={{ Callout, pre: MdxCodeBlock }} /><Catalogue components={{ pre: MdxCodeBlock }} /></article>
   </div></main>;
 }

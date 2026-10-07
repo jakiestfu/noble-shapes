@@ -6,6 +6,7 @@ import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, optionsToString, PAL
 import "@noble-polyhedra/web-component";
 import type { NoblePolyhedronElement } from "@noble-polyhedra/web-component";
 import { Button } from "@/components/ui/button";
+import { CodePreview } from "@/components/code-preview";
 import { FormPicker } from "@/components/form-picker";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -79,7 +80,7 @@ function App() {
   const [codeError, setCodeError] = useState(initial.error);
   const [parameterError, setParameterError] = useState("");
   const [identity, setIdentity] = useState("");
-  const [copied, setCopied] = useState<"link" | "embed" | "">("");
+  const [copied, setCopied] = useState<"link" | "">("");
   const code = useMemo(() => optionsToString(options), [options.shape, options.view, options.palette,
     options.color, options.background, options.faceIndex, options.n, options.p, options.q,
     options.crownHeight, options.a, options.b, options.c]);
@@ -198,7 +199,7 @@ function App() {
     setOptions(previous => ({ ...previous, ...randomOptions(seed) }));
     setCodeError(""); setParameterError("");
   };
-  const copyText = async (kind: "link" | "embed", text: string) => {
+  const copyText = async (kind: "link", text: string) => {
     await navigator.clipboard.writeText(text); setCopied(kind);
     window.setTimeout(() => setCopied(""), 1600);
   };
@@ -218,7 +219,7 @@ function App() {
     b: family === "disphenoid" ? String(options.b) : undefined,
     c: family === "disphenoid" ? String(options.c) : undefined,
   };
-  const snippet = `import "@noble-polyhedra/web-component";\n\n<noble-polyhedron\n${Object.entries(appearanceAttrs).filter(([, value]) => value !== undefined).map(([key, value]) => `  ${key}="${value}"`).join("\n")}\n></noble-polyhedron>`;
+  const snippet = `<script type="module">\n  import "@noble-polyhedra/web-component";\n</script>\n\n<noble-polyhedron\n${Object.entries(appearanceAttrs).filter(([, value]) => value !== undefined).map(([key, value]) => `  ${key}="${value}"`).join("\n")}\n></noble-polyhedron>`;
   const shareUrl = new URL("/", window.location.origin); shareUrl.searchParams.set("code", code);
   const download = () => {
     if (!hero.current) return;
@@ -246,11 +247,12 @@ function App() {
 
     {page === "showcase" ? <Suspense fallback={<main className="content-page" aria-busy="true"><div className="content-inner"><p className="eyebrow">Curated forms</p><h1 className="section-title">Showcase</h1><p className="page-description">Loading forms…</p></div></main>}><Showcase theme={options.theme} onOpen={next => { replacingDesign.current = true; setOptions(next); setCodeError(""); setParameterError(""); const url = new URL("/", window.location.origin); url.searchParams.set("code", optionsToString(next)); window.history.pushState(null, "", url); setPage("workbench"); }} /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page" aria-busy="true"><p className="eyebrow">Documentation</p><h1 className="section-title">Loading guide…</h1></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
-        <div className="control-intro"><p className="eyebrow">Workbench / Design</p><h1 className="font-heading text-xl font-bold tracking-tight">Make a form.</h1><p className="mt-1 text-xs text-muted-foreground">Form and appearance live in the share link.</p><Button variant="ghost" className="mt-4 w-full justify-start" onClick={() => generate(randomSeed())}><Shuffle className="size-4" /> Surprise me</Button><div className="mt-4 space-y-2"><label htmlFor="identity" className="text-xs font-medium">Generate from text</label><div className="flex gap-2"><Input id="identity" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} onKeyDown={event => { if (event.key === "Enter" && identity) generate(identity); }} /><Button variant="ghost" size="sm" disabled={!identity} onClick={() => generate(identity)}>Generate</Button></div><p className="text-[11px] text-muted-foreground">The same text makes the same design. Camera, motion, and theme stay as you set them.</p></div></div>
+        <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Workbench</h1><p className="mt-1 text-xs text-muted-foreground">146 finite forms · two infinite families</p></div>
 
-        <Group title="Geometry">
-          <Control label="Form" value="← / →"><div className="flex items-center gap-2"><Button variant="ghost" size="icon" className="size-9" aria-label="Previous form" title="Previous form (←)" onClick={() => stepShape(-1)}><ChevronLeft className="size-4" /></Button><div className="min-w-0 flex-1"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /></div><Button variant="ghost" size="icon" className="size-9" aria-label="Next form" title="Next form (→)" onClick={() => stepShape(1)}><ChevronRight className="size-4" /></Button></div></Control>
-          <Control label="View"><div className="grid grid-cols-2 gap-1.5">{VIEWS.map(item => <Button key={item.id} variant="ghost" aria-pressed={options.view === item.id} size="sm" className={`${item.id === "face-context" ? "col-span-2" : ""} ${options.view === item.id ? "is-selected" : ""}`} onClick={() => update({ view: item.id, ...(item.id === "face" ? { pitch: 0, rotation: undefined } : {}) })}>{item.name}</Button>)}</div></Control>
+        <Group title="Form">
+          <Control label="Polyhedron" value={`${shapeIndex + 1} / ${SHAPES.length}`}><div className="form-selector"><Button variant="ghost" size="icon" className="size-8" aria-label="Previous form" title="Previous form (←)" onClick={() => stepShape(-1)}><ChevronLeft className="size-4" /></Button><div className="min-w-0 flex-1"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /></div><Button variant="ghost" size="icon" className="size-8" aria-label="Next form" title="Next form (→)" onClick={() => stepShape(1)}><ChevronRight className="size-4" /></Button></div></Control>
+          <div className="design-actions"><Button variant="ghost" size="sm" className="surprise-action" onClick={() => generate(randomSeed())}><Shuffle className="size-3.5" /> Surprise me</Button><details className="identity-disclosure"><summary>From text</summary><form className="identity-form" onSubmit={event => { event.preventDefault(); if (identity.trim()) generate(identity.trim()); }}><Input id="identity" aria-label="Text for repeatable design" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} /><Button variant="ghost" size="sm" type="submit" disabled={!identity.trim()}>Generate</Button></form><p>Same text produces the same design.</p></details></div>
+          <Control label="View"><div className="view-options">{VIEWS.map(item => <Button key={item.id} variant="ghost" aria-pressed={options.view === item.id} size="sm" className={`${item.id === "face-context" ? "col-span-2" : ""} ${options.view === item.id ? "is-selected" : ""}`} onClick={() => update({ view: item.id, ...(item.id === "face" ? { pitch: 0, rotation: undefined } : {}) })}>{item.name}</Button>)}</div></Control>
           {(options.view === "face" || options.view === "face-context") && <Control label="Repeated face" value={`${options.faceIndex + 1} / ${poly.faces.length}`}><Slider min={0} max={poly.faces.length - 1} step={1} value={[options.faceIndex]} onValueChange={value => update({ faceIndex: sliderValue(value, 0) })} /></Control>}
           {family === "disphenoid" && <div className="grid grid-cols-3 gap-2">{(["a", "b", "c"] as const).map(key => <Control key={key} label={`Axis ${key.toUpperCase()}`}><Input type="number" min="0.1" max="3" step="0.05" value={options[key]} onChange={event => updateGeometry({ [key]: Number(event.target.value) })} /></Control>)}</div>}
           {family === "stephanoid" && <div className="space-y-3"><div className="grid grid-cols-3 gap-2">{(["n", "p", "q"] as const).map(key => <Control key={key} label={key === "n" ? "Rings" : `Step ${key.toUpperCase()}`}><Input type="number" min="1" step="1" value={options[key]} onChange={event => updateGeometry({ [key]: Number(event.target.value) })} /></Control>)}</div><Control label="Crown height" value={options.crownHeight.toFixed(2)}><Slider min={0.2} max={1.5} step={0.01} value={[options.crownHeight]} onValueChange={value => updateGeometry({ crownHeight: sliderValue(value, 0.7) })} /></Control></div>}
@@ -286,7 +288,7 @@ function App() {
         </div>
         <div className="preview-dock"><div className="preview-meta"><p>{poly.vertices.length} vertices <span>·</span> {poly.edges.length} edges <span>·</span> {poly.faces.length} faces</p><p>Drag to rotate <span>·</span> Scroll to zoom</p></div>
           <details className="math-panel" open={mathOpen} onToggle={event => setMathOpen(event.currentTarget.open)}><summary><span>Form mathematics</span><span className="math-panel-summary-value">χ = V − E + F = {eulerCharacteristic(poly)}</span></summary>{mathOpen && <Suspense fallback={<p className="math-note p-4">Loading notation…</p>}><MathPanel poly={poly} regularSymbol={regularSymbol} /></Suspense>}</details>
-          <details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Embed this form</span><span className="text-xs text-muted-foreground">Web component</span></summary><div className="embed-content"><pre><code>{snippet}</code></pre><Button variant="ghost" size="sm" onClick={() => copyText("embed", snippet)}>{copied === "embed" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied === "embed" ? "Copied" : "Copy code"}</Button></div></details></div>
+          <details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Embed this form</span><span className="text-xs text-muted-foreground">Web component</span></summary><div className="embed-content"><CodePreview code={snippet} language="html" compact /></div></details></div>
       </main>
     </div>}
   </div>;

@@ -7,6 +7,7 @@ import rehypeSlug from "rehype-slug";
 import { defineConfig } from "vite";
 
 const documentationPath = fileURLToPath(new URL("../../DOCUMENTATION.md", import.meta.url));
+const cataloguePath = fileURLToPath(new URL("../../CATALOGUE.md", import.meta.url));
 
 export default defineConfig({
   plugins: [
@@ -16,10 +17,11 @@ export default defineConfig({
       load(id) {
         if (id !== "\0virtual:documentation-source") return;
         this.addWatchFile(documentationPath);
-        return `export default ${JSON.stringify(readFileSync(documentationPath, "utf8"))}`;
+        this.addWatchFile(cataloguePath);
+        return `export default ${JSON.stringify(`${readFileSync(documentationPath, "utf8")}\n${readFileSync(cataloguePath, "utf8")}`)}`;
       },
     },
-    { enforce: "pre", ...mdx({ include: /DOCUMENTATION\.md$/, format: "mdx", mdxExtensions: [".md", ".mdx"], rehypePlugins: [rehypeSlug] }) },
+    { enforce: "pre", ...mdx({ include: /(?:DOCUMENTATION|CATALOGUE)\.md$/, format: "mdx", mdxExtensions: [".md", ".mdx"], rehypePlugins: [rehypeSlug] }) },
     react({ include: /\.(jsx|js|mdx|md|tsx|ts)$/ }), tailwindcss(),
   ],
   resolve: { alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) }, dedupe: ["react", "react-dom"] },

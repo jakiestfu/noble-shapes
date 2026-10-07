@@ -156,7 +156,3 @@ pnpm bench --all --output benchmark.json
 ```
 
 `--all` covers every finite form plus representative members of the infinite families. Use `--shape` and family parameters to measure one specific member. Run benchmarks on the same machine and resolution when comparing results.
-
-## Further reading
-
-Read the [Research page](/research) for Connor Hill's classification, the video, Wikipedia introductions, and Stella tools. The repository's `docs/geometry.md` covers the construction and catalogue in more detail. This implementation is independent and MIT licensed.
