@@ -164,12 +164,12 @@ noble-polyhedron { display: block; }
 .view-options button.is-selected { background: color-mix(in srgb, var(--background) 55%, transparent); color: var(--foreground); }
 .view-options button.is-selected::before { position: absolute; top: 7px; bottom: 7px; left: 0; width: 2px; background: var(--foreground); content: ""; }
 [data-slot="button"].is-selected, [data-slot="button"][aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 78%, transparent); color: var(--foreground); }
-.palette-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
-.palette-choice { display: grid; min-width: 0; gap: 5px; justify-items: center; border: 1px solid transparent; border-radius: 3px; padding: 5px 2px 4px; color: var(--muted-foreground); font-size: 10px; cursor: pointer; }
-.palette-choice:hover { background: var(--accent); color: var(--foreground); }
-.palette-choice[aria-pressed="true"] { border-color: var(--input); color: var(--foreground); }
-.palette-chip { display: flex; width: 38px; height: 25px; align-items: center; justify-content: center; border: 1px solid var(--input); border-radius: 2px; }
-.palette-chip > span { width: 16px; height: 16px; border-radius: 50%; }
+.palette-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px 5px; }
+.palette-choice { display: grid; min-width: 0; gap: 7px; justify-items: center; border: 0; background: transparent; padding: 4px 1px; color: var(--muted-foreground); font-size: 10px; cursor: pointer; }
+.palette-choice:hover { color: var(--foreground); }
+.palette-choice:focus-visible { border-radius: 2px; outline: 2px solid var(--ring); outline-offset: 2px; }
+.palette-choice[aria-pressed="true"] { color: var(--foreground); font-weight: 700; }
+.palette-chip { display: block; width: 27px; height: 27px; border-radius: 50%; box-shadow: 0 0 0 1px var(--input); }
 .color-controls { display: grid; gap: 12px; }
 .color-control-label { display: block; margin-bottom: 7px; font-size: 12px; font-weight: 500; }
 .color-field { display: flex; height: 34px; align-items: center; gap: 9px; border: 1px solid var(--input); border-radius: 3px; background: color-mix(in srgb, var(--background) 22%, transparent); padding: 4px 8px 4px 4px; }
