@@ -105,7 +105,7 @@
 .section-title { font: 700 clamp(1.65rem, 3vw, 2.4rem)/1.12 Inter, sans-serif; letter-spacing: -0.05em; }
 noble-polyhedron { display: block; }
 
-.app-shell { display: flex; height: 100dvh; min-height: 570px; flex-direction: column; }
+.app-shell { display: flex; height: 100dvh; min-height: 420px; flex-direction: column; }
 .app-shell.is-workbench { background-color: var(--scene-background); background-image: radial-gradient(circle at 63% 47%, color-mix(in srgb, var(--scene-background) 88%, var(--scene-color)) 0%, var(--scene-background) 57%, color-mix(in srgb, var(--scene-background) 86%, #000) 100%); }
 .app-shell.is-workbench.is-transparent { background-color: var(--checker-light); background-image: linear-gradient(45deg, var(--checker-dark) 25%, transparent 25%), linear-gradient(-45deg, var(--checker-dark) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--checker-dark) 75%), linear-gradient(-45deg, transparent 75%, var(--checker-dark) 75%); background-position: 0 0, 0 12px, 12px -12px, -12px 0; background-size: 24px 24px; }
 .app-header { display: grid; height: 58px; flex: none; grid-template-columns: minmax(0, 1fr) 436px minmax(0, 1fr); align-items: center; column-gap: 20px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--background) 74%, transparent); padding: 0 18px; backdrop-filter: blur(28px) saturate(1.4); z-index: 3; }
@@ -198,11 +198,11 @@ noble-polyhedron { display: block; }
 .preview-surface { position: absolute; z-index: 0; inset: 0; overflow: hidden; background: transparent; }
 .preview-surface noble-polyhedron { width: 100%; height: 100%; min-height: 0; aspect-ratio: auto; border-radius: 0; }
 .preview-surface noble-polyhedron::part(stats) { top: 80px; right: 24px; border-radius: 3px; }
-.preview-dock { position: relative; z-index: 1; width: min(560px, calc(100% - 32px)); max-height: 58%; overflow-y: auto; align-self: flex-end; margin: auto 16px 16px; border: 1px solid var(--border); border-radius: 4px; background: color-mix(in srgb, var(--background) 72%, transparent); backdrop-filter: blur(28px) saturate(1.4); scrollbar-width: thin; }
+.preview-dock { position: relative; z-index: 1; width: min(560px, calc(100% - 32px)); max-height: calc(100% - 112px); overflow-y: auto; align-self: flex-end; margin: auto 16px 16px; border: 1px solid var(--border); border-radius: 4px; background: color-mix(in srgb, var(--background) 72%, transparent); backdrop-filter: blur(28px) saturate(1.4); scrollbar-width: thin; }
 .embed-panel { flex: none; }
 .embed-panel summary { display: flex; min-height: 42px; cursor: pointer; list-style: none; align-items: center; justify-content: space-between; padding: 0 16px; font-size: 12px; font-weight: 600; }
 .embed-panel summary::-webkit-details-marker { display: none; }
-.embed-content { max-height: 260px; overflow: auto; border-top: 1px solid var(--border); }
+.embed-content { border-top: 1px solid var(--border); }
 
 .content-page { min-height: 0; flex: 1; overflow-y: auto; padding: clamp(20px, 4vw, 52px) clamp(16px, 4vw, 52px) 72px; scrollbar-width: thin; }
 .loading-page { display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 24px; }
@@ -258,7 +258,7 @@ noble-polyhedron { display: block; }
 .code-preview-caption { position: absolute; right: 8px; bottom: 8px; left: 8px; border: 1px solid #ffffff30; border-radius: 2px; background: #141820ba; padding: 5px 7px; color: #f6f6f2; font: 10px/1.35 ui-monospace, SFMono-Regular, monospace; text-align: center; pointer-events: none; }
 .code-preview-error { margin: auto; padding: 20px; color: var(--foreground); font-size: 12px; }
 .code-preview.is-compact { margin: 0; border: 0; background: transparent; }
-.code-preview.is-compact pre { max-height: 220px; }
+.code-preview.is-compact pre { max-height: none; }
 .syntax-keyword { color: #74578e; }
 .syntax-string { color: #3e765d; }
 .syntax-comment { color: #7d817d; }
