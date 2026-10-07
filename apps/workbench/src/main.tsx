@@ -42,25 +42,22 @@ function sceneIsLight(background: string, theme: "light" | "dark"): boolean {
   });
   return channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722 > 0.179;
 }
-const VIEWER_STORAGE_KEY = "noble-forms-viewer-v1";
-type ViewerPreferences = Pick<WorkbenchOptions, "theme" | "yaw" | "pitch" | "rotation" | "zoom" | "rotate" | "float"> & { stats: boolean; animationEnabled: boolean };
-
-function readViewerPreferences(): Partial<ViewerPreferences> {
+const THEME_STORAGE_KEY = "noble-polyhedra-theme";
+const OLD_VIEWER_STORAGE_KEY = "noble-forms-viewer-v1";
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
+function readThemePreference(): "light" | "dark" | undefined {
   try {
-    const value: unknown = JSON.parse(localStorage.getItem(VIEWER_STORAGE_KEY) ?? "null");
-    if (!value || typeof value !== "object") return {};
-    const saved = value as Record<string, unknown>;
-    const preferences: Partial<ViewerPreferences> = {};
-    if (saved.theme === "light" || saved.theme === "dark") preferences.theme = saved.theme;
-    if (typeof saved.stats === "boolean") preferences.stats = saved.stats;
-    if (typeof saved.animationEnabled === "boolean") preferences.animationEnabled = saved.animationEnabled;
-    for (const key of ["yaw", "pitch", "zoom", "rotate", "float"] as const) {
-      if (typeof saved[key] === "number" && Number.isFinite(saved[key])) preferences[key] = saved[key];
-    }
-    if (Array.isArray(saved.rotation) && saved.rotation.length === 4 && saved.rotation.every(part => typeof part === "number" && Number.isFinite(part))) preferences.rotation = saved.rotation as unknown as Quaternion;
-    return preferences;
-  } catch { return {}; }
+    const value = localStorage.getItem(THEME_STORAGE_KEY);
+    return value === "light" || value === "dark" ? value : undefined;
+  } catch { return undefined; }
 }
+const savedTheme = readThemePreference();
+const initialTheme = savedTheme ?? (systemTheme.matches ? "dark" : "light");
+try { localStorage.removeItem(OLD_VIEWER_STORAGE_KEY); } catch { /* Storage may be disabled. */ }
+const DEFAULT_CODE = optionsToString(DEFAULT_DESIGN_OPTIONS);
+const defaultWorkbench = (design: DesignOptions, theme: "light" | "dark"): WorkbenchOptions =>
+  designForTheme({ ...DEFAULT_WORKBENCH_OPTIONS, ...design, theme }, theme);
 
 function readLocation(): { design: DesignOptions; error: string } {
   const code = new URL(window.location.href).searchParams.get("code");
@@ -69,11 +66,7 @@ function readLocation(): { design: DesignOptions; error: string } {
   catch (error) { return { design: DEFAULT_DESIGN_OPTIONS, error: error instanceof Error ? error.message : String(error) }; }
 }
 const initial = readLocation();
-const savedViewer = readViewerPreferences();
-const { stats: savedStats, animationEnabled: savedAnimationEnabled, ...savedViewOptions } = savedViewer;
-const legacyMotionDefaults = savedAnimationEnabled === undefined && savedViewer.rotate === 0 && savedViewer.float === 0
-  ? { rotate: 0.25, float: 0.25 } : {};
-document.documentElement.dataset.theme = savedViewer.theme ?? "light";
+document.documentElement.dataset.theme = initialTheme;
 
 function Control({ label, value, children }: { label: string; value?: string; children: ReactNode }) {
   return <div className="space-y-2"><div className="flex items-center justify-between gap-3 text-xs font-medium"><span>{label}</span>{value && <span className="font-mono text-muted-foreground">{value}</span>}</div>{children}</div>;
@@ -101,9 +94,9 @@ function ColorControl({ label, value, onChange }: { label: string; value: string
 
 function App() {
   const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname));
-  const [options, setOptions] = useState<WorkbenchOptions>(() => designForTheme({ ...DEFAULT_WORKBENCH_OPTIONS, ...savedViewOptions, ...legacyMotionDefaults, ...initial.design }, savedViewOptions.theme ?? "light"));
-  const [stats, setStats] = useState(savedStats ?? false);
-  const [animationEnabled, setAnimationEnabled] = useState(savedAnimationEnabled ?? !window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const [options, setOptions] = useState<WorkbenchOptions>(() => defaultWorkbench(initial.design, initialTheme));
+  const [stats, setStats] = useState(false);
+  const [animationEnabled, setAnimationEnabled] = useState(!reducedMotion.matches);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(() => new Set(["shape"]));
   const [opaqueBackground, setOpaqueBackground] = useState(options.background === "transparent" ? paletteColors(options.palette, options.theme).background : options.background);
   const [codeError, setCodeError] = useState(initial.error);
@@ -118,6 +111,7 @@ function App() {
   const [draftCode, setDraftCode] = useState(code);
   const hero = useRef<NoblePolyhedronElement>(null);
   const replacingDesign = useRef(false);
+  const hasThemeOverride = useRef(savedTheme !== undefined);
   const family = options.shape === "disphenoid" ? "disphenoid" : options.shape === "stephanoid" || options.shape === "antistephanoid" ? "stephanoid" : "finite";
   const poly = useMemo(() => createPolyhedron(options), [options.shape, options.n, options.p, options.q, options.crownHeight, options.a, options.b, options.c]);
   const shapeIndex = SHAPES.findIndex(item => item.id === options.shape);
@@ -125,26 +119,33 @@ function App() {
   const lightScene = sceneIsLight(options.background, options.theme);
 
   useEffect(() => { document.documentElement.dataset.theme = options.theme; }, [options.theme]);
+  useEffect(() => {
+    const onSystemTheme = (event: MediaQueryListEvent) => {
+      if (hasThemeOverride.current) return;
+      const theme = event.matches ? "dark" : "light";
+      setOptions(previous => designForTheme({ ...previous, theme }, theme));
+    };
+    systemTheme.addEventListener("change", onSystemTheme);
+    return () => systemTheme.removeEventListener("change", onSystemTheme);
+  }, []);
   useEffect(() => { if (options.view === "solid" || options.view === "solid-wireframe") setEdgesPreferred(options.view === "solid-wireframe"); }, [options.view]);
   useEffect(() => { if (options.background !== "transparent") setOpaqueBackground(options.background); }, [options.background]);
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const viewer: ViewerPreferences = { theme: options.theme, yaw: options.yaw, pitch: options.pitch,
-        rotation: options.rotation, zoom: options.zoom, rotate: options.rotate, float: options.float, stats, animationEnabled };
-      try { localStorage.setItem(VIEWER_STORAGE_KEY, JSON.stringify(viewer)); } catch { /* Storage may be disabled. */ }
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [options.theme, options.yaw, options.pitch, options.rotation, options.zoom, options.rotate, options.float, stats, animationEnabled]);
+  const toggleTheme = () => {
+    const theme = options.theme === "light" ? "dark" : "light";
+    hasThemeOverride.current = true;
+    try { localStorage.setItem(THEME_STORAGE_KEY, theme); } catch { /* Storage may be disabled. */ }
+    setOptions(previous => designForTheme({ ...previous, theme }, theme));
+  };
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.key.toLowerCase() !== "d") return;
       if (event.target instanceof Element && event.target.closest('input, textarea, select, [contenteditable], [role="combobox"], [role="listbox"]')) return;
       event.preventDefault();
-      setOptions(previous => { const theme = previous.theme === "light" ? "dark" : "light"; return designForTheme({ ...previous, theme }, theme); });
+      toggleTheme();
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
+  }, [options.theme]);
   useEffect(() => { document.title = `${page.charAt(0).toUpperCase() + page.slice(1)} — Noble Polyhedrons`; }, [page]);
   useLayoutEffect(() => {
     if (replacingDesign.current && hero.current) {
@@ -157,14 +158,21 @@ function App() {
     setDraftCode(code);
     if (page !== "workbench") return;
     const url = new URL(window.location.href);
-    url.searchParams.set("code", code);
-    window.history.replaceState(null, "", url);
+    if (code === DEFAULT_CODE) url.searchParams.delete("code");
+    else url.searchParams.set("code", code);
+    if (url.href !== window.location.href) window.history.replaceState(null, "", url);
   }, [code, page]);
   useEffect(() => {
     const onPopState = () => {
       const nextPage = pageFromPath(window.location.pathname);
       setPage(nextPage);
-      if (nextPage === "workbench") { const next = readLocation(); setOptions(previous => ({ ...previous, ...designForTheme(next.design, previous.theme) })); setCodeError(next.error); }
+      if (nextPage === "workbench") {
+        const next = readLocation();
+        setOptions(previous => defaultWorkbench(next.design, previous.theme));
+        setStats(false); setAnimationEnabled(!reducedMotion.matches);
+        setExpandedSections(new Set(["shape"])); setIdentityOpen(false); setIdentity("");
+        setCodeError(next.error); setParameterError("");
+      }
     };
     window.addEventListener("popstate", onPopState);
     return () => window.removeEventListener("popstate", onPopState);
@@ -185,10 +193,15 @@ function App() {
   }, [page]);
 
   const navigate = (nextPage: Page) => {
-    if (nextPage === page) return;
+    if (nextPage === page && nextPage !== "workbench") return;
     const url = new URL(pathForPage(nextPage), window.location.origin);
-    if (nextPage === "workbench") url.searchParams.set("code", code);
     window.history.pushState(null, "", url);
+    if (nextPage === "workbench") {
+      setOptions(previous => defaultWorkbench(DEFAULT_DESIGN_OPTIONS, previous.theme));
+      setStats(false); setAnimationEnabled(!reducedMotion.matches);
+      setExpandedSections(new Set(["shape"])); setIdentityOpen(false); setIdentity("");
+      setCodeError(""); setParameterError("");
+    }
     setPage(nextPage);
   };
   const navClick = (event: React.MouseEvent<HTMLAnchorElement>, target: Page) => {
@@ -197,7 +210,6 @@ function App() {
   };
 
   const update = (patch: Partial<WorkbenchOptions>) => { setOptions(previous => ({ ...previous, ...patch })); setCodeError(""); };
-  const toggleTheme = () => setOptions(previous => { const theme = previous.theme === "light" ? "dark" : "light"; return designForTheme({ ...previous, theme }, theme); });
   const toggleSection = (id: string) => setExpandedSections(current => {
     const next = new Set(current);
     if (next.has(id)) next.delete(id);
