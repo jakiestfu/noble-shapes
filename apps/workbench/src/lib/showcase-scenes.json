@@ -1,0 +1,69 @@
+[
+  {
+    "shape": "small-stellated-dodecahedron",
+    "palette": "aurora",
+    "yaw": 0.6,
+    "pitch": 0.72,
+    "category": "Kepler–Poinsot solid",
+    "note": "Twelve intersecting pentagrams form a clear five-pointed star."
+  },
+  {
+    "shape": "great-dodecahedron",
+    "palette": "gold",
+    "yaw": -0.36,
+    "pitch": 0.5,
+    "category": "Kepler–Poinsot solid",
+    "note": "Intersecting pentagons hide a deeper, angular structure."
+  },
+  {
+    "shape": "great-stellated-dodecahedron",
+    "palette": "coral",
+    "yaw": 0.55,
+    "pitch": 0.68,
+    "category": "Kepler–Poinsot solid",
+    "note": "Tall points radiate from twelve crossing star faces."
+  },
+  {
+    "shape": "great-icosahedron",
+    "palette": "violet",
+    "yaw": -0.7,
+    "pitch": 0.58,
+    "category": "Kepler–Poinsot solid",
+    "note": "Twenty triangular faces weave into a compact star."
+  },
+  {
+    "shape": "tI-5.7",
+    "palette": "gold",
+    "yaw": 0.55,
+    "pitch": 0.7,
+    "category": "Finite catalogue",
+    "note": "A dense radial pattern from the expanded icosahedral catalogue."
+  },
+  {
+    "shape": "ID-2",
+    "palette": "coral",
+    "yaw": 0.55,
+    "pitch": 0.7,
+    "category": "Finite catalogue",
+    "note": "Repeated triangular facets build a layered shell."
+  },
+  {
+    "shape": "tC-1.1",
+    "palette": "aurora",
+    "yaw": 0.55,
+    "pitch": 0.7,
+    "category": "Finite catalogue",
+    "note": "Cubic symmetry produces a many-pointed silhouette."
+  },
+  {
+    "shape": "stephanoid",
+    "palette": "violet",
+    "yaw": 0.55,
+    "pitch": 0.7,
+    "n": 7,
+    "p": 5,
+    "q": 2,
+    "category": "Infinite family",
+    "note": "A sevenfold crown, one choice from an infinite family."
+  }
+]

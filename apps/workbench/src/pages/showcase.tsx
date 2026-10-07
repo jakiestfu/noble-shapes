@@ -1,35 +1,33 @@
-import { createElement } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { SHAPES, type ShapeId } from "@noble-polyhedra/core";
-import { DEFAULT_WORKBENCH_OPTIONS, PALETTES, type PaletteName, type WorkbenchOptions } from "@noble-polyhedra/render";
-import { Button } from "@/components/ui/button";
+import { DEFAULT_DESIGN_OPTIONS, optionsToString, PALETTES, type PaletteName } from "@noble-polyhedra/render";
 import { MathText } from "@/components/math-text";
 import { REGULAR_SYMBOLS } from "@/lib/shape-math";
+import scenes from "@/lib/showcase-scenes.json";
 
-type Favorite = { shape: ShapeId; palette: PaletteName; yaw: number; pitch: number; note: string };
-
-const FAVORITES: Favorite[] = [
-  { shape: "small-stellated-dodecahedron", palette: "aurora", yaw: 0.6, pitch: 0.72, note: "A star of long, crossing pentagonal faces." },
-  { shape: "great-dodecahedron", palette: "gold", yaw: -0.36, pitch: 0.5, note: "A quieter silhouette with hidden depth." },
-  { shape: "great-stellated-dodecahedron", palette: "coral", yaw: 0.55, pitch: 0.68, note: "Sharp points and a dramatic, layered surface." },
-  { shape: "great-icosahedron", palette: "violet", yaw: -0.7, pitch: 0.58, note: "Angular facets that change character as it turns." },
-];
-
-export function Showcase({ theme, onOpen }: { theme: WorkbenchOptions["theme"]; onOpen: (options: WorkbenchOptions) => void }) {
+export function Showcase() {
   return <main className="content-page"><div className="content-inner">
-    <div className="page-heading"><div><p className="eyebrow">Curated forms</p><h1 className="section-title">Showcase</h1><p className="page-description">Four favorites from the Kepler–Poinsot solids. Open any form in the workbench to change its color, view, and motion.</p></div><span className="page-count">01 — 04</span></div>
-    <div className="showcase-grid">{FAVORITES.map((favorite, index) => {
-      const name = SHAPES.find(shape => shape.id === favorite.shape)?.name ?? favorite.shape;
-      const palette = PALETTES[favorite.palette];
-      return <article className="showcase-card" key={favorite.shape}>
-        <div className="showcase-stage" style={{ backgroundColor: palette.background }}>
-          {createElement("noble-polyhedron", { shape: favorite.shape, view: "solid-wireframe", palette: favorite.palette, color: palette.color, background: palette.background, yaw: String(favorite.yaw), pitch: String(favorite.pitch), className: "showcase-model", "aria-label": name })}
+    <div className="page-heading"><div><p className="eyebrow">Curated forms</p><h1 className="section-title">Showcase</h1><p className="page-description">A few ways nobility can look, from the regular stars to newer facetings and an infinite family. Select a form to open its design in the workbench.</p></div><span className="page-count">01 — {String(scenes.length).padStart(2, "0")}</span></div>
+    <div className="showcase-grid">{scenes.map((scene, index) => {
+      const shape = scene.shape as ShapeId;
+      const palette = scene.palette as PaletteName;
+      const name = SHAPES.find(item => item.id === shape)?.name ?? shape;
+      const colors = PALETTES[palette];
+      const code = optionsToString({ ...DEFAULT_DESIGN_OPTIONS, shape, palette,
+        color: colors.color, background: colors.background,
+        n: scene.n ?? DEFAULT_DESIGN_OPTIONS.n, p: scene.p ?? DEFAULT_DESIGN_OPTIONS.p, q: scene.q ?? DEFAULT_DESIGN_OPTIONS.q });
+      const symbol = REGULAR_SYMBOLS[shape];
+      return <a className="showcase-card" href={`/?code=${encodeURIComponent(code)}`} key={shape}>
+        <div className="showcase-stage" style={{ backgroundColor: colors.background }}>
+          <img className="showcase-image" src={`/showcase/${shape}.png`} alt="" loading={index < 2 ? "eager" : "lazy"} decoding="async" width="960" height="640" />
           <span className="showcase-number">{String(index + 1).padStart(2, "0")}</span>
         </div>
-        <div className="showcase-card-body"><div><p className="showcase-kicker">Kepler–Poinsot solid</p><div className="showcase-heading-row"><h2 className="showcase-name">{name}</h2><MathText className="showcase-symbol" tex={REGULAR_SYMBOLS[favorite.shape]!} /></div><p className="showcase-note">{favorite.note}</p></div>
-          <Button variant="ghost" size="sm" onClick={() => onOpen({ ...DEFAULT_WORKBENCH_OPTIONS, shape: favorite.shape, palette: favorite.palette, color: palette.color, background: palette.background, yaw: favorite.yaw, pitch: favorite.pitch, theme })}>Open in workbench <ArrowUpRight className="size-3.5" /></Button>
+        <div className="showcase-card-body">
+          <p className="showcase-kicker">{scene.category}</p>
+          <div className="showcase-heading-row"><h2 className="showcase-name">{name}</h2>{symbol && <MathText className="showcase-symbol" tex={symbol} />}<ArrowUpRight className="showcase-arrow" aria-hidden="true" /></div>
+          <p className="showcase-note">{scene.note}</p>
         </div>
-      </article>;
+      </a>;
     })}</div>
   </div></main>;
 }
