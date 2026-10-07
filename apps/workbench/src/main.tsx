@@ -49,6 +49,8 @@ function App() {
   const [pitch, setPitch] = useState(0.72);
   const [rotation, setRotation] = useState<string | undefined>();
   const [zoom, setZoom] = useState(1);
+  const [autoRotate, setAutoRotate] = useState(0);
+  const [float, setFloat] = useState(0);
   const [stats, setStats] = useState(true);
   const [copied, setCopied] = useState(false);
   const [n, setN] = useState(5), [p, setP] = useState(3), [q, setQ] = useState(1);
@@ -99,8 +101,10 @@ function App() {
   const attrs: Record<string, string | undefined> = {
     shape, seed, palette, color: customColors ? color : undefined, background: customColors ? background : undefined,
     yaw: String(yaw), pitch: String(pitch), rotation, zoom: String(zoom), view,
+    rotate: autoRotate > 0 ? String(autoRotate) : undefined,
+    float: float > 0 ? String(float) : undefined,
     "face-index": view === "face" || view === "face-context" ? String(selectedFace) : undefined,
-    stats: stats ? "" : undefined,
+    stats: stats ? "true" : undefined,
     n: family === "stephanoid" ? String(n) : undefined,
     p: family === "stephanoid" ? String(p) : undefined,
     q: family === "stephanoid" ? String(q) : undefined,
@@ -109,7 +113,7 @@ function App() {
     b: family === "disphenoid" ? String(b) : undefined,
     c: family === "disphenoid" ? String(c) : undefined,
   };
-  const snippet = `import "@noble-polyhedra/web-component";\n\n<noble-polyhedron\n${Object.entries(attrs).filter(([, value]) => value !== undefined).map(([key, value]) => value === "" ? `  ${key}` : `  ${key}="${value}"`).join("\n")}\n></noble-polyhedron>`;
+  const snippet = `import "@noble-polyhedra/web-component";\n\n<noble-polyhedron\n${Object.entries(attrs).filter(([, value]) => value !== undefined).map(([key, value]) => key === "stats" && value === "true" ? "  stats" : `  ${key}="${value}"`).join("\n")}\n></noble-polyhedron>`;
 
   const download = () => hero.current?.canvas.toBlob(blob => {
     if (!blob) return;
@@ -155,6 +159,10 @@ function App() {
               <Control label="Tilt" value={rotation ? "trackball" : pitch.toFixed(2)}><Slider min={-1.45} max={1.45} step={0.01} value={[pitch]} onValueChange={value => { setPitch(sliderValue(value, 0)); setRotation(undefined); }} /></Control>
               {rotation && <Button variant="ghost" size="sm" className="w-full" onClick={() => setRotation(undefined)}><RotateCcw className="size-3.5" /> Reset orientation</Button>}
               <Control label="Scale" value={zoom.toFixed(2)}><Slider min={0.5} max={1.5} step={0.01} value={[zoom]} onValueChange={value => setZoom(sliderValue(value, 1))} /></Control>
+              <div className="space-y-4 rounded-lg border border-border bg-muted/30 p-3"><div><p className="text-xs font-semibold">Pickup motion</p><p className="mt-1 text-[11px] leading-4 text-muted-foreground">A gentle spin and hover for embeds.</p></div>
+                <Control label="Auto rotate" value={autoRotate.toFixed(2)}><Slider min={0} max={1} step={0.01} value={[autoRotate]} onValueChange={value => setAutoRotate(sliderValue(value, 0))} /></Control>
+                <Control label="Float" value={float.toFixed(2)}><Slider min={0} max={1} step={0.01} value={[float]} onValueChange={value => setFloat(sliderValue(value, 0))} /></Control>
+              </div>
               <div className="flex items-start justify-between gap-3 border-t border-border pt-4"><div><label htmlFor="stats" className="text-xs font-medium">Renderer stats</label><p className="mt-1 text-[11px] leading-4 text-muted-foreground">Draw FPS, render time, latency, pixels and geometry.</p></div><input id="stats" type="checkbox" className="mt-0.5 size-4 accent-foreground" checked={stats} onChange={event => setStats(event.target.checked)} /></div>
               <Button className="w-full" size="lg" onClick={download}><ArrowDownToLine className="size-4" /> Download PNG</Button>
             </CardContent></Card>

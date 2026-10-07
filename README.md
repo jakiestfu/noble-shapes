@@ -34,6 +34,8 @@ import "@noble-polyhedra/web-component";
   view="face-context"
   face-index="0"
   stats
+  rotate="0.35"
+  float="0.5"
   yaw="0.6"
   pitch="0.72"
 ></noble-polyhedron>
@@ -44,6 +46,8 @@ Use `shape="random"` with a stable `seed` for a repeatable shape, camera angle, 
 The `view` attribute selects `solid` (shaded mesh), `solid-wireframe` (shaded with visible abstract edges, the default), `wireframe` (all edges), `face` (one isolated repeated face), or `face-context` (one face highlighted over the complete wireframe). `face-index` selects which congruent face to inspect.
 
 Drag with a mouse or touch pointer for screen-space 3D trackball rotation. The resulting `rotation` attribute is a unit quaternion in `x,y,z,w` order, so an adjusted view can be copied into another embed. Changing `yaw` or `pitch` in the workbench resets the trackball orientation. During a drag the browser renders a smaller frame on a worker, then produces a full-resolution frame on release. The optional `stats` attribute (or `element.stats = true` property) displays completed draw FPS (zero while idle), render and presentation times, input-to-image latency, canvas dimensions, pixel count, geometry counts, quality, and backend. The `noble-render` event exposes the same metrics in `event.detail`.
+
+Set `rotate` and `float` from `0` (off) to `1` for subtle pickup motion. At `rotate="1"`, the model turns around its vertical axis at 0.35 radians per second (one revolution in about 18 seconds). At `float="1"`, the image bobs by up to 8 pixels in each direction over a 3.6-second cycle; smaller components use a proportionally smaller distance. Both values default to `0` and can also be set through `element.rotate` and `element.float`. Dragging pauses the automatic turn and resumes it from the dragged orientation. Motion pauses when the user prefers reduced motion.
 
 ## Render in Node
 
