@@ -132,19 +132,18 @@ noble-polyhedron { display: block; }
 .shape-step-link:hover { color: var(--foreground); text-decoration: underline; text-underline-offset: 3px; }
 .shape-step-link:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .shape-step-link svg { width: 12px; height: 12px; }
-.design-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 10px; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+.design-actions { display: grid; gap: 4px; border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+.design-actions-head { display: flex; min-height: 28px; align-items: center; justify-content: space-between; gap: 10px; }
 .design-actions .surprise-action { margin-left: -8px; color: var(--muted-foreground); }
 .design-actions .surprise-action:hover { color: var(--foreground); }
-.identity-disclosure { color: var(--muted-foreground); font-size: 11px; }
-.identity-disclosure summary { cursor: pointer; list-style: none; padding: 5px 0; text-align: right; }
-.identity-disclosure summary::-webkit-details-marker { display: none; }
-.identity-disclosure summary::after { content: "+"; margin-left: 7px; font-size: 14px; }
-.identity-disclosure[open] { order: 2; width: 100%; margin-top: 4px; border-top: 1px solid var(--border); padding-top: 8px; }
-.identity-disclosure[open] summary::after { content: "−"; }
-.identity-form { display: flex; align-items: stretch; gap: 6px; margin-top: 8px; }
+.identity-toggle { display: inline-flex; min-height: 27px; align-items: center; gap: 7px; color: var(--muted-foreground); font-size: 11px; white-space: nowrap; cursor: pointer; }
+.identity-toggle:hover { color: var(--foreground); }
+.identity-toggle:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.identity-toggle span { width: 8px; font-size: 14px; line-height: 1; text-align: center; }
+.identity-form { display: flex; align-items: stretch; gap: 6px; margin-top: 4px; }
 .identity-form input { min-width: 0; flex: 1; }
 .identity-form button { height: 34px; border: 1px solid var(--border); }
-.identity-disclosure p { margin-top: 7px; line-height: 1.45; }
+.identity-controls p { margin-top: 6px; color: var(--muted-foreground); font-size: 11px; line-height: 1.45; }
 .view-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; overflow: hidden; border: 1px solid var(--border); border-radius: 3px; background: var(--border); }
 .view-options button { position: relative; min-width: 0; min-height: 34px; border-radius: 0; background: color-mix(in srgb, var(--background) 20%, transparent); font-size: 11px; }
 .view-options button:hover { background: var(--accent); }

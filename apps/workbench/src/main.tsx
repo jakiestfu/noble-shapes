@@ -85,6 +85,7 @@ function App() {
   const [codeError, setCodeError] = useState(initial.error);
   const [parameterError, setParameterError] = useState("");
   const [identity, setIdentity] = useState("");
+  const [identityOpen, setIdentityOpen] = useState(false);
   const [copied, setCopied] = useState<"link" | "">("");
   const code = useMemo(() => optionsToString(options), [options.shape, options.view, options.palette,
     options.color, options.background, options.faceIndex, options.n, options.p, options.q,
@@ -268,7 +269,16 @@ function App() {
 
         <Group title="Shape">
           <Control label="Polyhedron" value={`${shapeIndex + 1} / ${SHAPES.length}`}><div className="shape-selector"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /><div className="shape-step-links"><button type="button" className="shape-step-link" title="Previous shape (←)" onClick={() => stepShape(-1)}><ChevronLeft aria-hidden="true" /> Previous</button><button type="button" className="shape-step-link" title="Next shape (→)" onClick={() => stepShape(1)}>Next <ChevronRight aria-hidden="true" /></button></div></div></Control>
-          <div className="design-actions"><Button variant="ghost" size="sm" className="surprise-action" onClick={surpriseMe}><Shuffle className="size-3.5" /> Surprise me</Button><details className="identity-disclosure"><summary>From text</summary><form className="identity-form" onSubmit={event => { event.preventDefault(); if (identity.trim()) generateFromText(identity.trim()); }}><Input id="identity" aria-label="Text for repeatable design" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} /><Button variant="ghost" size="sm" type="submit" disabled={!identity.trim()}>Generate</Button></form><p>Same text produces the same design.</p></details></div>
+          <div className="design-actions">
+            <div className="design-actions-head">
+              <Button variant="ghost" size="sm" className="surprise-action" onClick={surpriseMe}><Shuffle className="size-3.5" /> Surprise me</Button>
+              <button type="button" className="identity-toggle" aria-expanded={identityOpen} onClick={() => setIdentityOpen(open => !open)}>From text <span aria-hidden="true">{identityOpen ? "−" : "+"}</span></button>
+            </div>
+            {identityOpen && <div className="identity-controls">
+              <form className="identity-form" onSubmit={event => { event.preventDefault(); if (identity.trim()) generateFromText(identity.trim()); }}><Input id="identity" aria-label="Text for repeatable design" value={identity} placeholder="username" onChange={event => setIdentity(event.target.value)} /><Button variant="ghost" size="sm" type="submit" disabled={!identity.trim()}>Generate</Button></form>
+              <p>Same text produces the same design.</p>
+            </div>}
+          </div>
           <Control label="View"><div className="view-options">{VIEWS.map(item => <Button key={item.id} variant="ghost" aria-pressed={options.view === item.id} size="sm" className={`${item.id === "face-context" ? "col-span-2" : ""} ${options.view === item.id ? "is-selected" : ""}`} onClick={() => update({ view: item.id, ...(item.id === "face" ? { pitch: 0, rotation: undefined } : {}) })}>{item.name}</Button>)}</div></Control>
           {(options.view === "face" || options.view === "face-context") && <Control label="Repeated face" value={`${options.faceIndex + 1} / ${poly.faces.length}`}><Slider min={0} max={poly.faces.length - 1} step={1} value={[options.faceIndex]} onValueChange={value => update({ faceIndex: sliderValue(value, 0) })} /></Control>}
           {family === "disphenoid" && <div className="grid grid-cols-3 gap-2">{(["a", "b", "c"] as const).map(key => <Control key={key} label={`Axis ${key.toUpperCase()}`}><Input type="number" min="0.1" max="3" step="0.05" value={options[key]} onChange={event => updateGeometry({ [key]: Number(event.target.value) })} /></Control>)}</div>}
