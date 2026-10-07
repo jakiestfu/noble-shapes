@@ -1,5 +1,5 @@
-import { renderPng } from "@noble-shapes/node";
-import { DEFAULT_DESIGN_OPTIONS, PALETTES, stringToOptions, type DesignOptions } from "@noble-shapes/render";
+import { DEFAULT_DESIGN_OPTIONS, stringToOptions, type DesignOptions } from "@noble-shapes/render";
+import { renderOgCard, shapeName } from "./og-card.ts";
 
 const PREFIX = "/api/image/";
 const CODE_PATTERN = /^np[1-4]_[A-Za-z0-9_-]{1,4092}$/;
@@ -34,9 +34,8 @@ export async function handler(event: Request): Promise<Response> {
   if (method === "HEAD") return { statusCode: 200, headers, body: "" };
 
   try {
-    const background = design.background === "transparent"
-      ? PALETTES[design.palette].background : design.background;
-    const png = renderPng({ ...design, background, width: 1200, height: 630, quality: 1 });
+    const png = await renderOgCard(design, code === "default" ? "Noble Shapes" : shapeName(design),
+      code === "default" ? "Explore 146 finite forms and two infinite families." : "Create, customize, and share this noble polyhedron.");
     return {
       statusCode: 200,
       headers,

@@ -23,12 +23,14 @@ const Showcase = lazy(() => import("@/views/showcase").then(module => ({ default
 const Documentation = lazy(() => import("@/views/documentation").then(module => ({ default: module.Documentation })));
 const MathText = lazy(() => import("@/components/math-text").then(module => ({ default: module.MathText })));
 
-type Page = "workbench" | "showcase" | "research" | "documentation";
-const pageFromPath = (path: string): Page => {
+type Page = "home" | "create" | "showcase" | "research" | "documentation";
+const pageFromPath = (path: string, search = ""): Page => {
   const normalized = path.replace(/\/+$/, "");
-  return normalized === "/showcase" || normalized === "/research" || normalized === "/documentation" ? normalized.slice(1) as Page : "workbench";
+  if (normalized === "/" || !normalized) return new URLSearchParams(search).has("code") ? "create" : "home";
+  if (normalized === "/workbench") return "create";
+  return normalized === "/create" || normalized === "/showcase" || normalized === "/research" || normalized === "/documentation" ? normalized.slice(1) as Page : "home";
 };
-const pathForPage = (page: Page): string => page === "workbench" ? "/" : `/${page}`;
+const pathForPage = (page: Page): string => page === "home" ? "/" : `/${page}`;
 
 const VIEWS: { id: RenderView; name: string }[] = [
   { id: "solid", name: "Whole shape" }, { id: "wireframe", name: "Wireframe" }, { id: "face", name: "One face" },
@@ -94,7 +96,7 @@ function ColorControl({ label, value, onChange }: { label: string; value: string
 }
 
 export function App() {
-  const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname));
+  const [page, setPage] = useState<Page>(() => pageFromPath(window.location.pathname, window.location.search));
   const [options, setOptions] = useState<WorkbenchOptions>(() => defaultWorkbench(initial.design, initialTheme));
   const [stats, setStats] = useState(false);
   const [animationEnabled, setAnimationEnabled] = useState(!reducedMotion.matches);
@@ -168,7 +170,7 @@ export function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [options.theme]);
   useEffect(() => {
-    document.title = `${page.charAt(0).toUpperCase() + page.slice(1)} — ${PRODUCT.name}`;
+    document.title = page === "home" ? PRODUCT.name : `${page.charAt(0).toUpperCase() + page.slice(1)} — ${PRODUCT.name}`;
     document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute("href", `${PRODUCT.url}${pathForPage(page)}`);
   }, [page]);
   useLayoutEffect(() => {
@@ -180,17 +182,18 @@ export function App() {
   }, [options, page]);
   useEffect(() => {
     setDraftCode(code);
-    if (page !== "workbench") return;
+    if (page !== "create") return;
     const url = new URL(window.location.href);
+    if (url.pathname === "/" || url.pathname === "/workbench") url.pathname = "/create";
     if (code === DEFAULT_CODE) url.searchParams.delete("code");
     else url.searchParams.set("code", code);
     if (url.href !== window.location.href) window.history.replaceState(null, "", url);
   }, [code, page]);
   useEffect(() => {
     const onPopState = () => {
-      const nextPage = pageFromPath(window.location.pathname);
+      const nextPage = pageFromPath(window.location.pathname, window.location.search);
       setPage(nextPage);
-      if (nextPage === "workbench") {
+      if (nextPage === "create") {
         const next = readLocation();
         setOptions(previous => defaultWorkbench(next.design, previous.theme));
         setStats(false); setAnimationEnabled(!reducedMotion.matches);
@@ -202,7 +205,7 @@ export function App() {
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
   useEffect(() => {
-    if (page !== "workbench") return;
+    if (page !== "create") return;
     const element = hero.current;
     if (!element) return;
     const onChange = () => {
@@ -217,10 +220,10 @@ export function App() {
   }, [page]);
 
   const navigate = (nextPage: Page) => {
-    if (nextPage === page && nextPage !== "workbench") return;
+    if (nextPage === page && nextPage !== "create") return;
     const url = new URL(pathForPage(nextPage), window.location.origin);
     window.history.pushState(null, "", url);
-    if (nextPage === "workbench") {
+    if (nextPage === "create") {
       setOptions(previous => defaultWorkbench(DEFAULT_DESIGN_OPTIONS, previous.theme));
       setStats(false); setAnimationEnabled(!reducedMotion.matches);
       setExpandedSections(new Set(["shape"])); setIdentityOpen(false); setIdentity("");
@@ -259,7 +262,7 @@ export function App() {
     if (next) chooseShape(next.id);
   };
   useEffect(() => {
-    if (page !== "workbench") return;
+    if (page !== "create") return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || event.repeat || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
       if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
@@ -318,7 +321,7 @@ export function App() {
     c: family === "disphenoid" ? String(options.c) : undefined,
   };
   const codeFormats = workbenchCodeFormats(options, appearanceAttrs);
-  const shareUrl = new URL("/", window.location.origin); shareUrl.searchParams.set("code", code);
+  const shareUrl = new URL("/create", window.location.origin); shareUrl.searchParams.set("code", code);
   const saveBlob = (blob: Blob, extension: string) => {
     const url = URL.createObjectURL(blob), link = document.createElement("a");
     link.href = url; link.download = `noble-${options.shape}.${extension}`; link.click();
@@ -349,16 +352,20 @@ export function App() {
     saveBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), "json");
   };
 
-  return <div className={`app-shell ${page === "workbench" ? "is-workbench" : ""} ${options.background === "transparent" ? "is-transparent" : ""}`} style={page === "workbench" ? { "--scene-background": options.background === "transparent" ? "var(--background)" : options.background, "--scene-color": options.color } as CSSProperties : undefined}>
+  const homeDesign = DEFAULT_DESIGN_OPTIONS;
+  return <div className={`app-shell ${page === "create" ? "is-workbench" : ""} ${page === "home" ? "is-home" : ""} ${page === "create" && options.background === "transparent" ? "is-transparent" : ""}`} style={page === "create" ? { "--scene-background": options.background === "transparent" ? "var(--background)" : options.background, "--scene-color": options.color } as CSSProperties : page === "home" ? { "--scene-background": homeDesign.background, "--scene-color": homeDesign.color } as CSSProperties : undefined}>
     <header className="app-header">
-      <div className="brand-lockup"><a className="brand-product" href="/" onClick={event => navClick(event, "workbench")}>{PRODUCT.name}</a><a className="brand-byline" href={PRODUCT.author.url} target="_blank" rel="noopener noreferrer">by {PRODUCT.author.name}</a></div>
-      <nav className="app-nav" aria-label="Main navigation">{(["workbench", "showcase", "research", "documentation"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>
-      <div className="header-actions"><Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
+      <div className="brand-lockup"><a className="brand-product" href="/" onClick={event => navClick(event, "home")}>{PRODUCT.name}</a></div>
+      <nav className="app-nav" aria-label="Main navigation">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>
+      <div className="header-actions"><a href="/documentation" className={`header-docs-link ${page === "documentation" ? "is-active" : ""}`} aria-current={page === "documentation" ? "page" : undefined} onClick={event => navClick(event, "documentation")}>Docs</a><Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
     </header>
 
-    {page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
+    {page === "home" ? <main className="home-hero">
+      <div className="home-model"><noble-shape shape={homeDesign.shape} view={homeDesign.view} material={homeDesign.material} color={homeDesign.color} background="transparent" yaw="0.6" pitch="0.72" rotate={!reducedMotion.matches ? "0.25" : undefined} float={!reducedMotion.matches ? "0.25" : undefined} aria-label={SHAPES.find(item => item.id === homeDesign.shape)?.name ?? "Noble polyhedron"} /></div>
+      <div className="home-content"><p className="home-kicker">146 finite forms · two infinite families</p><h1>Noble Shapes</h1><p className="home-description">Explore the geometry. Make it yours.</p><p className="home-shape-name">Featuring the small stellated dodecahedron</p><nav className="home-tabs" aria-label="Explore Noble Shapes">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}<ChevronRight aria-hidden="true" className="size-4" /></a>)}</nav></div>
+    </main> : page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
-        <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Workbench</h1><p className="mt-1 text-xs text-muted-foreground">146 finite polyhedra · two infinite families</p></div>
+        <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Create</h1><p className="mt-1 text-xs text-muted-foreground">146 finite polyhedra · two infinite families</p></div>
 
         <div className="control-accordion" ref={accordionRef}>
         <Group id="shape" title="Shape" expanded={expandedSections.has("shape")} onToggle={() => toggleSection("shape")}>
@@ -438,5 +445,6 @@ export function App() {
         <div className="preview-dock"><details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Use this shape</span><span className="text-xs text-muted-foreground">Code examples</span></summary><div className="embed-content"><CodePreview formats={codeFormats} compact /></div></details></div>
       </main>
     </div>}
+    <footer className="app-footer"><a href={PRODUCT.author.url} target="_blank" rel="noopener noreferrer">by {PRODUCT.author.name}</a></footer>
   </div>;
 }

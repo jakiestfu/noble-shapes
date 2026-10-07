@@ -1,5 +1,5 @@
-import type { Metadata } from "next";
 import { ClientWorkbench } from "../client-workbench";
+import { pageSocial } from "../social";
 
-export const metadata: Metadata = { title: "Research" };
+export const metadata = pageSocial("research", "/research", "Research", "Explore the mathematics and classification of noble polyhedra.");
 export default function Page() { return <ClientWorkbench />; }

@@ -2,7 +2,7 @@
 
 A TypeScript workspace for deterministic images of noble polyhedra. It includes an independently generated finite catalogue, examples of the two infinite families, a shared browser and Node image renderer, a native web component, and an interactive workbench.
 
-Visit [nobleshap.es](https://nobleshap.es) for the workbench. The installable package is `noble-shapes`:
+Visit [nobleshap.es](https://nobleshap.es) for the shape-led homepage, or [Create](https://nobleshap.es/create) to customize a design. The installable package is `noble-shapes`:
 
 ```sh
 npm install noble-shapes
@@ -24,7 +24,7 @@ pnpm test
 pnpm render:examples
 ```
 
-The full-screen studio has a searchable form picker, previous and next form buttons, a separate **Surprise me** action, light and dark modes, and a shareable URL. Left and Right Arrow also step through forms when focus is outside text fields, sliders, and the picker; **D** toggles the theme outside text inputs. The URL stores the form and appearance. A plain visit to `/` starts with the default design and viewer controls; an explicit `?code=` link loads its design. Camera position, zoom, animation, and renderer stats last only for the current page session. The theme follows the device preference until changed, then saves that choice locally. The live preview draws the form on a transparent canvas over a full-page scene background, while PNG download composites the selected background. The homepage is the workbench, with separate Showcase, Research, and [Documentation](DOCUMENTATION.md) pages. The Documentation page compiles the root guide as MDX and builds its content navigation from the same file.
+The full-screen Create page has a searchable form picker, previous and next form buttons, a separate **Surprise me** action, light and dark modes, and a shareable URL. Left and Right Arrow also step through forms when focus is outside text fields, sliders, and the picker; **D** toggles the theme outside text inputs. The URL stores the form and appearance. A plain visit to `/create` starts with the default design and viewer controls; an explicit `?code=` link loads its design. Older `/?code=` links continue to work. Camera position, zoom, animation, and renderer stats last only for the current page session. The theme follows the device preference until changed, then saves that choice locally. The live preview draws the form on a transparent canvas over a full-page scene background, while PNG download composites the selected background. The homepage presents the default shape and links to Create, Showcase, and Research; [Documentation](DOCUMENTATION.md) remains available from the header. The Documentation page compiles the root guide as MDX and builds its content navigation from the same file.
 
 The workbench's **Form mathematics** section uses KaTeX on demand to show the selected form's computed vertex, edge, and face counts and Euler characteristic, `χ = V − E + F`. The nine regular forms also show their Schläfli symbols; those symbols do not apply to the rest of the noble catalogue. Counts follow abstract face cycles, so visible self-intersections do not add vertices or edges. The four Showcase favorites display their Schläfli symbols alongside their names.
 

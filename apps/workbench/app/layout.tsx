@@ -5,7 +5,7 @@ import "../src/style.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || product.url;
 const description = "Explore, customize, and render 146 noble polyhedra and two infinite families.";
-const defaultImage = `${siteUrl}/api/image/default`;
+const defaultImage = `${siteUrl}/og/default.png`;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: { default: product.name, template: `%s — ${product.name}` },
