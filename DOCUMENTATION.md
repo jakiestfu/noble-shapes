@@ -53,6 +53,18 @@ Use `view="solid"` for facets, `solid-wireframe` for facets and visible edges, `
 
 For the PNG bytes instead, call `renderPng(options)`. `encodePng(image)` converts an RGBA image returned by the render package.
 
+### Exporting geometry
+
+The workbench's **Export** menu downloads the current view as PNG, the polyhedron as GLB, or its exact vertices, edges, and ordered face cycles as JSON. GLB includes every edge and shaded triangles for simple convex faces. Self-crossing and other complex faces remain as edges; their original cycles are retained in the GLB mesh's `extras.faceCycles` field.
+
+For a 3D export in Node or JavaScript, use `polyhedronToGlb` from the core package:
+
+```ts
+import { createPolyhedron, polyhedronToGlb } from "@noble-polyhedra/core";
+
+const glb = polyhedronToGlb(createPolyhedron({ shape: "cube" }), "#5ce0d3");
+```
+
 ### Command line
 
 Installing `@noble-polyhedra/node` adds the `noble-render` command to your project:

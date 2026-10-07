@@ -157,10 +157,14 @@ noble-polyhedron { display: block; }
 .preview-toolbar { --preview-ink: rgb(255 255 255 / 0.94); --preview-muted: rgb(255 255 255 / 0.68); --preview-button: rgb(255 255 255 / 0.9); --preview-button-hover: rgb(255 255 255 / 0.98); --preview-button-ink: rgb(0 0 0 / 0.86); position: relative; z-index: 1; display: grid; flex: none; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 16px; align-self: stretch; margin: 20px 24px 0; color: var(--preview-ink); }
 .preview-toolbar.is-light-scene { --preview-ink: rgb(0 0 0 / 0.82); --preview-muted: rgb(0 0 0 / 0.55); --preview-button: rgb(0 0 0 / 0.8); --preview-button-hover: rgb(0 0 0 / 0.9); --preview-button-ink: rgb(255 255 255 / 0.96); }
 .preview-toolbar-title { min-width: 0; line-height: 1.1; }
-.preview-download[data-slot="button"] { height: 30px; border: 0; border-radius: 3px; background: var(--preview-button); color: var(--preview-button-ink); padding-inline: 11px; font-size: 11px; }
-.preview-download[data-slot="button"]:hover { background: var(--preview-button-hover); }
+.preview-export-trigger { display: inline-flex; height: 30px; align-items: center; justify-content: center; gap: 7px; border: 0; border-radius: 3px; background: var(--preview-button); color: var(--preview-button-ink); padding-inline: 11px; font-size: 11px; font-weight: 600; cursor: pointer; }
+.preview-export-trigger:hover { background: var(--preview-button-hover); }
+.preview-export-trigger:focus-visible { outline: 2px solid var(--preview-ink); outline-offset: 2px; }
+.export-menu-format { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
+.export-menu-caption { color: var(--muted-foreground); font-size: 10px; }
+.export-menu-note { margin: 2px 5px 3px; border-top: 1px solid var(--border); padding: 7px 3px 2px; color: var(--muted-foreground); font-size: 10px; line-height: 1.35; }
 .preview-toolbar-math { display: flex; min-width: 0; grid-column: 1 / -1; align-items: center; flex-wrap: wrap; gap: 3px 14px; color: var(--preview-muted); font: 10px/1.4 ui-monospace, SFMono-Regular, monospace; }
-.preview-toolbar-math i { margin: 0 2px; font-style: normal; opacity: 0.5; }
+.preview-toolbar-math .katex { font-size: 12px; }
 .preview-symbol { color: var(--preview-ink); }
 .preview-surface { position: absolute; z-index: 0; inset: 0; overflow: hidden; background: transparent; }
 .preview-surface noble-polyhedron { width: 100%; height: 100%; min-height: 0; aspect-ratio: auto; border-radius: 0; }

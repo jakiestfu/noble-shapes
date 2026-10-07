@@ -13,15 +13,6 @@ export const REGULAR_SYMBOLS: Partial<Record<ShapeId, string>> = {
   "great-icosahedron": "\\left\\{3,\\frac{5}{2}\\right\\}",
 };
 
-export const REGULAR_SYMBOL_LABELS: Partial<Record<ShapeId, string>> = {
-  tetrahedron: "{3, 3}", cube: "{4, 3}", octahedron: "{3, 4}",
-  dodecahedron: "{5, 3}", icosahedron: "{3, 5}",
-  "small-stellated-dodecahedron": "{5/2, 5}",
-  "great-dodecahedron": "{5, 5/2}",
-  "great-stellated-dodecahedron": "{5/2, 3}",
-  "great-icosahedron": "{3, 5/2}",
-};
-
 /** Uses the abstract face cycles: visual crossings are not added as vertices. */
 export function eulerCharacteristic(polyhedron: Polyhedron): number {
   return polyhedron.vertices.length - polyhedron.edges.length + polyhedron.faces.length;

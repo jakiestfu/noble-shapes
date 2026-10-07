@@ -1,24 +1,26 @@
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { Check, ChevronLeft, ChevronRight, Code2, Copy, Download, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
-import { createPolyhedron, SHAPES, type ShapeId } from "@noble-polyhedra/core";
+import { Box, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, Copy, Download, FileImage, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
+import { createPolyhedron, polyhedronToGlb, SHAPES, type ShapeId } from "@noble-polyhedra/core";
 import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, optionsToString, PALETTES, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-polyhedra/render";
 import "@noble-polyhedra/web-component";
 import "@noble-polyhedra/web-component/react";
 import type { NoblePolyhedronElement } from "@noble-polyhedra/web-component";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CodePreview } from "@/components/code-preview";
 import { FormPicker } from "@/components/form-picker";
 import { LoadingState } from "@/components/loading-state";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
-import { eulerCharacteristic, REGULAR_SYMBOL_LABELS, REGULAR_SYMBOLS } from "@/lib/shape-math";
+import { eulerCharacteristic, REGULAR_SYMBOLS } from "@/lib/shape-math";
 import { workbenchCodeFormats } from "@/lib/workbench-code";
 import { Research } from "@/pages/research";
 import "./style.css";
 
 const Showcase = lazy(() => import("@/pages/showcase").then(module => ({ default: module.Showcase })));
 const Documentation = lazy(() => import("@/pages/documentation").then(module => ({ default: module.Documentation })));
+const MathText = lazy(() => import("@/components/math-text").then(module => ({ default: module.MathText })));
 
 type Page = "workbench" | "showcase" | "research" | "documentation";
 const pageFromPath = (path: string): Page => {
@@ -239,7 +241,12 @@ function App() {
   };
   const codeFormats = workbenchCodeFormats(options, appearanceAttrs);
   const shareUrl = new URL("/", window.location.origin); shareUrl.searchParams.set("code", code);
-  const download = () => {
+  const saveBlob = (blob: Blob, extension: string) => {
+    const url = URL.createObjectURL(blob), link = document.createElement("a");
+    link.href = url; link.download = `noble-${options.shape}.${extension}`; link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const downloadPng = () => {
     if (!hero.current) return;
     const canvas = document.createElement("canvas");
     canvas.width = hero.current.canvas.width;
@@ -249,11 +256,18 @@ function App() {
     if (options.background !== "transparent") { context.fillStyle = options.background; context.fillRect(0, 0, canvas.width, canvas.height); }
     context.drawImage(hero.current.canvas, 0, 0);
     canvas.toBlob(blob => {
-    if (!blob) return;
-    const url = URL.createObjectURL(blob), link = document.createElement("a");
-    link.href = url; link.download = `noble-${options.shape}.png`; link.click();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      if (blob) saveBlob(blob, "png");
     }, "image/png");
+  };
+  const downloadGlb = () => {
+    const bytes = polyhedronToGlb(poly, options.color);
+    saveBlob(new Blob([bytes], { type: "model/gltf-binary" }), "glb");
+  };
+  const downloadGeometry = () => {
+    const parameters = family === "disphenoid" ? { a: options.a, b: options.b, c: options.c }
+      : family === "stephanoid" ? { n: options.n, p: options.p, q: options.q, crownHeight: options.crownHeight } : {};
+    const data = { format: "noble-polyhedra/geometry-v1", parameters, ...poly };
+    saveBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), "json");
   };
 
   return <div className={`app-shell ${page === "workbench" ? "is-workbench" : ""} ${options.background === "transparent" ? "is-transparent" : ""}`} style={page === "workbench" ? { "--scene-background": options.background === "transparent" ? "var(--background)" : options.background, "--scene-color": options.color } as CSSProperties : undefined}>
@@ -311,8 +325,22 @@ function App() {
       <main className="preview-panel">
         <div className={`preview-toolbar ${lightScene ? "is-light-scene" : ""}`}>
           <h2 className="preview-toolbar-title truncate font-heading text-lg font-semibold tracking-tight">{poly.name}</h2>
-          <Button variant="default" size="sm" className="preview-download" onClick={download}><Download className="size-3.5" /> PNG</Button>
-          <div className="preview-toolbar-math" aria-label="Polyhedron geometry"><span>V {poly.vertices.length} <i>·</i> E {poly.edges.length} <i>·</i> F {poly.faces.length}</span><span>χ {eulerCharacteristic(poly)}</span>{regularSymbol && <span className="preview-symbol">{REGULAR_SYMBOL_LABELS[options.shape]}</span>}</div>
+          <DropdownMenu>
+            <DropdownMenuTrigger className="preview-export-trigger"><Download className="size-3.5" /> Export <ChevronDown className="size-3" /></DropdownMenuTrigger>
+            <DropdownMenuContent aria-label="Export formats">
+              <DropdownMenuItem onClick={downloadPng}><span className="export-menu-format"><FileImage className="size-3.5" /> PNG</span><span className="export-menu-caption">Current view</span></DropdownMenuItem>
+              <DropdownMenuItem onClick={downloadGlb}><span className="export-menu-format"><Box className="size-3.5" /> GLB</span><span className="export-menu-caption">3D geometry</span></DropdownMenuItem>
+              <DropdownMenuItem onClick={downloadGeometry}><span className="export-menu-format"><Braces className="size-3.5" /> JSON</span><span className="export-menu-caption">Exact topology</span></DropdownMenuItem>
+              <p className="export-menu-note">Complex faces remain as edges in GLB.</p>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <div className="preview-toolbar-math" aria-label="Polyhedron geometry">
+            <Suspense fallback={<span>V {poly.vertices.length} · E {poly.edges.length} · F {poly.faces.length} · χ {eulerCharacteristic(poly)}</span>}>
+              <MathText tex={`V=${poly.vertices.length},\\; E=${poly.edges.length},\\; F=${poly.faces.length}`} />
+              <MathText tex={`\\chi=V-E+F=${eulerCharacteristic(poly)}`} />
+              {regularSymbol && <MathText className="preview-symbol" tex={regularSymbol} />}
+            </Suspense>
+          </div>
         </div>
         <div className="preview-surface">
           <noble-polyhedron ref={hero} {...appearanceAttrs} background="transparent" stats={stats ? "true" : undefined} className="preview-model" />

@@ -2,6 +2,7 @@ import { FINITE_SPECS, generateFinite, KNOWN_FINITE_IDS } from "./finite.js";
 import type { FiniteSpecId } from "./finite.js";
 
 export { CATALOGUE_SOURCE, CATALOGUE_ID_CANDIDATES, KNOWN_FINITE_IDS } from "./finite.js";
+export { polyhedronToGlb } from "./export.js";
 export type Vec3 = readonly [number, number, number];
 export type ShapeId =
   | "tetrahedron"
