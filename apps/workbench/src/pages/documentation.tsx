@@ -2,7 +2,8 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import Content from "../../../../DOCUMENTATION.md";
 import Catalogue from "../../../../CATALOGUE.md";
 import source from "virtual:documentation-source";
-import { MdxCodeBlock } from "@/components/code-preview";
+import { CodePreview, MdxCodeBlock, type CodeFormat, type PreviewScene } from "@/components/code-preview";
+import { CODE_EXAMPLES, type CodeExampleId } from "@/lib/code-examples";
 
 type Heading = { id: string; label: string; level: 2 | 3 };
 
@@ -14,6 +15,11 @@ const headings: Heading[] = [...source.matchAll(/^(#{2,3})\s+(.+)$/gm)].map(([, 
 
 function Callout({ children }: { children?: ReactNode }) {
   return <aside className="docs-callout">{children}</aside>;
+}
+
+function MdxCodeExample({ example, formats, preview }: { example?: CodeExampleId; formats?: CodeFormat[]; preview?: PreviewScene }) {
+  const definition = example ? CODE_EXAMPLES[example] : undefined;
+  return <CodePreview formats={formats ?? definition?.formats} preview={preview ?? definition?.preview} />;
 }
 
 export function Documentation() {
@@ -37,6 +43,6 @@ export function Documentation() {
 
   return <main ref={scroller} className="content-page docs-page"><div className="docs-layout">
     <aside className="docs-sidebar" aria-label="Documentation contents"><p className="docs-sidebar-title">On this page</p><nav className="docs-nav" aria-label="Documentation sections">{headings.map(heading => <a key={heading.id} href={`#${heading.id}`} data-level={heading.level} className={`docs-nav-link ${active === heading.id ? "is-active" : ""}`} aria-current={active === heading.id ? "location" : undefined} onClick={() => setActive(heading.id)}>{heading.label}</a>)}</nav></aside>
-    <article className="docs-article prose prose-neutral docs-prose"><Content components={{ Callout, pre: MdxCodeBlock }} /><Catalogue components={{ pre: MdxCodeBlock }} /></article>
+    <article className="docs-article prose prose-neutral docs-prose"><Content components={{ Callout, CodePreview: MdxCodeExample, pre: MdxCodeBlock }} /><Catalogue components={{ CodePreview: MdxCodeExample, pre: MdxCodeBlock }} /></article>
   </div></main>;
 }
