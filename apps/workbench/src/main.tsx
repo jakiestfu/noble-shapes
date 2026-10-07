@@ -105,7 +105,7 @@ function App() {
   const [options, setOptions] = useState<WorkbenchOptions>(() => designForTheme({ ...DEFAULT_WORKBENCH_OPTIONS, ...savedViewOptions, ...legacyMotionDefaults, ...initial.design }, savedViewOptions.theme ?? "light"));
   const [stats, setStats] = useState(savedStats ?? false);
   const [animationEnabled, setAnimationEnabled] = useState(savedAnimationEnabled ?? !window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-  const [expandedSection, setExpandedSection] = useState("shape");
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(() => new Set(["shape"]));
   const [opaqueBackground, setOpaqueBackground] = useState(options.background === "transparent" ? paletteColors(options.palette, options.theme).background : options.background);
   const [codeError, setCodeError] = useState(initial.error);
   const [parameterError, setParameterError] = useState("");
@@ -196,7 +196,12 @@ function App() {
   };
 
   const update = (patch: Partial<WorkbenchOptions>) => { setOptions(previous => ({ ...previous, ...patch })); setCodeError(""); };
-  const toggleSection = (id: string) => setExpandedSection(current => current === id ? "" : id);
+  const toggleSection = (id: string) => setExpandedSections(current => {
+    const next = new Set(current);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    return next;
+  });
   const toggleAnimation = () => {
     if (!animationEnabled && options.rotate === 0 && options.float === 0) update({ rotate: 0.25, float: 0.25 });
     setAnimationEnabled(enabled => !enabled);
@@ -311,7 +316,7 @@ function App() {
         <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Workbench</h1><p className="mt-1 text-xs text-muted-foreground">146 finite polyhedra · two infinite families</p></div>
 
         <div className="control-accordion">
-        <Group id="shape" title="Shape" expanded={expandedSection === "shape"} onToggle={() => toggleSection("shape")}>
+        <Group id="shape" title="Shape" expanded={expandedSections.has("shape")} onToggle={() => toggleSection("shape")}>
           <Control label="Polyhedron" value={`${shapeIndex + 1} / ${SHAPES.length}`}><div className="shape-selector"><FormPicker shape={options.shape} onSelect={shape => chooseShape(shape as ShapeId)} /><div className="shape-step-links"><button type="button" className="shape-step-link" title="Previous shape (←)" onClick={() => stepShape(-1)}><ChevronLeft aria-hidden="true" /> Previous</button><button type="button" className="shape-step-link" title="Next shape (→)" onClick={() => stepShape(1)}>Next <ChevronRight aria-hidden="true" /></button></div></div></Control>
           <div className="design-actions">
             <div className="design-actions-head">
@@ -330,26 +335,26 @@ function App() {
           {parameterError && <p role="alert" className="text-xs text-red-600">{parameterError}</p>}
         </Group>
 
-        <Group id="appearance" title="Appearance" expanded={expandedSection === "appearance"} onToggle={() => toggleSection("appearance")}>
+        <Group id="appearance" title="Appearance" expanded={expandedSections.has("appearance")} onToggle={() => toggleSection("appearance")}>
           <Control label="Palette" value={options.paletteLinked ? undefined : "Custom colors"}><div className="palette-grid">{(Object.keys(PALETTES) as PaletteName[]).map(item => { const colors = paletteColors(item, options.theme); return <button key={item} type="button" className="palette-choice" aria-label={`${PALETTES[item].name} palette`} aria-pressed={options.paletteLinked && options.palette === item} onClick={() => choosePalette(item)}><span className="palette-chip" style={{ background: colors.background }}><span style={{ background: colors.color }} /></span><span>{PALETTES[item].name}</span></button>; })}</div></Control>
           <div className="color-controls"><ColorControl label="Facet color" value={options.color} onChange={color => update({ color, paletteLinked: false })} /><ColorControl label="Background" value={options.background === "transparent" ? opaqueBackground : options.background} onChange={background => update({ background, paletteLinked: false })} /></div>
           <label className="control-check"><input type="checkbox" checked={options.background === "transparent"} onChange={() => update({ background: options.background === "transparent" ? options.paletteLinked ? paletteColors(options.palette, options.theme).background : opaqueBackground : "transparent" })} /><span>Transparent background</span></label>
         </Group>
 
-        <Group id="position" title="Position" expanded={expandedSection === "position"} onToggle={() => toggleSection("position")}>
+        <Group id="position" title="Position" expanded={expandedSections.has("position")} onToggle={() => toggleSection("position")}>
           <Control label="Rotation" value={options.rotation ? "trackball" : options.yaw.toFixed(2)}><Slider min={-3.14} max={3.14} step={0.01} value={[options.yaw]} onValueChange={value => update({ yaw: sliderValue(value, 0), rotation: undefined })} /></Control>
           <Control label="Tilt" value={options.rotation ? "trackball" : options.pitch.toFixed(2)}><Slider min={-1.45} max={1.45} step={0.01} value={[options.pitch]} onValueChange={value => update({ pitch: sliderValue(value, 0), rotation: undefined })} /></Control>
           {options.rotation && <Button variant="ghost" size="sm" className="w-full" onClick={() => update({ rotation: undefined })}><RotateCcw className="size-3.5" /> Reset orientation</Button>}
           <Control label="Scale" value={options.zoom.toFixed(2)}><Slider min={0.5} max={1.5} step={0.01} value={[options.zoom]} onValueChange={value => update({ zoom: sliderValue(value, 1) })} /></Control>
         </Group>
 
-        <Group id="animation" title="Animation" expanded={expandedSection === "animation"} onToggle={() => toggleSection("animation")} headerAction={<button type="button" role="switch" aria-label="Animation" aria-checked={animationEnabled} className="animation-switch" onClick={toggleAnimation}><span /></button>}>
+        <Group id="animation" title="Animation" expanded={expandedSections.has("animation")} onToggle={() => toggleSection("animation")} headerAction={<button type="button" role="switch" aria-label="Animation" aria-checked={animationEnabled} className="animation-switch" onClick={toggleAnimation}><span /></button>}>
           <p className="control-hint">Subtle motion, independent of the shared design.</p>
           <Control label="Auto rotate" value={options.rotate.toFixed(2)}><Slider disabled={!animationEnabled} min={0} max={1} step={0.01} value={[options.rotate]} onValueChange={value => update({ rotate: sliderValue(value, 0) })} /></Control>
           <Control label="Float" value={options.float.toFixed(2)}><Slider disabled={!animationEnabled} min={0} max={1} step={0.01} value={[options.float]} onValueChange={value => update({ float: sliderValue(value, 0) })} /></Control>
         </Group>
 
-        <Group id="share" title="Share & inspect" expanded={expandedSection === "share"} onToggle={() => toggleSection("share")}>
+        <Group id="share" title="Share & inspect" expanded={expandedSections.has("share")} onToggle={() => toggleSection("share")}>
           <Control label="Design code"><textarea aria-label="Design code" className="code-input" rows={3} spellCheck={false} value={draftCode} onChange={event => setDraftCode(event.target.value)} onKeyDown={event => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") applyCode(); }} /></Control>
           {codeError && <p role="alert" className="text-xs text-red-600">{codeError}</p>}
           <div className="flex gap-2"><Button variant="ghost" size="sm" className="flex-1" onClick={applyCode}>Load code</Button><Button variant="ghost" size="sm" className="flex-1" onClick={() => copyText("link", shareUrl.toString())}>{copied === "link" ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}{copied === "link" ? "Copied" : "Copy link"}</Button></div>
