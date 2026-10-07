@@ -75,7 +75,7 @@ test("design codes capture only form and appearance and read older links", () =>
     rotate: 0.42, float: 0.31, theme: "dark" };
   const code = optionsToString(options);
   const { yaw, pitch, rotation, zoom, rotate, float, theme, ...design } = options;
-  assert.match(code, /^np3_[A-Za-z0-9_-]+$/);
+  assert.match(code, /^np4_[A-Za-z0-9_-]+$/);
   assert.deepEqual(stringToOptions(code), design);
   assert.equal(optionsToString(stringToOptions(code)), code);
   assert.equal(optionsToString({ ...options, yaw: 1, pitch: -0.5, zoom: 1.8, rotate: 1, float: 1, theme: "light" }), code);
@@ -86,8 +86,18 @@ test("design codes capture only form and appearance and read older links", () =>
   const previousTuple = [options.shape, options.view, options.palette, options.color, options.background,
     options.faceIndex, options.n, options.p, options.q, options.crownHeight, options.a, options.b, options.c];
   assert.deepEqual(stringToOptions(`np2_${Buffer.from(JSON.stringify(previousTuple)).toString("base64url")}`), design);
-  assert.throws(() => stringToOptions("np4_invalid"), /Unsupported design code/);
+  assert.deepEqual(stringToOptions(`np3_${Buffer.from(JSON.stringify([...previousTuple, options.paletteLinked])).toString("base64url")}`), design);
+  assert.throws(() => stringToOptions("np5_invalid"), /Unsupported design code/);
   assert.throws(() => optionsToString({ ...options, color: "red" }), /invalid color/);
+  assert.throws(() => optionsToString({ ...options, material: "glass" }), /invalid material/);
+});
+
+test("clay material changes facet lighting and survives a design code", () => {
+  const scene = { shape: "dodecahedron", view: "solid", background: "transparent", width: 80, height: 80 };
+  assert.notDeepEqual(renderScene({ ...scene, material: "clay" }).data, renderScene({ ...scene, material: "cel" }).data);
+  checkPngPixels({ ...scene, material: "clay" });
+  const design = { ...DEFAULT_WORKBENCH_OPTIONS, material: "clay" };
+  assert.equal(stringToOptions(optionsToString(design)).material, "clay");
 });
 
 test("linked palettes follow the viewer theme without changing the shared design code", () => {

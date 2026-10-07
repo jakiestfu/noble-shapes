@@ -1,10 +1,12 @@
 import { seededDefaults, type Polyhedron, type ShapeOptions, type Vec3 } from "@noble-polyhedra/core";
 import { createGeometryCache } from "./geometry-cache.js";
+import { MATERIAL_NAMES, shadeFace, type MaterialName } from "./materials.js";
 import { PALETTES } from "./palettes.js";
 import { resolveSceneOptions } from "./random-options.js";
 
 export type PaletteName = "aurora" | "coral" | "violet" | "gold" | "glacier" | "jade" | "rose" | "ember";
 export type RenderView = "solid" | "solid-wireframe" | "wireframe" | "face" | "face-context";
+export { MATERIAL_NAMES, shadeFace, type MaterialName } from "./materials.js";
 /** Quaternion in [x, y, z, w] order. Overrides yaw and pitch when provided. */
 export type Quaternion = readonly [number, number, number, number];
 export interface RenderTimings {
@@ -32,6 +34,8 @@ export interface RenderOptions {
   edgeWidth?: number;
   /** Shaded mesh, full wireframe, or one repeated face. */
   view?: RenderView;
+  /** Facet lighting, independent of the selected view. */
+  material?: MaterialName;
   /** Select one of the congruent faces for the face study views. */
   faceIndex?: number;
   /** Internal supersampling. The web component uses 2 at rest and during motion. */
@@ -118,6 +122,8 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
   const background = transparent ? undefined : parseHex(options.background ?? palette.background);
   const view: RenderView = options.view ?? "solid-wireframe";
   if (!["solid", "solid-wireframe", "wireframe", "face", "face-context"].includes(view)) throw new Error(`Unknown render view: ${view}`);
+  const material = options.material ?? "cel";
+  if (!MATERIAL_NAMES.includes(material)) throw new Error(`Unknown material: ${material}`);
   const yaw = options.yaw ?? 0.55, pitch = options.pitch ?? (view === "face" ? 0 : 0.72);
   const rotation = options.rotation;
   if (rotation && (rotation.length !== 4 || rotation.some(value => !Number.isFinite(value)) || Math.abs(Math.hypot(...rotation) - 1) > 0.01)) throw new Error("Rotation must be a unit quaternion [x, y, z, w]");
@@ -188,11 +194,7 @@ export function renderPolyhedron(polyhedron: Polyhedron, options: RenderOptions 
     const normal = faceNormal(a, b, c);
     if (Math.abs(normal[2]) < 1e-7) continue;
     const planeD = normal[0] * a[0] + normal[1] * a[1] + normal[2] * a[2];
-    const key = Math.abs(normal[0] * -0.42 + normal[1] * 0.55 + normal[2] * 0.72);
-    const fill = view === "face" || view === "face-context" ? 0.88 + key * 0.12 : 0.42 + key * 0.47 + Math.pow(1 - Math.abs(normal[2]), 2) * 0.1;
-    const variation = view === "face" || view === "face-context" ? 1 : 0.96 + ((drawnFace * 73) % 11) / 135;
-    const highlight = Math.pow(key, 8) * 0.15;
-    const color: RGB = [0, 1, 2].map(channel => clamp(base[channel]! * fill * variation + (255 - base[channel]!) * highlight, 0, 255)) as unknown as RGB;
+    const color: RGB = shadeFace(base, normal, drawnFace, material, view === "face" || view === "face-context");
     const minX = Math.max(0, Math.floor(Math.min(...polygon.map(p => p.x))));
     const maxX = Math.min(w - 1, Math.ceil(Math.max(...polygon.map(p => p.x))));
     const minY = Math.max(0, Math.floor(Math.min(...polygon.map(p => p.y))));

@@ -2,7 +2,7 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, 
 import { createRoot } from "react-dom/client";
 import { Box, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, Copy, Download, FileImage, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
 import { createPolyhedron, polyhedronToGlb, SHAPES, type ShapeId } from "@noble-polyhedra/core";
-import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, designForTheme, optionsToString, PALETTES, paletteColors, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-polyhedra/render";
+import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, designForTheme, optionsToString, PALETTES, paletteColors, randomOptions, randomSeed, stringToOptions, type DesignOptions, type MaterialName, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-polyhedra/render";
 import "@noble-polyhedra/web-component";
 import "@noble-polyhedra/web-component/react";
 import type { NoblePolyhedronElement } from "@noble-polyhedra/web-component";
@@ -30,8 +30,7 @@ const pageFromPath = (path: string): Page => {
 const pathForPage = (page: Page): string => page === "workbench" ? "/" : `/${page}`;
 
 const VIEWS: { id: RenderView; name: string }[] = [
-  { id: "solid", name: "Shaded" }, { id: "solid-wireframe", name: "Shaded + edges" },
-  { id: "wireframe", name: "Wireframe" }, { id: "face", name: "One face" },
+  { id: "solid", name: "Whole shape" }, { id: "wireframe", name: "Wireframe" }, { id: "face", name: "One face" },
   { id: "face-context", name: "Face + wireframe" },
 ];
 const sliderValue = (value: number | readonly number[], fallback: number): number => typeof value === "number" ? value : value[0] ?? fallback;
@@ -81,7 +80,7 @@ function Control({ label, value, children }: { label: string; value?: string; ch
 }
 function Group({ id, title, expanded, onToggle, headerAction, children }: { id: string; title: string; expanded: boolean; onToggle: () => void; headerAction?: ReactNode; children: ReactNode }) {
   return <section className={`control-group ${expanded ? "is-open" : ""}`}>
-    <div className="control-group-header"><h3><button type="button" className="control-group-toggle" aria-expanded={expanded} aria-controls={`${id}-controls`} onClick={onToggle}>{title}</button></h3>{headerAction}<button type="button" className="control-group-chevron" aria-label={`${expanded ? "Collapse" : "Expand"} ${title}`} aria-expanded={expanded} aria-controls={`${id}-controls`} onClick={onToggle}><ChevronDown aria-hidden="true" className="size-3.5" /></button></div>
+    <div className="control-group-header"><button type="button" className="control-group-hit" aria-label={`${expanded ? "Collapse" : "Expand"} ${title}`} aria-expanded={expanded} aria-controls={`${id}-controls`} onClick={onToggle} /><h3>{title}</h3>{headerAction}<ChevronDown aria-hidden="true" className="control-group-chevron size-3.5" /></div>
     <div id={`${id}-controls`} className="control-group-content" hidden={!expanded}><div className="space-y-4">{children}</div></div>
   </section>;
 }
@@ -111,8 +110,9 @@ function App() {
   const [parameterError, setParameterError] = useState("");
   const [identity, setIdentity] = useState("");
   const [identityOpen, setIdentityOpen] = useState(false);
+  const [edgesPreferred, setEdgesPreferred] = useState(initial.design.view === "solid-wireframe");
   const [copied, setCopied] = useState<"link" | "">("");
-  const code = useMemo(() => optionsToString(options), [options.shape, options.view, options.palette, options.paletteLinked,
+  const code = useMemo(() => optionsToString(options), [options.shape, options.view, options.material, options.palette, options.paletteLinked,
     options.color, options.background, options.faceIndex, options.n, options.p, options.q,
     options.crownHeight, options.a, options.b, options.c]);
   const [draftCode, setDraftCode] = useState(code);
@@ -125,6 +125,7 @@ function App() {
   const lightScene = sceneIsLight(options.background, options.theme);
 
   useEffect(() => { document.documentElement.dataset.theme = options.theme; }, [options.theme]);
+  useEffect(() => { if (options.view === "solid" || options.view === "solid-wireframe") setEdgesPreferred(options.view === "solid-wireframe"); }, [options.view]);
   useEffect(() => { if (options.background !== "transparent") setOpaqueBackground(options.background); }, [options.background]);
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -260,7 +261,7 @@ function App() {
   };
 
   const appearanceAttrs: Record<string, string | undefined> = {
-    shape: options.shape, view: options.view, palette: options.palette, color: options.color,
+    shape: options.shape, view: options.view, material: options.material, palette: options.palette, color: options.color,
     background: options.background, yaw: String(options.yaw), pitch: String(options.pitch),
     rotation: options.rotation?.join(","), zoom: String(options.zoom),
     "face-index": options.view === "face" || options.view === "face-context" ? String(options.faceIndex) : undefined,
@@ -329,7 +330,8 @@ function App() {
               <p>Same text produces the same design.</p>
             </div>}
           </div>
-          <Control label="View"><div className="view-options">{VIEWS.map(item => <Button key={item.id} variant="ghost" aria-pressed={options.view === item.id} size="sm" className={`${item.id === "face-context" ? "col-span-2" : ""} ${options.view === item.id ? "is-selected" : ""}`} onClick={() => update({ view: item.id, ...(item.id === "face" ? { pitch: 0, rotation: undefined } : {}) })}>{item.name}</Button>)}</div></Control>
+          <Control label="View"><div className="view-options">{VIEWS.map(item => { const selected = item.id === "solid" ? options.view === "solid" || options.view === "solid-wireframe" : options.view === item.id; return <Button key={item.id} variant="ghost" aria-pressed={selected} size="sm" className={selected ? "is-selected" : ""} onClick={() => update({ view: item.id === "solid" && edgesPreferred ? "solid-wireframe" : item.id, ...(item.id === "face" ? { pitch: 0, rotation: undefined } : {}) })}>{item.name}</Button>; })}</div></Control>
+          {(options.view === "solid" || options.view === "solid-wireframe") && <label className="control-check"><input type="checkbox" checked={options.view === "solid-wireframe"} onChange={event => { setEdgesPreferred(event.target.checked); update({ view: event.target.checked ? "solid-wireframe" : "solid" }); }} /><span>Show edges</span></label>}
           {(options.view === "face" || options.view === "face-context") && <Control label="Repeated face" value={`${options.faceIndex + 1} / ${poly.faces.length}`}><Slider min={0} max={poly.faces.length - 1} step={1} value={[options.faceIndex]} onValueChange={value => update({ faceIndex: sliderValue(value, 0) })} /></Control>}
           {family === "disphenoid" && <div className="grid grid-cols-3 gap-2">{(["a", "b", "c"] as const).map(key => <Control key={key} label={`Axis ${key.toUpperCase()}`}><Input type="number" min="0.1" max="3" step="0.05" value={options[key]} onChange={event => updateGeometry({ [key]: Number(event.target.value) })} /></Control>)}</div>}
           {family === "stephanoid" && <div className="space-y-3"><div className="grid grid-cols-3 gap-2">{(["n", "p", "q"] as const).map(key => <Control key={key} label={key === "n" ? "Rings" : `Step ${key.toUpperCase()}`}><Input type="number" min="1" step="1" value={options[key]} onChange={event => updateGeometry({ [key]: Number(event.target.value) })} /></Control>)}</div><Control label="Crown height" value={options.crownHeight.toFixed(2)}><Slider min={0.2} max={1.5} step={0.01} value={[options.crownHeight]} onValueChange={value => updateGeometry({ crownHeight: sliderValue(value, 0.7) })} /></Control></div>}
@@ -337,6 +339,7 @@ function App() {
         </Group>
 
         <Group id="appearance" title="Appearance" expanded={expandedSections.has("appearance")} onToggle={() => toggleSection("appearance")}>
+          <Control label="Material"><div className="material-options">{(["cel", "clay"] as MaterialName[]).map(material => <Button key={material} variant="ghost" aria-pressed={options.material === material} size="sm" className={options.material === material ? "is-selected" : ""} onClick={() => update({ material })}>{material === "cel" ? "Cel" : "Clay"}</Button>)}</div></Control>
           <Control label="Palette" value={options.paletteLinked ? undefined : "Custom colors"}><div className="palette-grid">{(Object.keys(PALETTES) as PaletteName[]).map(item => { const colors = paletteColors(item, options.theme); return <button key={item} type="button" className="palette-choice" aria-label={`${PALETTES[item].name} palette`} aria-pressed={options.paletteLinked && options.palette === item} onClick={() => choosePalette(item)}><span className="palette-chip" aria-hidden="true" style={{ background: `linear-gradient(90deg, ${colors.color} 50%, ${colors.background} 50%)` }} /><span>{PALETTES[item].name}</span></button>; })}</div></Control>
           <div className="color-controls"><ColorControl label="Facet color" value={options.color} onChange={color => update({ color, paletteLinked: false })} /><ColorControl label="Background" value={options.background === "transparent" ? opaqueBackground : options.background} onChange={background => update({ background, paletteLinked: false })} /></div>
           <label className="control-check"><input type="checkbox" checked={options.background === "transparent"} onChange={() => update({ background: options.background === "transparent" ? options.paletteLinked ? paletteColors(options.palette, options.theme).background : opaqueBackground : "transparent" })} /><span>Transparent background</span></label>

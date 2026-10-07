@@ -1,5 +1,5 @@
 import type { Polyhedron, Vec3 } from "@noble-polyhedra/core";
-import { PALETTES, type Quaternion, type RenderOptions, type RenderView } from "@noble-polyhedra/render";
+import { MATERIAL_NAMES, PALETTES, shadeFace, type Quaternion, type RenderOptions, type RenderView } from "@noble-polyhedra/render";
 
 /** CPU submission time and the most recently completed, asynchronous GPU timer query. */
 export interface GpuTimings {
@@ -323,6 +323,8 @@ export class GpuRenderer {
     const background=transparent?undefined:parseHex(options.background??palette.background);
     const view: RenderView=options.view??"solid-wireframe";
     if (!["solid","solid-wireframe","wireframe","face","face-context"].includes(view)) throw new Error(`Unknown render view: ${view}`);
+    const material=options.material??"cel";
+    if (!MATERIAL_NAMES.includes(material)) throw new Error(`Unknown material: ${material}`);
     const faceIndex=options.faceIndex??0;
     if (!Number.isInteger(faceIndex)||faceIndex<0||faceIndex>=mesh.faces.length) throw new Error("Face index is outside this shape's face range");
     const zoom=options.zoom??1;
@@ -386,11 +388,7 @@ export class GpuRenderer {
       const faceN=faceNormal(a,b,c);
       const normal=rotate([dot(faceN,basis[0]!),dot(faceN,basis[1]!),dot(faceN,basis[2]!)],rotation);
       if (Math.abs(normal[2])<1e-7) continue;
-      const key=Math.abs(normal[0]*-0.42+normal[1]*0.55+normal[2]*0.72);
-      const fill=view==="face"||view==="face-context"?0.88+key*0.12:0.42+key*0.47+(1-Math.abs(normal[2]))**2*0.1;
-      const variation=view==="face"||view==="face-context"?1:0.96+((i*73)%11)/135;
-      const highlight=key**8*0.15;
-      const color=base.map(channel=>clamp(channel*fill*variation+(255-channel)*highlight,0,255)/255);
+      const color=shadeFace(base,normal,i,material,view==="face"||view==="face-context").map(channel=>channel/255);
       gl.uniform4f(this.#face.uniforms.u_color!,color[0]!,color[1]!,color[2]!,1);
       gl.enable(gl.SCISSOR_TEST); gl.scissor(minX,minY,maxX-minX+1,maxY-minY+1);
       gl.stencilMask(0xff); gl.clear(gl.STENCIL_BUFFER_BIT);

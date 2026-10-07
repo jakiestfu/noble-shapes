@@ -40,7 +40,7 @@ const HTMLElementBase: typeof HTMLElement = typeof HTMLElement === "undefined" ?
 
 export class NoblePolyhedronElement extends HTMLElementBase {
   static get observedAttributes(): string[] {
-    return ["shape", "seed", "random", "palette", "color", "background", "yaw", "pitch", "rotation", "zoom", "view", "face-index", "stats", "rotate", "float", "n", "p", "q", "crown-height", "a", "b", "c"];
+    return ["shape", "seed", "random", "palette", "color", "background", "yaw", "pitch", "rotation", "zoom", "view", "material", "face-index", "stats", "rotate", "float", "n", "p", "q", "crown-height", "a", "b", "c"];
   }
 
   #canvas: HTMLCanvasElement;
@@ -354,6 +354,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
       rotation: rotating ? this.#currentRotation() : parseRotation(this.getAttribute("rotation")),
       zoom: numericAttribute(this, "zoom"),
       view: this.getAttribute("view") as SceneOptions["view"] ?? generated?.view,
+      material: this.getAttribute("material") as SceneOptions["material"] ?? generated?.material,
       faceIndex: explicitFaceIndex ?? (generated ? generated.faceIndex % this.#geometry.get(geometry).polyhedron.faces.length : undefined),
       quality: 2,
     };

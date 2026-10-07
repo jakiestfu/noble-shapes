@@ -29,7 +29,7 @@ const code = optionsToString({ ...DEFAULT_WORKBENCH_OPTIONS, background: "transp
 const options = stringToOptions(code);
 ```
 
-Design codes begin with `np3_` and contain the form, view, palette, whether its colors follow the viewer theme, optional custom colors or transparent background, repeated face, and family dimensions. Decoding validates the version and geometry. Older `np1_` and `np2_` links still load; `np1_` viewer settings are ignored. The studio updates the `code` URL parameter when the design changes. Dragging, zooming, animation, and theme changes leave it alone. **Surprise me** and **Generate from text** change only the design, preserving local viewer settings.
+Design codes begin with `np4_` and contain the form, view, material, palette, whether its colors follow the viewer theme, optional custom colors or transparent background, repeated face, and family dimensions. Decoding validates the version and geometry. Older `np1_`, `np2_`, and `np3_` links still load; `np1_` viewer settings are ignored. The studio updates the `code` URL parameter when the design changes. Dragging, zooming, animation, and theme changes leave it alone. **Surprise me** and **Generate from text** change only the design, preserving local viewer settings.
 
 An identity seed generates a design; a design code captures its form and appearance. Keep the seed if you want an avatar that stays tied to a username, or share a code if you want a snapshot that can be edited independently:
 
@@ -67,6 +67,8 @@ For a deterministic avatar, use `<noble-polyhedron random="foobar"></noble-polyh
 Drag the image to rotate; scroll to zoom. Named shapes include the five Platonic solids and the four Kepler–Poinsot solids: `small-stellated-dodecahedron`, `great-dodecahedron`, `great-stellated-dodecahedron`, and `great-icosahedron`. `disphenoid`, `stephanoid`, and `antistephanoid` cover the families. Families accept `a`, `b`, `c` (disphenoid) or `n`, `p`, `q`, `crown-height` (stephanoids). The `color` attribute accepts a six-digit hex color; `background` accepts a six-digit hex color or `transparent`.
 
 The `view` attribute selects `solid` (shaded mesh), `solid-wireframe` (shaded with visible abstract edges, the default), `wireframe` (all edges), `face` (one isolated repeated face), or `face-context` (one face highlighted over the complete wireframe). `face-index` selects which congruent face to inspect.
+
+The `material` attribute selects `cel` (the original crisp lighting) or `clay` (soft matte lighting). It works in the browser and Node renderers, independently of the view. In the workbench, **Whole shape** and **Show edges** control the solid views separately.
 
 Drag with a mouse or touch pointer for screen-space 3D trackball rotation. The resulting `rotation` attribute is a unit quaternion in `x,y,z,w` order, so an adjusted view can be copied into another embed. Changing `yaw` or `pitch` in the workbench resets the trackball orientation. The browser renders every frame at the canvas's CSS size multiplied by the window's device pixel ratio, including during dragging and animation. The optional `stats` attribute (or `element.stats = true` property) displays completed draw FPS (zero while idle), mesh preparation, GPU submission and asynchronous GPU timer time when supported, time from input to GPU submission, canvas dimensions, pixel count, geometry counts, quality, and backend. The `noble-render` event exposes the same metrics in `event.detail`.
 

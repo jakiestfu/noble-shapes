@@ -1,6 +1,6 @@
 import type { DetailedHTMLProps, HTMLAttributes } from "react";
 import type { ShapeId } from "@noble-polyhedra/core";
-import type { PaletteName, RenderView } from "@noble-polyhedra/render";
+import type { MaterialName, PaletteName, RenderView } from "@noble-polyhedra/render";
 import type { NoblePolyhedronElement } from "./index.js";
 
 type NoblePolyhedronProps = Omit<DetailedHTMLProps<HTMLAttributes<NoblePolyhedronElement>, NoblePolyhedronElement>, "color"> & {
@@ -8,6 +8,7 @@ type NoblePolyhedronProps = Omit<DetailedHTMLProps<HTMLAttributes<NoblePolyhedro
   seed?: string | number;
   random?: string | boolean;
   view?: RenderView;
+  material?: MaterialName;
   palette?: PaletteName;
   color?: string;
   background?: string;

@@ -47,10 +47,12 @@ export function randomOptions(seed: string | number = randomSeed()): DesignOptio
   const background = next() < 0.18 ? "transparent" : colors.background;
   // Preserve the face choice for existing identity seeds after removing camera draws.
   next(); if (view !== "face") next(); next();
+  const faceIndex = Math.floor(next() * faces);
+  const material = pick(["cel", "clay"] as const);
   return {
-    shape, view, palette, paletteLinked: true,
+    shape, view, material, palette, paletteLinked: true,
     color, background,
-    faceIndex: Math.floor(next() * faces),
+    faceIndex,
     n, p, q, crownHeight, a, b, c,
   };
 }

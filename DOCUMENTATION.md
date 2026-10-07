@@ -43,6 +43,12 @@ Drag to rotate and scroll to zoom. `stats` adds an overlay with frame rate, GPU 
 
 Use `view="solid"` for facets, `solid-wireframe` for facets and visible edges, `wireframe` for all edges, `face` for one repeated face, or `face-context` to highlight one face over the full wireframe. Set `face-index="0"` to choose the face in the two face views. The `background` attribute accepts a six-digit hex color or `transparent`.
 
+Set `material="cel"` for crisp facet lighting or `material="clay"` for softer matte lighting. Material, view, and color are independent, so clay also works with the edge overlay or an isolated face. The Node renderer accepts the same `material` option and the CLI accepts `--material clay`. Clay uses broad directional light and fill light; it does not cast shadows between faces.
+
+### Effects architecture
+
+The shape material is chosen separately from its edges and background. This leaves room for future mesh materials, such as refraction, without changing the geometry or face study views. [Shader Effects](https://github.com/shader-effects-inc/shaders) offers WebGPU effects that could supply an optional background layer. Its canvas effects are separate from the current WebGL2 mesh renderer; refractive shapes would also need mesh normals, scene depth, and background sampling. The core and Node renderers have no WebGPU dependency.
+
 `rotate` and `float` accept values from `0` to `1` and stay deliberately subtle. The component fills its CSS size at the browser's device pixel ratio. A browser without WebGL2 uses the CPU fallback.
 
 ### Node image rendering
@@ -73,6 +79,7 @@ Installing `@noble-polyhedra/node` adds the `noble-render` command to your proje
 npm exec -- noble-render --out avatar.png --shape great-icosahedron --palette violet --width 512 --height 512
 npm exec -- noble-render --out crown.png --shape stephanoid --n 7 --p 3 --q 1 --crown-height 0.7
 npm exec -- noble-render --out user.png --random a-user-name --view face-context --face-index 0
+npm exec -- noble-render --out clay.png --shape great-dodecahedron --view solid-wireframe --material clay
 ```
 
 Run `npm exec -- noble-render --help` for the short option list. Camera controls include `--yaw`, `--pitch`, `--zoom`, and `--rotation x,y,z,w`.
@@ -118,7 +125,7 @@ const code = optionsToString(design);
 const restored = stringToOptions(code);
 ```
 
-The workbench stores that code in its URL's `code` parameter. It captures the shape, view, palette, whether colors follow the palette or are custom, selected face, and family dimensions. Each of the eight palettes has light and dark colors. Switching themes changes linked palette colors without changing the design code; editing either color keeps both colors fixed until a palette is selected again. Camera position, animation, renderer stats, and light or dark mode remain local viewer settings. The browser saves those viewer settings locally, and **D** toggles the theme when focus is outside an input. Animation defaults on at 0.25 rotate and float when reduced motion is not requested. **Surprise me** shuffles the shape and colors while keeping the current view and transparent background setting. **From text** creates a complete design from a repeatable seed.
+The workbench stores that code in its URL's `code` parameter. It captures the shape, view, material, palette, whether colors follow the palette or are custom, selected face, and family dimensions. Each of the eight palettes has light and dark colors. Switching themes changes linked palette colors without changing the design code; editing either color keeps both colors fixed until a palette is selected again. Camera position, animation, renderer stats, and light or dark mode remain local viewer settings. The browser saves those viewer settings locally, and **D** toggles the theme when focus is outside an input. Animation defaults on at 0.25 rotate and float when reduced motion is not requested. **Surprise me** shuffles the shape and colors while keeping the current view and transparent background setting. **From text** creates a complete design from a repeatable seed.
 
 ## Forms and families
 

@@ -9,7 +9,7 @@ export function workbenchCodeFormats(options: WorkbenchOptions, attributes: Reco
   const vueAttributes = entries.map(([key, value]) => `    ${key}="${value}"`).join("\n");
   const family = options.shape === "disphenoid" ? "disphenoid" : options.shape === "stephanoid" || options.shape === "antistephanoid" ? "stephanoid" : "finite";
   const scene: Record<string, string | number | readonly number[]> = {
-    shape: options.shape, view: options.view, palette: options.palette,
+    shape: options.shape, view: options.view, material: options.material, palette: options.palette,
     color: options.color, background: options.background,
     ...(options.rotation ? { rotation: options.rotation } : { yaw: options.yaw, pitch: options.pitch }),
     zoom: options.zoom,
