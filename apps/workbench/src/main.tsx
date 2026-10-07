@@ -81,7 +81,7 @@ function Control({ label, value, children }: { label: string; value?: string; ch
 }
 function Group({ id, title, expanded, onToggle, headerAction, children }: { id: string; title: string; expanded: boolean; onToggle: () => void; headerAction?: ReactNode; children: ReactNode }) {
   return <section className={`control-group ${expanded ? "is-open" : ""}`}>
-    <div className="control-group-header"><h3><button type="button" className="control-group-toggle" aria-expanded={expanded} aria-controls={`${id}-controls`} onClick={onToggle}>{title}<ChevronDown aria-hidden="true" className="size-3.5" /></button></h3>{headerAction}</div>
+    <div className="control-group-header"><h3><button type="button" className="control-group-toggle" aria-expanded={expanded} aria-controls={`${id}-controls`} onClick={onToggle}>{title}</button></h3>{headerAction}<button type="button" className="control-group-chevron" aria-label={`${expanded ? "Collapse" : "Expand"} ${title}`} aria-expanded={expanded} aria-controls={`${id}-controls`} onClick={onToggle}><ChevronDown aria-hidden="true" className="size-3.5" /></button></div>
     <div id={`${id}-controls`} className="control-group-content" hidden={!expanded}><div className="space-y-4">{children}</div></div>
   </section>;
 }

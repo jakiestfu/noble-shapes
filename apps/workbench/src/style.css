@@ -125,13 +125,14 @@ noble-polyhedron { display: block; }
 .control-panel { min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-right: 1px solid var(--border); background: color-mix(in srgb, var(--background) 69%, transparent); backdrop-filter: blur(30px) saturate(1.4); scrollbar-width: thin; z-index: 2; }
 .control-intro { padding: 18px 20px 19px; }
 .control-group { border-top: 1px solid var(--border); }
-.control-group-header { display: flex; min-height: 42px; align-items: center; justify-content: space-between; padding: 0 20px; }
-.control-group-header h3 { min-width: 0; flex: 1; margin: 0; }
-.control-group-toggle { display: flex; width: 100%; min-height: 42px; align-items: center; justify-content: space-between; gap: 8px; color: var(--muted-foreground); font: 700 10px/1.2 ui-monospace, SFMono-Regular, monospace; letter-spacing: 0.15em; text-align: left; text-transform: uppercase; cursor: pointer; }
-.control-group-toggle:hover, .control-group.is-open .control-group-toggle { color: var(--foreground); }
-.control-group-toggle svg { flex: none; transition: transform 150ms ease; }
-.control-group.is-open .control-group-toggle svg { transform: rotate(180deg); }
-.control-group-toggle:focus-visible, .animation-switch:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+.control-group-header { display: flex; min-height: 42px; align-items: center; gap: 10px; padding: 0 16px 0 20px; }
+.control-group-header h3 { min-width: 0; margin: 0; }
+.control-group-toggle { display: flex; min-height: 42px; align-items: center; color: var(--muted-foreground); font: 700 10px/1.2 ui-monospace, SFMono-Regular, monospace; letter-spacing: 0.15em; text-align: left; text-transform: uppercase; cursor: pointer; }
+.control-group-chevron { display: flex; width: 24px; height: 30px; flex: none; align-items: center; justify-content: center; margin-left: auto; color: var(--muted-foreground); cursor: pointer; }
+.control-group-toggle:hover, .control-group-chevron:hover, .control-group.is-open :is(.control-group-toggle, .control-group-chevron) { color: var(--foreground); }
+.control-group-chevron svg { transition: transform 150ms ease; }
+.control-group.is-open .control-group-chevron svg { transform: rotate(180deg); }
+.control-group-toggle:focus-visible, .control-group-chevron:focus-visible, .animation-switch:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
 .control-group-content { padding: 7px 20px 22px; }
 .control-group-content[hidden] { display: none; }
 .animation-switch { display: inline-flex; width: 30px; height: 17px; flex: none; align-items: center; border: 1px solid var(--border); border-radius: 10px; background: var(--muted); padding: 2px; cursor: pointer; }
