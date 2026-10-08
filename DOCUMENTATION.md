@@ -50,7 +50,7 @@ Choose a code format and inspect the matching live shape. The Preview control in
 
 React 19 renders dashed custom-element tags directly. In a TypeScript React project, import `@noble-shapes/web-component/react` once to register the `<noble-shape>` JSX props, then use the React example above. The component package does not require React for plain HTML or other frameworks.
 
-Drag to rotate and scroll to zoom. `stats` adds an overlay with frame rate, GPU timing when supported, canvas size, and mesh counts. The element also emits `noble-render` with the metrics in `event.detail`.
+Drag to rotate and scroll to zoom. On touch screens, dragging the shape rotates it without scrolling the page. `stats` adds an overlay with frame rate, GPU timing when supported, canvas size, and mesh counts. The element also emits `noble-render` with the metrics in `event.detail`.
 
 Use `view="solid"` for facets, `solid-wireframe` for facets and visible edges, `wireframe` for all edges, `face` for one repeated face, or `face-context` to highlight one face over the full wireframe. Set `face-index="0"` to choose the face in the two face views. The `background` attribute accepts a six-digit hex color or `transparent`.
 

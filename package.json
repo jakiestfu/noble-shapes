@@ -10,6 +10,7 @@
     "release:check": "pnpm test && node scripts/check-package-archives.mjs",
     "bench": "pnpm -r --filter './packages/**' build && node scripts/benchmark.mjs",
     "render:examples": "node scripts/render-examples.mjs",
+    "render:home": "pnpm -r --filter './packages/**' build && node scripts/render-home.mjs",
     "render:showcase": "pnpm -r --filter './packages/**' build && node scripts/render-showcase.mjs"
   },
   "devDependencies": {

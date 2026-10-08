@@ -1,7 +1,7 @@
 "use client";
 
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Box, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, Copy, Download, FileImage, Link2, Moon, RotateCcw, Shuffle, Star, Sun } from "lucide-react";
+import { Box, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, Copy, Download, FileImage, Link2, Moon, RotateCcw, Shuffle, Sun } from "lucide-react";
 import { createPolyhedron, polyhedronToGlb, SHAPES, type ShapeId } from "@noble-shapes/core";
 import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, designForTheme, optionsToString, PALETTES, paletteColors, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-shapes/render";
 import "@noble-shapes/web-component";
@@ -12,13 +12,14 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { CodePreview } from "@/components/code-preview";
 import { FormPicker } from "@/components/form-picker";
 import { HomeHero } from "@/components/home-hero";
+import { GitHubStars } from "@/components/github-stars";
 import { LoadingState } from "@/components/loading-state";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { eulerCharacteristic, REGULAR_SYMBOLS } from "@/lib/shape-math";
 import { workbenchCodeFormats } from "@/lib/workbench-code";
 import { Research } from "@/views/research";
-import { PRODUCT, PROJECT_GITHUB_URL } from "@/lib/resources";
+import { PRODUCT } from "@/lib/resources";
 
 const Showcase = lazy(() => import("@/views/showcase").then(module => ({ default: module.Showcase })));
 const Documentation = lazy(() => import("@/views/documentation").then(module => ({ default: module.Documentation })));
@@ -78,12 +79,6 @@ document.documentElement.dataset.theme = initialTheme;
 function Control({ label, value, children }: { label: string; value?: string; children: ReactNode }) {
   return <div className="space-y-2"><div className="flex items-center justify-between gap-3 text-xs font-medium"><span>{label}</span>{value && <span className="font-mono text-muted-foreground">{value}</span>}</div>{children}</div>;
 }
-function GitHubStars({ count }: { count: number | null }) {
-  if (!PROJECT_GITHUB_URL) return null;
-  return <a className="github-stars" href={PROJECT_GITHUB_URL} target="_blank" rel="noopener noreferrer" aria-label={count === null ? "Star Noble Shapes on GitHub" : `Noble Shapes on GitHub · ${count.toLocaleString()} stars`} title="Star on GitHub">
-    <Star aria-hidden="true" className="size-3.5" /><span className="github-stars-label">GitHub</span>{count !== null && <span className="github-stars-count">{count.toLocaleString()}</span>}
-  </a>;
-}
 function Group({ id, title, expanded, onToggle, headerAction, children }: { id: string; title: string; expanded: boolean; onToggle: () => void; headerAction?: ReactNode; children: ReactNode }) {
   return <section className={`control-group ${expanded ? "is-open" : ""}`}>
     <div className="control-group-header"><button type="button" className="control-group-hit" aria-label={`${expanded ? "Collapse" : "Expand"} ${title}`} aria-expanded={expanded} aria-controls={`${id}-controls`} onClick={onToggle} /><h3>{title}</h3>{headerAction}<ChevronDown aria-hidden="true" className="control-group-chevron size-3.5" /></div>
@@ -119,7 +114,6 @@ export function App() {
   const [identityOpen, setIdentityOpen] = useState(false);
   const [edgesPreferred, setEdgesPreferred] = useState(initial.design.view === "solid-wireframe");
   const [copied, setCopied] = useState<"link" | "">("");
-  const [githubStars, setGithubStars] = useState<number | null>(null);
   const code = useMemo(() => optionsToString(options), [options.shape, options.view, options.material, options.palette, options.paletteLinked,
     options.color, options.background, options.faceIndex, options.n, options.p, options.q,
     options.crownHeight, options.a, options.b, options.c]);
@@ -153,16 +147,6 @@ export function App() {
   }, [expandedSections]);
 
   useEffect(() => { document.documentElement.dataset.theme = options.theme; }, [options.theme]);
-  useEffect(() => {
-    if (!PROJECT_GITHUB_URL) return;
-    const controller = new AbortController();
-    const repository = new URL(PROJECT_GITHUB_URL).pathname.replace(/^\/+|\/+$/g, "");
-    fetch(`https://api.github.com/repos/${repository}`, { signal: controller.signal, headers: { Accept: "application/vnd.github+json" } })
-      .then(response => response.ok ? response.json() : null)
-      .then(data => { if (typeof data?.stargazers_count === "number") setGithubStars(data.stargazers_count); })
-      .catch(() => { /* The repository link remains usable when the count is unavailable. */ });
-    return () => controller.abort();
-  }, []);
   useEffect(() => {
     const onSystemTheme = () => {
       if (hasThemeOverride.current) return;
@@ -378,13 +362,13 @@ export function App() {
   };
 
   return <div className={`app-shell ${page === "create" ? "is-workbench" : ""} ${page === "home" ? "is-home" : ""} ${page === "create" && options.background === "transparent" ? "is-transparent" : ""}`} style={page === "create" ? { "--scene-background": options.background === "transparent" ? "var(--background)" : options.background, "--scene-color": options.color } as CSSProperties : undefined}>
-    <header className={`app-header ${page === "home" ? "is-home-header" : ""}`}>
-      <div className="brand-lockup"><a className="brand-product" href="/" onClick={event => navClick(event, "home")}>{PRODUCT.name}</a><GitHubStars count={githubStars} /></div>
-      {page !== "home" && <nav className="app-nav" aria-label="Main navigation">{(["create", "showcase", "research", "documentation"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{pageLabel(item)}</a>)}</nav>}
+    {page !== "home" && <header className="app-header">
+      <div className="brand-lockup"><a className="brand-product" href="/">{PRODUCT.name}</a><GitHubStars /></div>
+      <nav className="app-nav" aria-label="Main navigation">{(["create", "showcase", "research", "documentation"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined}>{pageLabel(item)}</a>)}</nav>
       <div className="header-actions"><Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
-    </header>
+    </header>}
 
-    {page === "home" ? <HomeHero onNavigate={navClick} /> : page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
+    {page === "home" ? <HomeHero onNavigate={navClick} theme={options.theme} onToggleTheme={toggleTheme} /> : page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
         <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Create 3D</h1><p className="mt-1 text-xs text-muted-foreground">146 finite polyhedra · two infinite families</p></div>
 
@@ -463,7 +447,7 @@ export function App() {
         <div className="preview-surface">
           <noble-shape ref={hero} {...appearanceAttrs} background="transparent" stats={stats ? "true" : undefined} className="preview-model" />
         </div>
-        <div className="preview-dock"><details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> View code</span></summary><a className="embed-docs-link" href="/documentation" onClick={event => navClick(event, "documentation")}>Docs</a><div className="embed-content"><CodePreview formats={codeFormats} compact /></div></details></div>
+        <div className="preview-dock"><details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> View code</span></summary><a className="embed-docs-link" href="/documentation">Docs</a><div className="embed-content"><CodePreview formats={codeFormats} compact /></div></details></div>
       </main>
     </div>}
   </div>;

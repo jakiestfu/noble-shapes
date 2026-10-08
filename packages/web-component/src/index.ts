@@ -65,6 +65,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   #pending?: RenderRequest;
   #active?: RenderRequest;
   #dragging = false;
+  #activePointerId?: number;
   #lastPointer?: { x: number; y: number };
   #drawTimes: number[] = [];
   #randomKey?: string;
@@ -83,7 +84,7 @@ export class NoblePolyhedronElement extends HTMLElementBase {
       canvas { display: block; width: 100%; height: 100%; }
       canvas.backdrop { position: absolute; inset: 0; pointer-events: none; }
       canvas.backdrop[hidden] { display: none; }
-      canvas.scene { position: relative; cursor: grab; }
+      canvas.scene { position: relative; cursor: grab; touch-action: none; }
       canvas.scene:active { cursor: grabbing; }
       canvas.scene.floating { animation: pickup-float 3.6s ease-in-out infinite; will-change: transform; }
       @keyframes pickup-float { 0%, 100% { transform: translateY(var(--float-distance)); } 50% { transform: translateY(calc(-1 * var(--float-distance))); } }
@@ -147,6 +148,9 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     this.#gpu?.dispose();
     this.#gpu = undefined;
     this.#busy = false;
+    this.#dragging = false;
+    this.#activePointerId = undefined;
+    this.#lastPointer = undefined;
     this.#unbindCanvasEvents();
   }
 
@@ -500,6 +504,8 @@ export class NoblePolyhedronElement extends HTMLElementBase {
   }
 
   #pointerDown = (event: PointerEvent): void => {
+    if (!event.isPrimary || this.#activePointerId !== undefined) return;
+    if (event.pointerType === "touch") event.preventDefault();
     if (this.rotate > 0 && this.#motionAngle !== 0) {
       const current = this.#currentRotation();
       this.#motionAngle = 0;
@@ -507,12 +513,14 @@ export class NoblePolyhedronElement extends HTMLElementBase {
       this.dispatchEvent(new Event("input", { bubbles: true }));
     }
     this.#dragging = true;
+    this.#activePointerId = event.pointerId;
     this.#lastPointer = { x: event.clientX, y: event.clientY };
     this.#canvas.setPointerCapture(event.pointerId);
   };
 
   #pointerMove = (event: PointerEvent): void => {
-    if (!this.#dragging || !this.#lastPointer) return;
+    if (!this.#dragging || !this.#lastPointer || event.pointerId !== this.#activePointerId) return;
+    if (event.pointerType === "touch") event.preventDefault();
     const dx = event.clientX - this.#lastPointer.x, dy = event.clientY - this.#lastPointer.y;
     if (!dx && !dy) return;
     const current = this.#baseRotation();
@@ -522,9 +530,10 @@ export class NoblePolyhedronElement extends HTMLElementBase {
     this.dispatchEvent(new Event("input", { bubbles: true }));
   };
 
-  #pointerUp = (): void => {
-    if (!this.#dragging) return;
+  #pointerUp = (event: PointerEvent): void => {
+    if (!this.#dragging || event.pointerId !== this.#activePointerId) return;
     this.#dragging = false;
+    this.#activePointerId = undefined;
     this.#lastPointer = undefined;
     this.#schedule();
     this.#updateStats();

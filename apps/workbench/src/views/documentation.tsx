@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Content from "../../.generated/DOCUMENTATION.mdx";
 import Catalogue from "../../.generated/CATALOGUE.mdx";
