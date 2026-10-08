@@ -7,6 +7,7 @@
     "build": "node scripts/check-product.mjs && pnpm -r --filter './packages/**' build && pnpm --filter @noble-shapes/workbench build",
     "dev": "pnpm --filter @noble-shapes/workbench dev",
     "test": "pnpm build && pnpm --filter @noble-shapes/workbench typecheck && node --test tests/*.test.mjs",
+    "release:check": "pnpm test && node scripts/check-package-archives.mjs",
     "bench": "pnpm -r --filter './packages/**' build && node scripts/benchmark.mjs",
     "render:examples": "node scripts/render-examples.mjs",
     "render:showcase": "pnpm -r --filter './packages/**' build && node scripts/render-showcase.mjs"

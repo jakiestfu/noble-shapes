@@ -5,7 +5,7 @@ const config = {
   output: "export",
   agentRules: false,
   pageExtensions: ["js", "jsx", "mdx", "ts", "tsx"],
-  transpilePackages: ["noble-shapes", "@noble-shapes/core", "@noble-shapes/render", "@noble-shapes/web-component"],
+  transpilePackages: ["@noble-shapes/core", "@noble-shapes/render", "@noble-shapes/web-component"],
   devIndicators: false,
 };
 

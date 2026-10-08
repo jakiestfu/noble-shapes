@@ -4,9 +4,9 @@ import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, 
 import { Box, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, Copy, Download, FileImage, Link2, Moon, RotateCcw, Shuffle, Star, Sun } from "lucide-react";
 import { createPolyhedron, polyhedronToGlb, SHAPES, type ShapeId } from "@noble-shapes/core";
 import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, designForTheme, optionsToString, PALETTES, paletteColors, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-shapes/render";
-import "noble-shapes/web-component";
-import "noble-shapes/react";
-import type { NobleShapeElement } from "noble-shapes/web-component";
+import "@noble-shapes/web-component";
+import "@noble-shapes/web-component/react";
+import type { NobleShapeElement } from "@noble-shapes/web-component";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CodePreview } from "@/components/code-preview";

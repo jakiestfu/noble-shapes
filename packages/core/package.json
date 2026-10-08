@@ -1,9 +1,12 @@
 {
   "name": "@noble-shapes/core",
   "version": "0.1.0",
+  "description": "Catalogue and mathematical generators for noble polyhedra",
   "license": "MIT",
   "homepage": "https://nobleshap.es",
   "repository": { "type": "git", "url": "https://github.com/jakiestfu/noble-shapes.git", "directory": "packages/core" },
+  "bugs": { "url": "https://github.com/jakiestfu/noble-shapes/issues" },
+  "keywords": ["noble-polyhedra", "geometry", "polyhedra", "typescript"],
   "publishConfig": { "access": "public" },
   "type": "module",
   "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },

@@ -5,7 +5,7 @@ export const CODE_EXAMPLES = {
   "web-component": {
     formats: [
       { id: "html", label: "HTML", language: "html", code: `<script type="module">
-  import "${PRODUCT.packages.main}/web-component";
+  import "${PRODUCT.packages.webComponent}";
 </script>
 
 <noble-shape
@@ -14,26 +14,26 @@ export const CODE_EXAMPLES = {
   palette="coral"
   style="width: 360px; height: 360px"
 ></noble-shape>` },
-      { id: "javascript", label: "JavaScript", language: "js", code: `import "${PRODUCT.packages.main}/web-component";
+      { id: "javascript", label: "JavaScript", language: "js", code: `import "${PRODUCT.packages.webComponent}";
 
-const form = document.createElement("noble-shape");
-form.setAttribute("shape", "great-stellated-dodecahedron");
-form.setAttribute("view", "solid-wireframe");
-form.setAttribute("palette", "coral");
-form.style.cssText = "width: 360px; height: 360px";
-document.body.append(form);` },
-      { id: "typescript", label: "TypeScript", language: "ts", code: `import "${PRODUCT.packages.main}/web-component";
+const shape = document.createElement("noble-shape");
+shape.setAttribute("shape", "great-stellated-dodecahedron");
+shape.setAttribute("view", "solid-wireframe");
+shape.setAttribute("palette", "coral");
+shape.style.cssText = "width: 360px; height: 360px";
+document.body.append(shape);` },
+      { id: "typescript", label: "TypeScript", language: "ts", code: `import "${PRODUCT.packages.webComponent}";
 
-const form = document.createElement("noble-shape");
-form.setAttribute("shape", "great-stellated-dodecahedron");
-form.setAttribute("view", "solid-wireframe");
-form.setAttribute("palette", "coral");
-form.style.cssText = "width: 360px; height: 360px";
-document.body.append(form);` },
-      { id: "react", label: "React", language: "tsx", code: `import "${PRODUCT.packages.main}/web-component";
-import "${PRODUCT.packages.main}/react";
+const shape = document.createElement("noble-shape");
+shape.setAttribute("shape", "great-stellated-dodecahedron");
+shape.setAttribute("view", "solid-wireframe");
+shape.setAttribute("palette", "coral");
+shape.style.cssText = "width: 360px; height: 360px";
+document.body.append(shape);` },
+      { id: "react", label: "React", language: "tsx", code: `import "${PRODUCT.packages.webComponent}";
+import "${PRODUCT.packages.webComponent}/react";
 
-export function NobleForm() {
+export function NobleShapePreview() {
   return <noble-shape
     shape="great-stellated-dodecahedron"
     view="solid-wireframe"
@@ -43,7 +43,7 @@ export function NobleForm() {
 }` },
       { id: "vue", label: "Vue", language: "vue", code: `<!-- Mark noble-shape as a custom element in Vue's compiler options. -->
 <script setup>
-import "${PRODUCT.packages.main}/web-component";
+import "${PRODUCT.packages.webComponent}";
 </script>
 
 <template>
@@ -54,9 +54,9 @@ import "${PRODUCT.packages.main}/web-component";
     style="width: 360px; height: 360px"
   />
 </template>` },
-      { id: "node", label: "Node", language: "js", code: `import { savePng } from "${PRODUCT.packages.main}/node";
+      { id: "node", label: "Node", language: "js", code: `import { savePng } from "${PRODUCT.packages.node}";
 
-await savePng("form.png", {
+await savePng("shape.png", {
   shape: "great-stellated-dodecahedron",
   view: "solid-wireframe",
   palette: "coral",
@@ -64,7 +64,7 @@ await savePng("form.png", {
   height: 512,
 });` },
       { id: "cli", label: "CLI", language: "sh", code: `npm exec -- ${PRODUCT.packages.main} \\
-  --out form.png \\
+  --out shape.png \\
   --shape great-stellated-dodecahedron \\
   --view solid-wireframe \\
   --palette coral \\
@@ -74,7 +74,7 @@ await savePng("form.png", {
   },
   "node-image": {
     formats: [
-      { id: "node", label: "Node", language: "js", code: `import { savePng } from "${PRODUCT.packages.main}/node";
+      { id: "node", label: "Node", language: "js", code: `import { savePng } from "${PRODUCT.packages.node}";
 
 await savePng("avatar.png", {
   shape: "great-dodecahedron",
@@ -84,7 +84,7 @@ await savePng("avatar.png", {
   height: 512,
   background: "transparent",
 });` },
-      { id: "typescript", label: "TypeScript", language: "ts", code: `import { renderPng } from "${PRODUCT.packages.main}/node";
+      { id: "typescript", label: "TypeScript", language: "ts", code: `import { renderPng } from "${PRODUCT.packages.node}";
 
 const png: Uint8Array = renderPng({
   shape: "great-dodecahedron",

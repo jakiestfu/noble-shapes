@@ -25,6 +25,8 @@ for (const dependency of Object.values(product.packages).filter(name => name !==
 }
 
 const workbench = read("apps/workbench/package.json");
-if (workbench.dependencies[product.packages.main] !== "workspace:*") {
-  throw new Error("The workbench must use the public package");
+for (const dependency of [product.packages.core, product.packages.render, product.packages.node, product.packages.webComponent]) {
+  if (workbench.dependencies[dependency] !== "workspace:*") {
+    throw new Error(`The workbench must depend on ${dependency}`);
+  }
 }

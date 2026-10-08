@@ -26,16 +26,16 @@ Open the local address printed by Next.js, or use the [live editor](https://nobl
 
 ## Package API
 
-The `noble-shapes` package groups the geometry, renderers, component, and CLI. Its parts are prepared for separate publication as `@noble-shapes/core`, `@noble-shapes/render`, `@noble-shapes/web-component`, and `@noble-shapes/node`. After the first npm release, install it with:
+`noble-shapes` is the all-in-one package. The focused packages are `@noble-shapes/core`, `@noble-shapes/render`, `@noble-shapes/web-component`, and `@noble-shapes/node`. After the first npm release, install the package you plan to import:
 
 ```sh
-npm install noble-shapes
+npm install @noble-shapes/web-component
 ```
 
-**On a web page:** import the custom element once, then use it in HTML or JSX.
+**In a bundled web app:** import the custom element once, then use it in HTML or JSX.
 
 ```ts
-import "noble-shapes/web-component";
+import "@noble-shapes/web-component";
 ```
 
 ```html
@@ -44,10 +44,14 @@ import "noble-shapes/web-component";
 
 The same `random` string produces the same shape and appearance. Set `shape`, `palette`, `view`, or `color` to override individual choices.
 
-**In Node.js:** render a PNG without a browser or native canvas dependency.
+**In Node.js:** install `@noble-shapes/node` to render a PNG without a browser or native canvas dependency.
+
+```sh
+npm install @noble-shapes/node
+```
 
 ```ts
-import { savePng } from "noble-shapes/node";
+import { savePng } from "@noble-shapes/node";
 
 await savePng("shape.png", {
   shape: "great-stellated-dodecahedron",
@@ -57,7 +61,13 @@ await savePng("shape.png", {
 });
 ```
 
-**From the command line after the first npm release:**
+**For the combined API and command line:** install `noble-shapes`. It includes the smaller packages as dependencies and exports the browser-safe geometry and render APIs from its main entry point.
+
+```sh
+npm install noble-shapes
+```
+
+After the first npm release:
 
 ```sh
 npx noble-shapes --shape cube --out cube.png
@@ -67,7 +77,7 @@ For geometry access, React custom-element types, shareable design codes, exports
 
 ## Develop
 
-This is a pnpm monorepo. After cloning it, run `pnpm test` for the build, type check, geometry checks, renderer checks, and Open Graph image checks. Run `pnpm render:showcase` to regenerate the images above. See [CONTRIBUTING.md](CONTRIBUTING.md) before changing the mathematical catalogue.
+This is a pnpm monorepo. After cloning it, run `pnpm test` for the build, type check, geometry checks, renderer checks, and Open Graph image checks. Run `pnpm release:check` to also inspect the npm archives, or `pnpm render:showcase` to regenerate the images above. See [CONTRIBUTING.md](CONTRIBUTING.md) before changing the mathematical catalogue.
 
 The site omits analytics by default. To enable Google Analytics 4 for a build or deployment, set `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` to a measurement ID such as `G-ABC123`. Next.js includes the Google tag on every page only when that variable is set.
 

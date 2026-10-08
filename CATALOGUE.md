@@ -15,7 +15,7 @@ The familiar named entries are `tetrahedron`, `cube`, `octahedron`, `dodecahedro
 The remaining finite entries retain their research IDs, such as `ID-1`, `D-2`, `tC-1.1`, and `tI-1.1`. Search for an ID in the form picker to see its full name. The `SHAPES` list is the canonical machine-readable index, so code can present the complete catalogue without maintaining a second copy of all 146 names.
 
 ```ts
-import { SHAPES } from "noble-shapes/core";
+import { SHAPES } from "@noble-shapes/core";
 
 const finiteForms = SHAPES.filter(({ family }) => family === "Finite");
 console.log(finiteForms.length); // 146
@@ -26,9 +26,9 @@ console.log(finiteForms.length); // 146
 `disphenoid` takes positive axis lengths `a`, `b`, and `c`. The stephanoid family uses `n`, `p`, `q`, and `crownHeight`; select `stephanoid` for its prismatic form or `antistephanoid` for its antiprismatic form.
 
 ```ts
-import { createPolyhedron } from "noble-shapes/core";
+import { createPolyhedron } from "@noble-shapes/core";
 
-const form = createPolyhedron({ shape: "antistephanoid", n: 7, p: 3, q: 1, crownHeight: 0.7 });
+const polyhedron = createPolyhedron({ shape: "antistephanoid", n: 7, p: 3, q: 1, crownHeight: 0.7 });
 ```
 
 ### Faces and topology

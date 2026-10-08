@@ -1,9 +1,12 @@
 {
   "name": "@noble-shapes/node",
   "version": "0.1.0",
+  "description": "Dependency-light Node.js PNG rendering and CLI for noble polyhedra",
   "license": "MIT",
   "homepage": "https://nobleshap.es",
   "repository": { "type": "git", "url": "https://github.com/jakiestfu/noble-shapes.git", "directory": "packages/node" },
+  "bugs": { "url": "https://github.com/jakiestfu/noble-shapes/issues" },
+  "keywords": ["noble-polyhedra", "png", "nodejs", "cli"],
   "publishConfig": { "access": "public" },
   "type": "module",
   "exports": {
