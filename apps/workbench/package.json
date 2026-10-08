@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/generate-doc-source.mjs && node scripts/generate-default-assets.mjs",
+    "predev": "node scripts/generate-doc-source.mjs && node scripts/generate-default-assets.mjs && node scripts/generate-og-images.mjs",
     "dev": "next dev --webpack",
     "prebuild": "node scripts/generate-doc-source.mjs && node scripts/generate-default-assets.mjs && node scripts/generate-og-images.mjs",
     "build": "next build --webpack",
