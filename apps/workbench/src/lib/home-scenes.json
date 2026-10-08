@@ -1,0 +1,6 @@
+[
+  { "shape": "small-stellated-dodecahedron", "yaw": 0.6, "pitch": 0.72 },
+  { "shape": "great-dodecahedron", "yaw": -0.36, "pitch": 0.5 },
+  { "shape": "great-stellated-dodecahedron", "yaw": 0.55, "pitch": 0.68 },
+  { "shape": "great-icosahedron", "yaw": -0.7, "pitch": 0.58 }
+]

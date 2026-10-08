@@ -1,7 +1,7 @@
 "use client";
 
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Box, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, Copy, Download, FileImage, Moon, RotateCcw, Share2, Shuffle, Star, Sun } from "lucide-react";
+import { Box, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, Copy, Download, FileImage, Link2, Moon, RotateCcw, Shuffle, Star, Sun } from "lucide-react";
 import { createPolyhedron, polyhedronToGlb, SHAPES, type ShapeId } from "@noble-shapes/core";
 import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, designForTheme, optionsToString, PALETTES, paletteColors, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-shapes/render";
 import "noble-shapes/web-component";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { CodePreview } from "@/components/code-preview";
 import { FormPicker } from "@/components/form-picker";
+import { HomeHero } from "@/components/home-hero";
 import { LoadingState } from "@/components/loading-state";
 import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
@@ -31,7 +32,7 @@ const pageFromPath = (path: string, search = ""): Page => {
   return normalized === "/showcase" || normalized === "/research" || normalized === "/documentation" ? normalized.slice(1) as Page : "home";
 };
 const pathForPage = (page: Page): string => page === "home" ? "/" : page === "create" ? "/3d" : `/${page}`;
-const pageLabel = (page: Page): string => page === "create" ? "Create 3D" : page.charAt(0).toUpperCase() + page.slice(1);
+const pageLabel = (page: Page): string => page === "create" ? "Create 3D" : page === "documentation" ? "Docs" : page.charAt(0).toUpperCase() + page.slice(1);
 
 const VIEWS: { id: RenderView; name: string }[] = [
   { id: "solid", name: "Whole shape" }, { id: "wireframe", name: "Wireframe" }, { id: "face", name: "One face" },
@@ -153,7 +154,7 @@ export function App() {
 
   useEffect(() => { document.documentElement.dataset.theme = options.theme; }, [options.theme]);
   useEffect(() => {
-    if (page !== "home" || !PROJECT_GITHUB_URL || githubStars !== null) return;
+    if (!PROJECT_GITHUB_URL) return;
     const controller = new AbortController();
     const repository = new URL(PROJECT_GITHUB_URL).pathname.replace(/^\/+|\/+$/g, "");
     fetch(`https://api.github.com/repos/${repository}`, { signal: controller.signal, headers: { Accept: "application/vnd.github+json" } })
@@ -161,7 +162,7 @@ export function App() {
       .then(data => { if (typeof data?.stargazers_count === "number") setGithubStars(data.stargazers_count); })
       .catch(() => { /* The repository link remains usable when the count is unavailable. */ });
     return () => controller.abort();
-  }, [page, githubStars]);
+  }, []);
   useEffect(() => {
     const onSystemTheme = () => {
       if (hasThemeOverride.current) return;
@@ -379,15 +380,12 @@ export function App() {
   const homeDesign = DEFAULT_DESIGN_OPTIONS;
   return <div className={`app-shell ${page === "create" ? "is-workbench" : ""} ${page === "home" ? "is-home" : ""} ${page === "create" && options.background === "transparent" ? "is-transparent" : ""}`} style={page === "create" ? { "--scene-background": options.background === "transparent" ? "var(--background)" : options.background, "--scene-color": options.color } as CSSProperties : page === "home" ? { "--scene-background": homeDesign.background, "--scene-color": homeDesign.color } as CSSProperties : undefined}>
     <header className={`app-header ${page === "home" ? "is-home-header" : ""}`}>
-      <div className="brand-lockup"><a className="brand-product" href="/" onClick={event => navClick(event, "home")}>{PRODUCT.name}</a></div>
-      {page !== "home" && <nav className="app-nav" aria-label="Main navigation">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{pageLabel(item)}</a>)}</nav>}
-      <div className="header-actions"><a href="/documentation" className={`header-docs-link ${page === "documentation" ? "is-active" : ""}`} aria-current={page === "documentation" ? "page" : undefined} onClick={event => navClick(event, "documentation")}>Docs</a><GitHubStars count={githubStars} /><Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
+      <div className="brand-lockup"><a className="brand-product" href="/" onClick={event => navClick(event, "home")}>{PRODUCT.name}</a><GitHubStars count={githubStars} /></div>
+      {page !== "home" && <nav className="app-nav" aria-label="Main navigation">{(["create", "showcase", "research", "documentation"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{pageLabel(item)}</a>)}</nav>}
+      <div className="header-actions"><Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
     </header>
 
-    {page === "home" ? <main className="home-hero">
-      <div className="home-model"><noble-shape shape={homeDesign.shape} view={homeDesign.view} material={homeDesign.material} color={homeDesign.color} background="transparent" yaw="0.6" pitch="0.72" rotate={!reducedMotion.matches ? "0.25" : undefined} float={!reducedMotion.matches ? "0.25" : undefined} aria-label={SHAPES.find(item => item.id === homeDesign.shape)?.name ?? "Noble polyhedron"} /></div>
-      <div className="home-content"><p className="home-shape-name">Small stellated dodecahedron</p><h1>Noble Shapes</h1><p className="home-kicker">146 finite forms · two infinite families</p><nav className="home-tabs" aria-label="Explore Noble Shapes">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} onClick={event => navClick(event, item)}>{pageLabel(item)}</a>)}</nav></div>
-    </main> : page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
+    {page === "home" ? <HomeHero onNavigate={navClick} /> : page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
         <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Create 3D</h1><p className="mt-1 text-xs text-muted-foreground">146 finite polyhedra · two infinite families</p></div>
 
@@ -444,9 +442,9 @@ export function App() {
         <div className={`preview-toolbar ${lightScene ? "is-light-scene" : ""}`}>
           <h2 className="preview-toolbar-title truncate font-heading text-lg font-semibold tracking-tight">{poly.name}</h2>
           <div className="preview-toolbar-actions">
-            <Button variant="ghost" size="icon" className="preview-share" aria-label={copied === "link" ? "Link copied" : "Share design"} title={copied === "link" ? "Link copied" : "Share design"} onClick={() => copyText("link", shareUrl.toString())}>{copied === "link" ? <Check className="size-4" /> : <Share2 className="size-4" />}</Button>
+            <Button variant="ghost" size="sm" className="preview-share" aria-label={copied === "link" ? "Link copied" : "Share design"} title={copied === "link" ? "Link copied" : "Copy share link"} onClick={() => copyText("link", shareUrl.toString())}>{copied === "link" ? <Check className="size-4" /> : <Link2 className="size-4" />}<span>{copied === "link" ? "Copied" : "Share"}</span></Button>
             <DropdownMenu>
-              <DropdownMenuTrigger className="preview-export-trigger" aria-label="Export shape" title="Export shape"><Download className="size-4" /></DropdownMenuTrigger>
+              <DropdownMenuTrigger className="preview-export-trigger" aria-label="Export shape" title="Export shape"><Download className="size-4" /><span>Export</span><ChevronDown className="preview-export-chevron size-3" /></DropdownMenuTrigger>
               <DropdownMenuContent aria-label="Export formats">
                 <DropdownMenuItem onClick={downloadPng}><span className="export-menu-format"><FileImage className="size-3.5" /> PNG</span><span className="export-menu-caption">Current view</span></DropdownMenuItem>
                 <DropdownMenuItem onClick={downloadGlb}><span className="export-menu-format"><Box className="size-3.5" /> GLB</span><span className="export-menu-caption">3D geometry</span></DropdownMenuItem>
@@ -466,7 +464,7 @@ export function App() {
         <div className="preview-surface">
           <noble-shape ref={hero} {...appearanceAttrs} background="transparent" stats={stats ? "true" : undefined} className="preview-model" />
         </div>
-        <div className="preview-dock"><details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Use this shape</span><span className="text-xs text-muted-foreground">Code examples</span></summary><div className="embed-content"><CodePreview formats={codeFormats} compact /></div></details></div>
+        <div className="preview-dock"><details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> View code</span></summary><a className="embed-docs-link" href="/documentation" onClick={event => navClick(event, "documentation")}>Docs</a><div className="embed-content"><CodePreview formats={codeFormats} compact /></div></details></div>
       </main>
     </div>}
   </div>;
