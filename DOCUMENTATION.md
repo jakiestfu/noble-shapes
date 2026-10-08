@@ -14,7 +14,17 @@ The browser component uses WebGL2 when available and falls back to a CPU rendere
 
 ## Installation
 
-Install `noble-shapes` for the geometry, renderers, web component, and command line tool:
+The npm packages are prepared but have not been published yet. Until the first release, clone the source to run the editor and use the workspace packages:
+
+```sh
+git clone https://github.com/jakiestfu/noble-shapes.git
+cd noble-shapes
+corepack enable
+pnpm install
+pnpm dev
+```
+
+After the first npm release, install `noble-shapes` for the geometry, renderers, web component, and command line tool:
 
 ```sh
 npm install noble-shapes
@@ -26,7 +36,7 @@ Import `noble-shapes` for the browser-safe geometry and rendering API. Use `nobl
 npm install @noble-shapes/core @noble-shapes/render
 ```
 
-To develop this repository itself, run `pnpm install` and `pnpm dev` from the root.
+The examples below use the planned public package names; the same imports work within this workspace today.
 
 ## Usage
 
@@ -68,7 +78,7 @@ const glb = polyhedronToGlb(createPolyhedron({ shape: "cube" }), "#5ce0d3");
 
 ### Command line
 
-Installing `noble-shapes` adds the `noble-shapes` command to your project (`noble-render` remains an alias):
+Once published, installing `noble-shapes` adds the `noble-shapes` command to your project (`noble-render` remains an alias). In this repository today, replace `npm exec -- noble-shapes` with `node packages/noble-shapes/dist/cli.js` after running `pnpm build`:
 
 ```sh
 npm exec -- noble-shapes --out avatar.png --shape great-icosahedron --palette violet --width 512 --height 512

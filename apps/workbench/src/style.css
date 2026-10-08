@@ -1,28 +1,6 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
-@font-face {
-  font-family: "Freight Sans Pro";
-  src: url("/fonts/freight-sans-pro-black.woff") format("woff");
-  font-style: normal;
-  font-weight: 900;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Freight Sans Pro";
-  src: url("/fonts/freight-sans-pro-700.woff") format("woff");
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Freight Sans Pro";
-  src: url("/fonts/freight-sans-pro-600.woff") format("woff");
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-}
-
 /* Mirrored from the light, warm-neutral theme in jakiestfu-next/packages/ui. */
 :root {
   --background: oklch(0.9818 0.0054 95.0986);
@@ -88,7 +66,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --font-sans: Inter, ui-sans-serif, sans-serif;
-  --font-heading: "Freight Sans Pro", Inter, ui-sans-serif, sans-serif;
+  --font-heading: Inter, ui-sans-serif, sans-serif;
   --font-serif: Fraunces, Georgia, serif;
   --font-mono: ui-monospace, SFMono-Regular, monospace;
 }
@@ -109,7 +87,7 @@ noble-shape { display: block; }
 .app-shell.is-workbench, .app-shell.is-home { background-color: var(--scene-background); background-image: radial-gradient(circle at 63% 47%, color-mix(in srgb, var(--scene-background) 88%, var(--scene-color)) 0%, var(--scene-background) 57%, color-mix(in srgb, var(--scene-background) 86%, #000) 100%); }
 .app-shell.is-workbench.is-transparent { background-color: var(--checker-light); background-image: linear-gradient(45deg, var(--checker-dark) 25%, transparent 25%), linear-gradient(-45deg, var(--checker-dark) 25%, transparent 25%), linear-gradient(45deg, transparent 75%, var(--checker-dark) 75%), linear-gradient(-45deg, transparent 75%, var(--checker-dark) 75%); background-position: 0 0, 0 12px, 12px -12px, -12px 0; background-size: 24px 24px; }
 .app-header { display: grid; height: 58px; flex: none; grid-template-columns: minmax(0, 1fr) 436px minmax(0, 1fr); align-items: center; column-gap: 20px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--background) 74%, transparent); padding: 0 18px; backdrop-filter: blur(28px) saturate(1.4); z-index: 3; }
-.brand-lockup { display: flex; min-width: 0; align-items: baseline; white-space: nowrap; font: 900 16px/1 "Freight Sans Pro", Inter, sans-serif; letter-spacing: -0.035em; }
+.brand-lockup { display: flex; min-width: 0; align-items: baseline; white-space: nowrap; font: 900 16px/1 Inter, sans-serif; letter-spacing: -0.035em; }
 .brand-lockup a { color: inherit; text-decoration: none; }
 .brand-lockup .brand-product { color: var(--foreground); }
 .brand-lockup a:focus-visible, .app-nav-link:focus-visible, .resource-link:focus-visible, .header-docs-link:focus-visible, .home-tabs a:focus-visible, .github-stars:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
@@ -127,7 +105,7 @@ noble-shape { display: block; }
 .home-model noble-shape { width: 100%; height: 100%; touch-action: pan-y; }
 .home-content { width: min(100%, 760px); padding: 0 24px 36px; color: rgb(255 255 255 / 0.96); text-align: center; }
 .home-shape-name { margin-bottom: 12px; color: rgb(255 255 255 / 0.58); font: 600 10px/1.4 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
-.home-content h1 { font: 900 clamp(48px, 7vw, 76px)/1 "Freight Sans Pro", Inter, sans-serif; letter-spacing: -.055em; }
+.home-content h1 { font: 900 clamp(48px, 7vw, 76px)/1 Inter, sans-serif; letter-spacing: -.055em; }
 .home-description { margin-top: 10px; font-size: clamp(14px, 1.7vw, 18px); }
 .home-kicker { margin-top: 14px; color: rgb(255 255 255 / 0.6); font: 600 10px/1.4 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
 .home-tabs { display: grid; width: min(100%, 490px); grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 26px auto 0; }
