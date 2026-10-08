@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import opentype, { type Font } from "opentype.js";
 import { SHAPES } from "@noble-shapes/core";
 import { renderPng } from "@noble-shapes/node";
 import { DEFAULT_DESIGN_OPTIONS, PALETTES, type DesignOptions } from "@noble-shapes/render";
@@ -6,6 +7,12 @@ import { OG_FONT_BOLD, OG_FONT_REGULAR } from "./og-fonts.ts";
 
 const WIDTH = 1200;
 const HEIGHT = 630;
+function parseFont(data: string): Font {
+  const bytes = Buffer.from(data, "base64");
+  return opentype.parse(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+}
+const regularFont = parseFont(OG_FONT_REGULAR);
+const boldFont = parseFont(OG_FONT_BOLD);
 export const PLAYGROUND_DESCRIPTION = "A playground for exploring finite and infinite noble polyhedra.";
 
 export type PageCard = "default" | "create" | "showcase" | "research" | "documentation";
@@ -40,25 +47,29 @@ function isLight(hex: string): boolean {
   return red! * 0.2126 + green! * 0.7152 + blue! * 0.0722 > 0.35;
 }
 
-function textWidth(value: string, fontSize: number): number {
-  return [...value].reduce((width, character) => width + fontSize * (
-    character === " " ? 0.31 : /[ilI.,'!]/.test(character) ? 0.29 : /[MWmw]/.test(character) ? 0.83 : /[A-Z]/.test(character) ? 0.67 : 0.53
-  ), 0);
-}
-
-function wrapText(value: string, fontSize: number, maxWidth: number): string[] {
+function wrapText(value: string, font: Font, fontSize: number, maxWidth: number): string[] {
   const lines: string[] = [];
   for (const word of value.split(/\s+/)) {
     const last = lines.length - 1;
     const candidate = last < 0 ? word : `${lines[last]} ${word}`;
-    if (last >= 0 && textWidth(candidate, fontSize) <= maxWidth) lines[last] = candidate;
+    if (last >= 0 && font.getAdvanceWidth(candidate, fontSize) <= maxWidth) lines[last] = candidate;
     else lines.push(word);
   }
   return lines;
 }
 
-function svgLines(lines: string[], x: number, y: number, lineHeight: number): string {
-  return lines.map((line, index) => `<tspan x="${x}" y="${y + index * lineHeight}">${escapeXml(line)}</tspan>`).join("");
+function svgText(value: string, font: Font, size: number, x: number, y: number, color: string): string {
+  return font.getPaths(value, x, y, size)
+    .map(path => {
+      const data = path.toPathData(2);
+      if (data.includes("NaN")) throw new Error("Open Graph font produced an invalid glyph path");
+      return `<path d="${data}" fill="${escapeXml(color)}"/>`;
+    }).join("");
+}
+
+function svgLayer(content: string): Promise<Buffer> {
+  const svg = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}">${content}</svg>`);
+  return sharp(svg).png().toBuffer();
 }
 
 /** A profile-style card shared by page images and encoded design previews. */
@@ -70,9 +81,9 @@ export async function renderOgCard(design: DesignOptions, title: string, subtitl
   const heading = light ? "#162027" : "#f7f7f8";
   const muted = light ? "#4e5860" : "#b3b7bd";
   const accentSize = subtitle ? 43 : 36;
-  const accentLines = wrapText(title, accentSize, 605);
+  const accentLines = wrapText(title, boldFont, accentSize, 605);
   const subtitleSize = 22;
-  const subtitleLines = subtitle ? wrapText(subtitle, subtitleSize, 600) : [];
+  const subtitleLines = subtitle ? wrapText(subtitle, regularFont, subtitleSize, 600) : [];
   const brandHeight = 74;
   const accentHeight = accentLines.length * 52;
   const subtitleHeight = subtitleLines.length * 31;
@@ -89,19 +100,20 @@ export async function renderOgCard(design: DesignOptions, title: string, subtitl
     <rect x="28" y="28" width="1144" height="574" rx="27" fill="${background}" stroke="${border}" stroke-width="2"/>
   </svg>`);
   const shape = Buffer.from(renderPng({ ...design, background: "transparent", width: 475, height: 475, quality: 1 }));
-  const foreground = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}">
-    <style>
-      @font-face { font-family: NobleCard; src: url(data:font/ttf;base64,${OG_FONT_REGULAR}) format("truetype"); font-weight: 400; }
-      @font-face { font-family: NobleCard; src: url(data:font/ttf;base64,${OG_FONT_BOLD}) format("truetype"); font-weight: 700; }
-    </style>
-    <text x="526" y="${brandY}" fill="${heading}" font-family="NobleCard" font-size="62" font-weight="700" letter-spacing="-2">Noble Shapes</text>
-    <text fill="${escapeXml(design.color)}" font-family="NobleCard" font-size="${accentSize}" font-weight="700" letter-spacing="-.6">${svgLines(accentLines, 526, accentY, 52)}</text>
-    ${subtitle ? `<text fill="${muted}" font-family="NobleCard" font-size="${subtitleSize}" font-weight="400">${svgLines(subtitleLines, 526, subtitleY, 31)}</text>` : ""}
+  const badge = await svgLayer(`
     <rect x="526" y="${badgeY}" width="190" height="${badgeHeight}" rx="22.5" fill="${escapeXml(design.color)}" fill-opacity=".1" stroke="${escapeXml(design.color)}" stroke-opacity=".36"/>
-    <text x="548" y="${badgeY + 29}" fill="${escapeXml(design.color)}" font-family="NobleCard" font-size="21" font-weight="700">Explore now</text>
     <path d="M684 ${badgeY + 22.5}h19m-7-7 7 7-7 7" fill="none" stroke="${escapeXml(design.color)}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-  </svg>`);
-  return sharp(backdrop).composite([{ input: shape, left: 27, top: 78 }, { input: foreground, left: 0, top: 0 }]).png().toBuffer();
+  `);
+  const textLayers = await Promise.all([
+    svgText("Noble Shapes", boldFont, 62, 526, brandY, heading),
+    ...accentLines.map((line, index) => svgText(line, boldFont, accentSize, 526, accentY + index * 52, design.color)),
+    ...subtitleLines.map((line, index) => svgText(line, regularFont, subtitleSize, 526, subtitleY + index * 31, muted)),
+    svgText("Explore now", boldFont, 21, 548, badgeY + 29, design.color),
+  ].map(svgLayer));
+  return sharp(backdrop).composite([
+    { input: shape, left: 27, top: 78 }, { input: badge, left: 0, top: 0 },
+    ...textLayers.map(input => ({ input, left: 0, top: 0 })),
+  ]).png().toBuffer();
 }
 
 export function shapeName(design: DesignOptions): string {
