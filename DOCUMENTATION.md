@@ -1,12 +1,12 @@
 # Documentation
 
-Build a noble polyhedron into a page, generate an image in Node, or use the geometry directly. All examples below use the package names defined in this workspace.
+Build a noble polyhedron into a page, generate an image in Node, or use the geometry directly. All examples below use the public `noble-shapes` package.
 
 ## Introduction
 
-Noble Shapes provides a mathematical catalogue of **146 finite noble polyhedra** and generators for the disphenoid and stephanoid families. A noble polyhedron has equivalent vertices and equivalent faces under its symmetries. The packages keep the mathematical face cycles separate from the renderer, so you can inspect geometry as well as draw it.
+Noble Shapes provides a mathematical catalogue of **146 finite noble polyhedra** and generators for the disphenoid and stephanoid families. A noble polyhedron has equivalent vertices and equivalent faces under its symmetries. The library keeps the mathematical face cycles separate from the renderer, so you can inspect geometry as well as draw it.
 
-The browser component uses WebGL2 when available and falls back to a CPU renderer. The Node package generates PNG files without a browser or native canvas dependency. Both share the same geometry, palettes, views, and image conventions.
+The browser component uses WebGL2 when available and falls back to a CPU renderer. The Node entry generates PNG files without a browser or native canvas dependency. Both share the same geometry, palettes, views, and image conventions.
 
 <Callout>
   For a quick visual start, open [Create 3D](/3d). It produces copyable examples in several formats and a shareable design URL as you edit.
@@ -14,7 +14,7 @@ The browser component uses WebGL2 when available and falls back to a CPU rendere
 
 ## Installation
 
-The npm packages are prepared but have not been published yet. Until the first release, clone the source to run the editor and use the workspace packages:
+To run the editor from source, clone the repository:
 
 ```sh
 git clone https://github.com/jakiestfu/noble-shapes.git
@@ -24,21 +24,13 @@ pnpm install
 pnpm dev
 ```
 
-After the first npm release, install the packages you import. The focused packages have scoped names:
-
-```sh
-npm install @noble-shapes/web-component
-npm install @noble-shapes/node
-npm install @noble-shapes/core @noble-shapes/render
-```
-
-Each command above is an alternative; install only what your project uses. The all-in-one `noble-shapes` package includes the smaller packages as dependencies, exposes the browser-safe geometry and render APIs from its main entry point, and provides the `noble-shapes` CLI:
+Install the one public package for geometry, rendering, the web component, Node tools, and the CLI:
 
 ```sh
 npm install noble-shapes
 ```
 
-If you install only the umbrella package, its `/core`, `/render`, `/web-component`, `/react`, and `/node` subpath aliases remain available. Those paths are exports of `noble-shapes`, while `@noble-shapes/*` are independent packages. The examples below use the focused packages. Browser module imports assume a bundler or import map; a plain HTML file cannot resolve npm package names by itself. The same imports work within this workspace today.
+Use its `/core`, `/render`, `/web-component`, `/react`, and `/node` subpaths for focused imports. The `@noble-shapes/*` names are private to this repository. Browser module imports assume a bundler or import map; a plain HTML file cannot resolve npm package names by itself.
 
 ## Usage
 
@@ -48,7 +40,7 @@ Choose a code format and inspect the matching live shape. The Preview control in
 
 <CodePreview example="web-component" />
 
-React 19 renders dashed custom-element tags directly. In a TypeScript React project, import `@noble-shapes/web-component/react` once to register the `<noble-shape>` JSX props, then use the React example above. The component package does not require React for plain HTML or other frameworks.
+React 19 renders dashed custom-element tags directly. In a TypeScript React project, import `noble-shapes/react` once to register the `<noble-shape>` JSX props, then use the React example above. The component does not require React for plain HTML or other frameworks.
 
 Drag to rotate and scroll to zoom. On touch screens, dragging the shape rotates it without scrolling the page. `stats` adds an overlay with frame rate, GPU timing when supported, canvas size, and mesh counts. The element also emits `noble-render` with the metrics in `event.detail`.
 
@@ -70,17 +62,17 @@ For the PNG bytes instead, call `renderPng(options)`. `encodePng(image)` convert
 
 The Create 3D page's **Export** menu downloads the current view as PNG, the polyhedron as GLB, or its exact vertices, edges, and ordered face cycles as JSON. GLB includes every edge and shaded triangles for simple convex faces. Self-crossing and other complex faces remain as edges; their original cycles are retained in the GLB mesh's `extras.faceCycles` field.
 
-For a 3D export in Node or JavaScript, use `polyhedronToGlb` from the core package:
+For a 3D export in Node or JavaScript, use `polyhedronToGlb` from the core entry:
 
 ```ts
-import { createPolyhedron, polyhedronToGlb } from "@noble-shapes/core";
+import { createPolyhedron, polyhedronToGlb } from "noble-shapes/core";
 
 const glb = polyhedronToGlb(createPolyhedron({ shape: "cube" }), "#5ce0d3");
 ```
 
 ### Command line
 
-Once published, installing `noble-shapes` adds the `noble-shapes` command to your project (`noble-render` remains an alias). In this repository today, replace `npm exec -- noble-shapes` with `node packages/noble-shapes/dist/cli.js` after running `pnpm build`:
+Installing `noble-shapes` adds the `noble-shapes` command to your project (`noble-render` remains an alias). When working from this repository without an npm installation, use `node packages/noble-shapes/dist/cli.js` after running `pnpm build`:
 
 ```sh
 npm exec -- noble-shapes --out avatar.png --shape great-icosahedron --palette violet --width 512 --height 512
@@ -92,10 +84,10 @@ Run `npm exec -- noble-shapes --help` for the short option list. Camera controls
 
 ### JavaScript API
 
-Use `@noble-shapes/core` to inspect ordered face cycles, vertices, and edges. The shape list supplies IDs and display names.
+Use `noble-shapes/core` to inspect ordered face cycles, vertices, and edges. The shape list supplies IDs and display names.
 
 ```ts
-import { createPolyhedron, SHAPES } from "@noble-shapes/core";
+import { createPolyhedron, SHAPES } from "noble-shapes/core";
 
 const polyhedron = createPolyhedron({ shape: "small-stellated-dodecahedron" });
 console.log(polyhedron.name, polyhedron.vertices.length, polyhedron.edges.length, polyhedron.faces.length);
@@ -105,7 +97,7 @@ console.log(SHAPES.find(({ id }) => id === polyhedron.id)?.name);
 The render package returns an RGBA image that you can use with a canvas, image encoder, or other pipeline:
 
 ```ts
-import { renderScene } from "@noble-shapes/render";
+import { renderScene } from "noble-shapes/render";
 
 const image = renderScene({ shape: "cube", palette: "gold", width: 256, height: 256 });
 console.log(image.width, image.height, image.data); // Uint8ClampedArray RGBA
@@ -124,7 +116,7 @@ For an already constructed polyhedron, use `renderPolyhedron(polyhedron, options
 A bare `random` attribute creates a fresh design that stays stable for that element until the attribute changes. For a complete, editable snapshot, encode design options into a code:
 
 ```ts
-import { randomOptions, optionsToString, stringToOptions } from "@noble-shapes/render";
+import { randomOptions, optionsToString, stringToOptions } from "noble-shapes/render";
 
 const design = randomOptions("a-user-name");
 const code = optionsToString(design);
@@ -140,7 +132,7 @@ On nobleshap.es, social previews of shared designs use the same code and include
 `SHAPES` contains the 146 finite forms as well as `disphenoid`, `stephanoid`, and `antistephanoid`. The latter two are prismatic and antiprismatic members of the stephanoid family. Use `a`, `b`, and `c` for disphenoid axis lengths, or `n`, `p`, `q`, and `crownHeight` for crowns.
 
 ```ts
-import { createPolyhedron } from "@noble-shapes/core";
+import { createPolyhedron } from "noble-shapes/core";
 
 const crown = createPolyhedron({ shape: "stephanoid", n: 7, p: 3, q: 1, crownHeight: 0.7 });
 ```

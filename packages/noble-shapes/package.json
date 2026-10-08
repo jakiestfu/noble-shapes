@@ -5,26 +5,66 @@
   "type": "module",
   "description": "Noble polyhedron geometry, rendering, web component, and Node image tools",
   "homepage": "https://nobleshap.es",
-  "repository": { "type": "git", "url": "https://github.com/jakiestfu/noble-shapes.git", "directory": "packages/noble-shapes" },
-  "bugs": { "url": "https://github.com/jakiestfu/noble-shapes/issues" },
-  "keywords": ["polyhedra", "geometry", "web-components", "webgl", "png"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jakiestfu/noble-shapes.git",
+    "directory": "packages/noble-shapes"
+  },
+  "bugs": {
+    "url": "https://github.com/jakiestfu/noble-shapes/issues"
+  },
+  "keywords": [
+    "polyhedra",
+    "geometry",
+    "web-components",
+    "webgl",
+    "png"
+  ],
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./core": { "types": "./dist/core.d.ts", "import": "./dist/core.js" },
-    "./render": { "types": "./dist/render.d.ts", "import": "./dist/render.js" },
-    "./node": { "types": "./dist/node.d.ts", "import": "./dist/node.js" },
-    "./web-component": { "types": "./dist/web-component.d.ts", "import": "./dist/web-component.js" },
-    "./react": { "types": "./dist/react.d.ts", "import": "./dist/react.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./core": {
+      "types": "./dist/core.d.ts",
+      "import": "./dist/core.js"
+    },
+    "./render": {
+      "types": "./dist/render.d.ts",
+      "import": "./dist/render.js"
+    },
+    "./node": {
+      "types": "./dist/node.d.ts",
+      "import": "./dist/node.js"
+    },
+    "./web-component": {
+      "types": "./dist/web-component.d.ts",
+      "import": "./dist/web-component.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    }
   },
-  "bin": { "noble-shapes": "./dist/cli.js", "noble-render": "./dist/cli.js" },
-  "files": ["dist"],
-  "publishConfig": { "access": "public" },
-  "scripts": { "build": "tsc -p tsconfig.json" },
-  "dependencies": {
+  "bin": {
+    "noble-shapes": "./dist/cli.js",
+    "noble-render": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown"
+  },
+  "devDependencies": {
     "@noble-shapes/core": "workspace:*",
-    "@noble-shapes/render": "workspace:*",
     "@noble-shapes/node": "workspace:*",
-    "@noble-shapes/web-component": "workspace:*"
-  },
-  "devDependencies": { "typescript": "^5.9.0" }
+    "@noble-shapes/render": "workspace:*",
+    "@noble-shapes/web-component": "workspace:*",
+    "tsdown": "0.23.0",
+    "typescript": "^5.9.0"
+  }
 }

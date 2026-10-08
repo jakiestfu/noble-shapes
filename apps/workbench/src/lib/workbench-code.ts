@@ -24,12 +24,12 @@ export function workbenchCodeFormats(options: WorkbenchOptions, attributes: Reco
   const cliOptions = Object.entries(scene).map(([key, value]) => `  --${cliKeys[key] ?? key} ${typeof value === "string" ? JSON.stringify(value) : Array.isArray(value) ? value.join(",") : value}`).join(" \\\n");
 
   return [
-    { id: "html", label: "HTML", language: "html", code: `<script type="module">\n  import "${PRODUCT.packages.webComponent}";\n</script>\n\n<noble-shape\n${htmlAttributes}\n  style="width: 360px; height: 360px"\n></noble-shape>` },
-    { id: "javascript", label: "JavaScript", language: "js", code: `import "${PRODUCT.packages.webComponent}";\n\nconst shape = document.createElement("noble-shape");\n${setAttributes}\nshape.style.cssText = "width: 360px; height: 360px";\ndocument.body.append(shape);` },
-    { id: "typescript", label: "TypeScript", language: "ts", code: `import "${PRODUCT.packages.webComponent}";\nimport type { NobleShapeElement } from "${PRODUCT.packages.webComponent}";\n\nconst shape: NobleShapeElement = document.createElement("noble-shape");\n${setAttributes}\nshape.style.cssText = "width: 360px; height: 360px";\ndocument.body.append(shape);` },
-    { id: "react", label: "React", language: "tsx", code: `import "${PRODUCT.packages.webComponent}";\nimport "${PRODUCT.packages.webComponent}/react";\n\nexport function NobleShapePreview() {\n  return (\n    <noble-shape\n${jsxAttributes}\n      style={{ width: 360, height: 360 }}\n    />\n  );\n}` },
-    { id: "vue", label: "Vue", language: "vue", code: `<!-- Configure Vue to treat noble-shape as a custom element. -->\n<script setup lang="ts">\nimport "${PRODUCT.packages.webComponent}";\n</script>\n\n<template>\n  <noble-shape\n${vueAttributes}\n    style="width: 360px; height: 360px"\n  />\n</template>` },
-    { id: "node", label: "Node", language: "js", code: `import { savePng } from "${PRODUCT.packages.node}";\n\nawait savePng("shape.png", {\n${nodeOptions}\n});` },
+    { id: "html", label: "HTML", language: "html", code: `<script type="module">\n  import "noble-shapes/web-component";\n</script>\n\n<noble-shape\n${htmlAttributes}\n  style="width: 360px; height: 360px"\n></noble-shape>` },
+    { id: "javascript", label: "JavaScript", language: "js", code: `import "noble-shapes/web-component";\n\nconst shape = document.createElement("noble-shape");\n${setAttributes}\nshape.style.cssText = "width: 360px; height: 360px";\ndocument.body.append(shape);` },
+    { id: "typescript", label: "TypeScript", language: "ts", code: `import "noble-shapes/web-component";\nimport type { NobleShapeElement } from "noble-shapes/web-component";\n\nconst shape: NobleShapeElement = document.createElement("noble-shape");\n${setAttributes}\nshape.style.cssText = "width: 360px; height: 360px";\ndocument.body.append(shape);` },
+    { id: "react", label: "React", language: "tsx", code: `import "noble-shapes/web-component";\nimport "noble-shapes/react";\n\nexport function NobleShapePreview() {\n  return (\n    <noble-shape\n${jsxAttributes}\n      style={{ width: 360, height: 360 }}\n    />\n  );\n}` },
+    { id: "vue", label: "Vue", language: "vue", code: `<!-- Configure Vue to treat noble-shape as a custom element. -->\n<script setup lang="ts">\nimport "noble-shapes/web-component";\n</script>\n\n<template>\n  <noble-shape\n${vueAttributes}\n    style="width: 360px; height: 360px"\n  />\n</template>` },
+    { id: "node", label: "Node", language: "js", code: `import { savePng } from "noble-shapes/node";\n\nawait savePng("shape.png", {\n${nodeOptions}\n});` },
     { id: "cli", label: "CLI", language: "sh", code: `npm exec -- ${PRODUCT.packages.main} \\\n  --out shape.png \\\n${cliOptions}` },
   ];
 }

@@ -18,9 +18,20 @@ for (const [directory, name] of Object.entries(expected)) {
 }
 
 const umbrella = read("packages/noble-shapes/package.json");
+const root = read("package.json");
+if (umbrella.version !== root.version || umbrella.private) {
+  throw new Error("The public package version must match the root package.json");
+}
 for (const dependency of Object.values(product.packages).filter(name => name !== product.packages.main)) {
-  if (umbrella.dependencies[dependency] !== "workspace:*") {
-    throw new Error(`noble-shapes must depend on ${dependency}`);
+  if (umbrella.devDependencies[dependency] !== "workspace:*" || umbrella.dependencies?.[dependency]) {
+    throw new Error(`noble-shapes must use ${dependency} only as a workspace build dependency`);
+  }
+}
+
+for (const directory of ["core", "render", "node", "web-component"]) {
+  const manifest = read(`packages/${directory}/package.json`);
+  if (!manifest.private || manifest.version !== root.version) {
+    throw new Error(`${manifest.name} must remain private and match the root version`);
   }
 }
 

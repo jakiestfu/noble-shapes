@@ -7,3 +7,4 @@ apps/workbench/.generated/
 .vite/
 *.tsbuildinfo
 renders/
+release/
