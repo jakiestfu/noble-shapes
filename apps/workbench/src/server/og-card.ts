@@ -10,7 +10,7 @@ export type PageCard = "default" | "create" | "showcase" | "research" | "documen
 
 export const PAGE_CARDS: Record<PageCard, { title: string; subtitle: string; design: DesignOptions }> = {
   default: { title: "Noble Shapes", subtitle: "Explore 146 finite forms and two infinite families.", design: DEFAULT_DESIGN_OPTIONS },
-  create: { title: "Create a noble shape", subtitle: "Choose a form, shape its appearance, and share your design.", design: DEFAULT_DESIGN_OPTIONS },
+  create: { title: "Create 3D", subtitle: "Choose a noble polyhedron, shape its appearance, and share your design.", design: DEFAULT_DESIGN_OPTIONS },
   showcase: { title: "Shape showcase", subtitle: "A closer look at remarkable noble polyhedra.", design: { ...DEFAULT_DESIGN_OPTIONS, shape: "great-stellated-dodecahedron", palette: "coral", color: PALETTES.coral.color, background: PALETTES.coral.background } },
   research: { title: "The mathematics", subtitle: "One kind of vertex. One kind of face.", design: { ...DEFAULT_DESIGN_OPTIONS, shape: "icosahedron", palette: "gold", color: PALETTES.gold.color, background: PALETTES.gold.background } },
   documentation: { title: "Build with Noble Shapes", subtitle: "Web components, Node images, a CLI, and a JavaScript API.", design: { ...DEFAULT_DESIGN_OPTIONS, shape: "dodecahedron", palette: "violet", color: PALETTES.violet.color, background: PALETTES.violet.background } },

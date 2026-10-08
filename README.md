@@ -2,7 +2,7 @@
 
 Create, explore, and render noble polyhedra in the browser or Node.js. The catalogue covers **146 finite forms** and generators for the two infinite families. Geometry, colors, and rendering are available through small TypeScript packages, a native web component, and a visual editor.
 
-**[Explore the site](https://nobleshap.es)** · **[Create a shape](https://nobleshap.es/create)** · **[Documentation](https://nobleshap.es/documentation)**
+**[Explore the site](https://nobleshap.es)** · **[Create a shape](https://nobleshap.es/3d)** · **[Documentation](https://nobleshap.es/documentation)**
 
 | Small stellated dodecahedron | Great stellated dodecahedron | Stephanoid |
 | :---: | :---: | :---: |
@@ -22,7 +22,7 @@ pnpm install
 pnpm dev
 ```
 
-Open the local address printed by Next.js, or use the [live editor](https://nobleshap.es/create).
+Open the local address printed by Next.js, or use the [live editor](https://nobleshap.es/3d).
 
 ## Package API
 

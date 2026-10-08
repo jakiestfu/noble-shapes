@@ -27,10 +27,11 @@ type Page = "home" | "create" | "showcase" | "research" | "documentation";
 const pageFromPath = (path: string, search = ""): Page => {
   const normalized = path.replace(/\/+$/, "");
   if (normalized === "/" || !normalized) return new URLSearchParams(search).has("code") ? "create" : "home";
-  if (normalized === "/workbench") return "create";
-  return normalized === "/create" || normalized === "/showcase" || normalized === "/research" || normalized === "/documentation" ? normalized.slice(1) as Page : "home";
+  if (normalized === "/workbench" || normalized === "/create" || normalized === "/3d") return "create";
+  return normalized === "/showcase" || normalized === "/research" || normalized === "/documentation" ? normalized.slice(1) as Page : "home";
 };
-const pathForPage = (page: Page): string => page === "home" ? "/" : `/${page}`;
+const pathForPage = (page: Page): string => page === "home" ? "/" : page === "create" ? "/3d" : `/${page}`;
+const pageLabel = (page: Page): string => page === "create" ? "Create 3D" : page.charAt(0).toUpperCase() + page.slice(1);
 
 const VIEWS: { id: RenderView; name: string }[] = [
   { id: "solid", name: "Whole shape" }, { id: "wireframe", name: "Wireframe" }, { id: "face", name: "One face" },
@@ -75,6 +76,12 @@ document.documentElement.dataset.theme = initialTheme;
 
 function Control({ label, value, children }: { label: string; value?: string; children: ReactNode }) {
   return <div className="space-y-2"><div className="flex items-center justify-between gap-3 text-xs font-medium"><span>{label}</span>{value && <span className="font-mono text-muted-foreground">{value}</span>}</div>{children}</div>;
+}
+function GitHubStars({ count }: { count: number | null }) {
+  if (!PROJECT_GITHUB_URL) return null;
+  return <a className="github-stars" href={PROJECT_GITHUB_URL} target="_blank" rel="noopener noreferrer" aria-label={count === null ? "Star Noble Shapes on GitHub" : `Noble Shapes on GitHub · ${count.toLocaleString()} stars`} title="Star on GitHub">
+    <Star aria-hidden="true" className="size-3.5" /><span className="github-stars-label">GitHub</span>{count !== null && <span className="github-stars-count">{count.toLocaleString()}</span>}
+  </a>;
 }
 function Group({ id, title, expanded, onToggle, headerAction, children }: { id: string; title: string; expanded: boolean; onToggle: () => void; headerAction?: ReactNode; children: ReactNode }) {
   return <section className={`control-group ${expanded ? "is-open" : ""}`}>
@@ -187,7 +194,7 @@ export function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [options.theme]);
   useEffect(() => {
-    document.title = page === "home" ? PRODUCT.name : `${page.charAt(0).toUpperCase() + page.slice(1)} — ${PRODUCT.name}`;
+    document.title = page === "home" ? PRODUCT.name : `${pageLabel(page)} — ${PRODUCT.name}`;
     document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute("href", `${PRODUCT.url}${pathForPage(page)}`);
   }, [page]);
   useLayoutEffect(() => {
@@ -201,7 +208,7 @@ export function App() {
     setDraftCode(code);
     if (page !== "create") return;
     const url = new URL(window.location.href);
-    if (url.pathname === "/" || url.pathname === "/workbench") url.pathname = "/create";
+    if (url.pathname !== "/3d") url.pathname = "/3d";
     if (code === DEFAULT_CODE) url.searchParams.delete("code");
     else url.searchParams.set("code", code);
     if (url.href !== window.location.href) window.history.replaceState(null, "", url);
@@ -338,7 +345,7 @@ export function App() {
     c: family === "disphenoid" ? String(options.c) : undefined,
   };
   const codeFormats = workbenchCodeFormats(options, appearanceAttrs);
-  const shareUrl = new URL("/create", window.location.origin); shareUrl.searchParams.set("code", code);
+  const shareUrl = new URL("/3d", window.location.origin); shareUrl.searchParams.set("code", code);
   const saveBlob = (blob: Blob, extension: string) => {
     const url = URL.createObjectURL(blob), link = document.createElement("a");
     link.href = url; link.download = `noble-${options.shape}.${extension}`; link.click();
@@ -373,16 +380,16 @@ export function App() {
   return <div className={`app-shell ${page === "create" ? "is-workbench" : ""} ${page === "home" ? "is-home" : ""} ${page === "create" && options.background === "transparent" ? "is-transparent" : ""}`} style={page === "create" ? { "--scene-background": options.background === "transparent" ? "var(--background)" : options.background, "--scene-color": options.color } as CSSProperties : page === "home" ? { "--scene-background": homeDesign.background, "--scene-color": homeDesign.color } as CSSProperties : undefined}>
     <header className={`app-header ${page === "home" ? "is-home-header" : ""}`}>
       <div className="brand-lockup"><a className="brand-product" href="/" onClick={event => navClick(event, "home")}>{PRODUCT.name}</a></div>
-      {page !== "home" && <nav className="app-nav" aria-label="Main navigation">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>}
-      <div className="header-actions"><a href="/documentation" className={`header-docs-link ${page === "documentation" ? "is-active" : ""}`} aria-current={page === "documentation" ? "page" : undefined} onClick={event => navClick(event, "documentation")}>Docs</a><Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
+      {page !== "home" && <nav className="app-nav" aria-label="Main navigation">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{pageLabel(item)}</a>)}</nav>}
+      <div className="header-actions"><a href="/documentation" className={`header-docs-link ${page === "documentation" ? "is-active" : ""}`} aria-current={page === "documentation" ? "page" : undefined} onClick={event => navClick(event, "documentation")}>Docs</a><GitHubStars count={githubStars} /><Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
     </header>
 
     {page === "home" ? <main className="home-hero">
       <div className="home-model"><noble-shape shape={homeDesign.shape} view={homeDesign.view} material={homeDesign.material} color={homeDesign.color} background="transparent" yaw="0.6" pitch="0.72" rotate={!reducedMotion.matches ? "0.25" : undefined} float={!reducedMotion.matches ? "0.25" : undefined} aria-label={SHAPES.find(item => item.id === homeDesign.shape)?.name ?? "Noble polyhedron"} /></div>
-      <div className="home-content"><p className="home-shape-name">Small stellated dodecahedron</p><h1>Noble Shapes</h1><p className="home-kicker">146 finite forms · two infinite families</p><nav className="home-tabs" aria-label="Explore Noble Shapes">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>{PROJECT_GITHUB_URL && <a className="github-stars" href={PROJECT_GITHUB_URL} target="_blank" rel="noopener noreferrer"><Star aria-hidden="true" className="size-4" /><span>Star on GitHub</span>{githubStars !== null && <span className="github-stars-count">{githubStars.toLocaleString()}</span>}</a>}</div>
+      <div className="home-content"><p className="home-shape-name">Small stellated dodecahedron</p><h1>Noble Shapes</h1><p className="home-kicker">146 finite forms · two infinite families</p><nav className="home-tabs" aria-label="Explore Noble Shapes">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} onClick={event => navClick(event, item)}>{pageLabel(item)}</a>)}</nav></div>
     </main> : page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
-        <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Create</h1><p className="mt-1 text-xs text-muted-foreground">146 finite polyhedra · two infinite families</p></div>
+        <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Create 3D</h1><p className="mt-1 text-xs text-muted-foreground">146 finite polyhedra · two infinite families</p></div>
 
         <div className="control-accordion" ref={accordionRef}>
         <Group id="shape" title="Shape" expanded={expandedSections.has("shape")} onToggle={() => toggleSection("shape")}>
@@ -437,9 +444,9 @@ export function App() {
         <div className={`preview-toolbar ${lightScene ? "is-light-scene" : ""}`}>
           <h2 className="preview-toolbar-title truncate font-heading text-lg font-semibold tracking-tight">{poly.name}</h2>
           <div className="preview-toolbar-actions">
-            <Button variant="ghost" size="sm" className="preview-share" aria-label={copied === "link" ? "Link copied" : "Share design"} onClick={() => copyText("link", shareUrl.toString())}>{copied === "link" ? <Check className="size-3.5" /> : <Share2 className="size-3.5" />}<span>{copied === "link" ? "Copied" : "Share"}</span></Button>
+            <Button variant="ghost" size="icon" className="preview-share" aria-label={copied === "link" ? "Link copied" : "Share design"} title={copied === "link" ? "Link copied" : "Share design"} onClick={() => copyText("link", shareUrl.toString())}>{copied === "link" ? <Check className="size-4" /> : <Share2 className="size-4" />}</Button>
             <DropdownMenu>
-              <DropdownMenuTrigger className="preview-export-trigger"><Download className="size-3.5" /> Export <ChevronDown className="size-3" /></DropdownMenuTrigger>
+              <DropdownMenuTrigger className="preview-export-trigger" aria-label="Export shape" title="Export shape"><Download className="size-4" /></DropdownMenuTrigger>
               <DropdownMenuContent aria-label="Export formats">
                 <DropdownMenuItem onClick={downloadPng}><span className="export-menu-format"><FileImage className="size-3.5" /> PNG</span><span className="export-menu-caption">Current view</span></DropdownMenuItem>
                 <DropdownMenuItem onClick={downloadGlb}><span className="export-menu-format"><Box className="size-3.5" /> GLB</span><span className="export-menu-caption">3D geometry</span></DropdownMenuItem>

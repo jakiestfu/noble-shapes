@@ -9,7 +9,7 @@ Noble Shapes provides a mathematical catalogue of **146 finite noble polyhedra**
 The browser component uses WebGL2 when available and falls back to a CPU renderer. The Node package generates PNG files without a browser or native canvas dependency. Both share the same geometry, palettes, views, and image conventions.
 
 <Callout>
-  For a quick visual start, open [Create](/create). It produces copyable examples in several formats and a shareable design URL as you edit.
+  For a quick visual start, open [Create 3D](/3d). It produces copyable examples in several formats and a shareable design URL as you edit.
 </Callout>
 
 ## Installation
@@ -66,7 +66,7 @@ For the PNG bytes instead, call `renderPng(options)`. `encodePng(image)` convert
 
 ### Exporting geometry
 
-The Create page's **Export** menu downloads the current view as PNG, the polyhedron as GLB, or its exact vertices, edges, and ordered face cycles as JSON. GLB includes every edge and shaded triangles for simple convex faces. Self-crossing and other complex faces remain as edges; their original cycles are retained in the GLB mesh's `extras.faceCycles` field.
+The Create 3D page's **Export** menu downloads the current view as PNG, the polyhedron as GLB, or its exact vertices, edges, and ordered face cycles as JSON. GLB includes every edge and shaded triangles for simple convex faces. Self-crossing and other complex faces remain as edges; their original cycles are retained in the GLB mesh's `extras.faceCycles` field.
 
 For a 3D export in Node or JavaScript, use `polyhedronToGlb` from the core package:
 
@@ -129,9 +129,9 @@ const code = optionsToString(design);
 const restored = stringToOptions(code);
 ```
 
-Create stores that code in its URL's `code` parameter when the design differs from the default. Visiting `/create` without a code starts from the default design and viewer settings; `/` is the homepage. A shared `/create?code=...` link loads its design. Older `/?code=...` links still open in Create. The code captures the shape, view, material, palette, whether colors follow the palette or are custom, selected face, and family dimensions. Each of the eight palettes has light and dark colors. Switching themes changes linked palette colors without changing the design code; editing either color keeps both colors fixed until a palette is selected again. Camera position, animation, and renderer stats are temporary viewer settings. The theme follows the device's color preference until changed, then saves that choice locally; **D** toggles it when focus is outside an input. Animation defaults on at 0.25 rotate and float when reduced motion is not requested. **Surprise me** shuffles the shape and colors while keeping the current view and transparent background setting. **From text** creates a complete design from a repeatable seed.
+Create 3D stores that code in its URL's `code` parameter when the design differs from the default. Visiting `/3d` without a code starts from the default design and viewer settings; `/` is the homepage. A shared `/3d?code=...` link loads its design. Older `/create?code=...` and `/?code=...` links still open in Create 3D. The code captures the shape, view, material, palette, whether colors follow the palette or are custom, selected face, and family dimensions. Each of the eight palettes has light and dark colors. Switching themes changes linked palette colors without changing the design code; editing either color keeps both colors fixed until a palette is selected again. Camera position, animation, and renderer stats are temporary viewer settings. The theme follows the device's color preference until changed, then saves that choice locally; **D** toggles it when focus is outside an input. Animation defaults on at 0.25 rotate and float when reduced motion is not requested. **Surprise me** shuffles the shape and colors while keeping the current view and transparent background setting. **From text** creates a complete design from a repeatable seed.
 
-On nobleshap.es, social previews of shared designs use the same code and include the shape's name. The Open Graph image is a 1200 × 630 PNG served from `/api/image/<code>`. The homepage, Create, Showcase, Research, and Documentation have static Open Graph images in `/og/`; `/api/image/default` remains available. Ordinary visits load the static site.
+On nobleshap.es, social previews of shared designs use the same code and include the shape's name. The Open Graph image is a 1200 × 630 PNG served from `/api/image/<code>`. The homepage, Create 3D, Showcase, Research, and Documentation have static Open Graph images in `/og/`; `/api/image/default` remains available. Ordinary visits load the static site.
 
 ## Forms and families
 

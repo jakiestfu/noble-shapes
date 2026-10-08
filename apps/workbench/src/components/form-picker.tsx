@@ -3,13 +3,15 @@ import { SHAPES, type ShapeId } from "@noble-shapes/core";
 import { Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList } from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
 
-type Scope = "featured" | "icosahedral" | "octahedral" | "families" | "all" | "recent";
+type Collection = "featured" | "finite" | "infinite";
+type Symmetry = "all" | "icosahedral" | "octahedral" | "tetrahedral";
 type FormOption = {
   id: ShapeId;
   label: string;
   subtitle: string;
   search: string;
-  section: "named" | "icosahedral" | "octahedral" | "families";
+  collection: "finite" | "infinite";
+  symmetry: Exclude<Symmetry, "all">;
 };
 
 const FEATURED = new Set<ShapeId>([
@@ -17,51 +19,43 @@ const FEATURED = new Set<ShapeId>([
   "small-stellated-dodecahedron", "great-dodecahedron",
   "great-stellated-dodecahedron", "great-icosahedron",
 ]);
-const NAMED_ICOSAHEDRAL = new Set<ShapeId>([
-  "dodecahedron", "icosahedron", "small-stellated-dodecahedron",
-  "great-dodecahedron", "great-stellated-dodecahedron", "great-icosahedron",
-]);
-const NAMED_OCTAHEDRAL = new Set<ShapeId>(["cube", "octahedron"]);
 const OCTAHEDRAL_PREFIXES = ["tO-", "tC-", "rC-", "sC-", "gC-"];
-const FORM_OPTIONS: FormOption[] = [
-  ...SHAPES.map(item => {
-    const section: FormOption["section"] = item.family !== "Finite" ? "families"
-      : FEATURED.has(item.id) ? "named"
-        : OCTAHEDRAL_PREFIXES.some(prefix => item.id.startsWith(prefix)) ? "octahedral" : "icosahedral";
-    const label = item.name.includes("faceting") ? item.id : item.name;
-    const subtitle = section === "named" ? "Named solid" : section === "families" ? "Infinite family"
-      : section === "octahedral" ? "Octahedral symmetry" : "Icosahedral symmetry";
-    return { id: item.id, label, subtitle, search: `${item.name} ${item.id} ${subtitle}`.toLowerCase(), section };
-  }),
+const FORM_OPTIONS: FormOption[] = SHAPES.map(item => {
+  const collection = item.family === "Finite" ? "finite" : "infinite";
+  const symmetry: FormOption["symmetry"] = item.id === "tetrahedron" ? "tetrahedral"
+    : item.id === "cube" || item.id === "octahedron" || OCTAHEDRAL_PREFIXES.some(prefix => item.id.startsWith(prefix))
+      ? "octahedral" : "icosahedral";
+  const label = item.name.includes("faceting") ? item.id : item.name;
+  const subtitle = collection === "infinite" ? "Infinite family" : FEATURED.has(item.id) ? "Named solid" : `${symmetry[0]!.toUpperCase()}${symmetry.slice(1)} faceting`;
+  return { id: item.id, label, subtitle, search: `${item.name} ${item.id} ${subtitle}`.toLowerCase(), collection, symmetry };
+});
+const COLLECTIONS: { id: Collection; label: string; count: string }[] = [
+  { id: "featured", label: "Featured", count: "9" },
+  { id: "finite", label: "Finite", count: "146" },
+  { id: "infinite", label: "Infinite", count: "2 families" },
 ];
-const SCOPES: { id: Scope; label: string }[] = [
-  { id: "featured", label: "Featured" }, { id: "icosahedral", label: "Icosahedral" },
-  { id: "octahedral", label: "Octahedral" }, { id: "families", label: "Families" },
-  { id: "all", label: "All shapes" }, { id: "recent", label: "Recent" },
+const SYMMETRIES: { id: Symmetry; label: string }[] = [
+  { id: "all", label: "All" }, { id: "icosahedral", label: "Icosahedral" },
+  { id: "octahedral", label: "Octahedral" }, { id: "tetrahedral", label: "Tetrahedral" },
 ];
 
 export function FormPicker({ shape, onSelect }: { shape: string; onSelect: (shape: string) => void }) {
-  const [scope, setScope] = useState<Scope>("featured");
-  const [recent, setRecent] = useState<string[]>([]);
+  const [collection, setCollection] = useState<Collection>("featured");
+  const [symmetry, setSymmetry] = useState<Symmetry>("all");
   const [inputValue, setInputValue] = useState("");
   const selected = FORM_OPTIONS.find(item => item.id === shape) ?? FORM_OPTIONS[0]!;
 
   useEffect(() => {
-    setRecent(previous => [shape, ...previous.filter(id => id !== shape)].slice(0, 6));
-    setScope(selected.section === "named" ? "featured" : selected.section);
+    setCollection(FEATURED.has(selected.id) ? "featured" : selected.collection);
+    setSymmetry("all");
   }, [shape]);
 
-  const inScope = (item: FormOption): boolean => scope === "all"
-    || (scope === "featured" && item.section === "named")
-    || (scope === "recent" && recent.includes(item.id))
-    || (scope === "icosahedral" && NAMED_ICOSAHEDRAL.has(item.id as ShapeId))
-    || (scope === "octahedral" && NAMED_OCTAHEDRAL.has(item.id as ShapeId))
-    || item.section === scope;
   const term = inputValue.trim().toLowerCase();
   const searching = term !== "" && term !== selected.label.toLowerCase();
   const visible = FORM_OPTIONS.filter(item => searching
-    ? term.split(/\s+/).every(part => item.search.includes(part)) : inScope(item));
-  if (!searching && scope === "recent") visible.sort((left, right) => recent.indexOf(left.id) - recent.indexOf(right.id));
+    ? term.split(/\s+/).every(part => item.search.includes(part))
+    : collection === "featured" ? FEATURED.has(item.id)
+      : item.collection === collection && (collection === "infinite" || symmetry === "all" || item.symmetry === symmetry));
 
   return <Combobox
     items={visible}
@@ -74,29 +68,31 @@ export function FormPicker({ shape, onSelect }: { shape: string; onSelect: (shap
     autoHighlight
   >
     <ComboboxInput aria-label="Polyhedron" placeholder="Search by name or ID…" autoComplete="off" />
-    <ComboboxContent aria-label="Choose a noble polyhedron">
-      <div className="border-b border-border px-2.5 pb-2.5 pt-2">
-        <p className="mb-2 px-0.5 font-mono text-[10px] uppercase tracking-widest text-muted-foreground">Browse the catalogue</p>
-        <div className="grid grid-cols-3 gap-1">
-          {SCOPES.map(option => <button
-            key={option.id}
-            type="button"
-            aria-pressed={scope === option.id}
-            className={cn("min-w-0 rounded-sm px-1.5 py-1 text-[11px] font-medium transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring", scope === option.id && "bg-accent text-accent-foreground")}
-            onClick={() => setScope(option.id)}
-          >{option.label}</button>)}
+    <ComboboxContent className="shape-picker-popover" aria-label="Choose a noble polyhedron">
+      <div className="shape-picker-browse">
+        <p className="shape-picker-heading">Browse shapes</p>
+        <div className="shape-picker-collections" role="group" aria-label="Shape collection">
+          {COLLECTIONS.map(option => <button key={option.id} type="button" aria-pressed={collection === option.id}
+            className={cn("shape-picker-collection", collection === option.id && "is-active")}
+            onClick={() => setCollection(option.id)}>
+            <span>{option.label}</span><small>{option.count}</small>
+          </button>)}
         </div>
+        {collection === "finite" && !searching && <div className="shape-picker-symmetries" role="group" aria-label="Finite shape symmetry">
+          {SYMMETRIES.map(option => <button key={option.id} type="button" aria-pressed={symmetry === option.id}
+            className={cn("shape-picker-symmetry", symmetry === option.id && "is-active")}
+            onClick={() => setSymmetry(option.id)}>{option.label}</button>)}
+        </div>}
+        {collection === "infinite" && !searching && <p className="shape-picker-note">Two families; the stephanoid has prism and antiprism variants.</p>}
       </div>
-      <ComboboxEmpty>No shapes found. Try a name or a paper ID.</ComboboxEmpty>
-      <ComboboxList>
+      <ComboboxEmpty>No shapes found. Try a name or paper ID.</ComboboxEmpty>
+      <ComboboxList className="shape-picker-list">
         {(item: FormOption) => <ComboboxItem key={item.id} value={item}>
           <span className="min-w-0 flex-1 truncate font-medium">{item.label}</span>
           <span className="shrink-0 font-mono text-[10px] text-muted-foreground">{item.subtitle}</span>
         </ComboboxItem>}
       </ComboboxList>
-      <p className="border-t border-border px-3 py-2 text-[11px] text-muted-foreground">
-        {searching ? `${visible.length} matching ${visible.length === 1 ? "shape" : "shapes"} across the catalogue` : `${visible.length} shapes · Search all ${SHAPES.length} by name or ID`}
-      </p>
+      <p className="shape-picker-footer">{searching ? `${visible.length} matching ${visible.length === 1 ? "shape" : "shapes"} across the catalogue` : `${visible.length} shown · Search all ${SHAPES.length} entries by name or ID`}</p>
     </ComboboxContent>
   </Combobox>;
 }
