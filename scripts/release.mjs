@@ -40,25 +40,6 @@ function run(command, args) {
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
-async function verifyTag() {
-  for (let attempt = 0; attempt < 6; attempt++) {
-    const metadata = await readRegistry();
-    if (metadata.tags[tag] === version) return true;
-    const newest = semver.rsort(metadata.versions.filter(candidate => semver.valid(candidate)))[0];
-    if (newest && semver.gt(newest, version)) {
-      throw new Error(`npm now has ${newest}; refusing to move ${tag} back to ${version}`);
-    }
-    if (attempt < 5) await new Promise(resolve => setTimeout(resolve, 1_500));
-  }
-  return false;
-}
-
-async function ensureTag() {
-  if (await verifyTag()) return;
-  run("npm", ["dist-tag", "add", `${publishedPackage.name}@${version}`, tag]);
-  if (!(await verifyTag())) throw new Error(`npm did not move ${tag} to ${version}`);
-}
-
 const metadata = await readRegistry();
 const newest = semver.rsort(metadata.versions.filter(candidate => semver.valid(candidate)))[0];
 if (metadata.versions.includes(version)) {
@@ -66,8 +47,8 @@ if (metadata.versions.includes(version)) {
     if (checkOnly) {
       console.log(`${publishedPackage.name}@${version} is published, but ${tag} points to ${metadata.tags[tag] ?? "nothing"}.`);
     } else {
-      await ensureTag();
-      console.log(`Updated ${tag} to ${publishedPackage.name}@${version}.`);
+      run("npm", ["dist-tag", "add", `${publishedPackage.name}@${version}`, tag]);
+      console.log(`npm accepted ${tag} → ${publishedPackage.name}@${version}; registry views may take a few minutes to update.`);
     }
   } else {
     console.log(newest === version
@@ -97,5 +78,4 @@ if (packedManifest.name !== publishedPackage.name || packedManifest.version !== 
   throw new Error("Release archive name or version does not match the root package.json");
 }
 run("npm", ["publish", archive, "--access", "public", "--tag", tag]);
-await ensureTag();
-console.log(`${publishedPackage.name}@${version} is the current ${tag} release.`);
+console.log(`npm accepted ${publishedPackage.name}@${version} with tag ${tag}; registry views may take a few minutes to update.`);
