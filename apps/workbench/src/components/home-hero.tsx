@@ -5,7 +5,7 @@ import scenes from "@/lib/home-scenes.json";
 
 type Destination = "create" | "showcase" | "research";
 type Slide = { current: number; outgoing: number | null };
-const CYCLE_MS = 6000;
+const CYCLE_MS = 4000;
 const FADE_MS = 1200;
 const destinations: { page: Destination; label: string; href: string }[] = [
   { page: "create", label: "Create 3D", href: "/3d" },
@@ -19,7 +19,7 @@ function sceneStyle(index: number): CSSProperties {
 }
 
 export function HomeHero({ onNavigate }: { onNavigate: (event: MouseEvent<HTMLAnchorElement>, page: Destination) => void }) {
-  const [slide, setSlide] = useState<Slide>({ current: 0, outgoing: null });
+  const [slide, setSlide] = useState<Slide>(() => ({ current: Math.floor(Math.random() * scenes.length), outgoing: null }));
   const [motionAllowed, setMotionAllowed] = useState(() => !window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   const paused = useRef(false);
   const visible = slide.outgoing === null ? [slide.current] : [slide.outgoing, slide.current];
@@ -56,11 +56,12 @@ export function HomeHero({ onNavigate }: { onNavigate: (event: MouseEvent<HTMLAn
         const scene = scenes[index]!;
         const colors = PALETTES[scene.palette as PaletteName];
         const name = SHAPES.find(item => item.id === scene.shape)?.name ?? scene.shape;
-        return <noble-shape key={scene.shape} className={`home-model-layer ${index === slide.outgoing ? "is-leaving" : slide.outgoing !== null ? "is-entering" : ""}`}
-          shape={scene.shape as ShapeId} view={DEFAULT_DESIGN_OPTIONS.view} material={DEFAULT_DESIGN_OPTIONS.material}
-          color={colors.color} background="transparent" yaw={String(scene.yaw)} pitch={String(scene.pitch)}
-          rotate={motionAllowed ? "0.15" : undefined} float={motionAllowed ? "0.15" : undefined}
-          aria-label={name} aria-hidden={index === slide.outgoing} />;
+        return <div key={scene.shape} className={`home-model-layer ${index === slide.outgoing ? "is-leaving" : slide.outgoing !== null ? "is-entering" : ""}`}
+          aria-hidden={index === slide.outgoing}>
+          <noble-shape shape={scene.shape as ShapeId} view={DEFAULT_DESIGN_OPTIONS.view} material={DEFAULT_DESIGN_OPTIONS.material}
+            color={colors.color} background="transparent" yaw={String(scene.yaw)} pitch={String(scene.pitch)}
+            rotate={motionAllowed ? "0.45" : undefined} aria-label={name} />
+        </div>;
       })}
     </div>
     <div className="home-content">
