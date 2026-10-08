@@ -20,7 +20,7 @@ function ComboboxInput({ className, ...props }: ComboboxPrimitive.Input.Props) {
 
 function ComboboxContent({ className, children, ...props }: ComboboxPrimitive.Popup.Props) {
   return <ComboboxPrimitive.Portal>
-    <ComboboxPrimitive.Positioner side="bottom" sideOffset={6} align="start" className="isolate z-50">
+    <ComboboxPrimitive.Positioner side="bottom" sideOffset={6} align="start" className="z-50">
       <ComboboxPrimitive.Popup
         data-slot="combobox-content"
         className={cn("group/combobox-content max-h-(--available-height) w-[max(var(--anchor-width),320px)] max-w-[calc(100vw-24px)] overflow-hidden rounded-sm border border-border bg-popover text-popover-foreground shadow-lg outline-none", className)}

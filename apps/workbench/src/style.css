@@ -136,7 +136,7 @@ noble-shape { display: block; }
 .animation-switch[aria-checked="true"] span { background: var(--background); transform: translateX(13px); }
 .control-hint { margin-top: -2px; color: var(--muted-foreground); font-size: 11px; line-height: 1.45; }
 .shape-selector { display: grid; min-width: 0; gap: 5px; }
-.shape-picker-popover { border-color: var(--border); background: color-mix(in srgb, var(--background) 78%, transparent); backdrop-filter: blur(28px) saturate(1.4); -webkit-backdrop-filter: blur(28px) saturate(1.4); }
+.shape-picker-popover { border-color: var(--border); background: color-mix(in srgb, var(--background) 90%, transparent); backdrop-filter: blur(36px) saturate(1.2); -webkit-backdrop-filter: blur(36px) saturate(1.2); }
 .shape-picker-browse { border-bottom: 1px solid var(--border); padding: 12px; }
 .shape-picker-heading { margin: 0 0 10px; color: var(--muted-foreground); font: 700 10px/1.3 ui-monospace, SFMono-Regular, monospace; letter-spacing: .12em; text-transform: uppercase; }
 .shape-picker-collections { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }

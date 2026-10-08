@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import Script from "next/script";
 import product from "../../../product.config.json";
 import "../src/style.css";
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim() || product.url;
+const googleAnalyticsId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID?.trim();
+if (googleAnalyticsId && !/^G-[A-Z0-9]+$/.test(googleAnalyticsId)) {
+  throw new Error("NEXT_PUBLIC_GOOGLE_ANALYTICS_ID must be a GA4 measurement ID such as G-ABC123");
+}
 const description = "Explore, customize, and render 146 noble polyhedra and two infinite families.";
 const defaultImage = `${siteUrl}/og/default.png`;
 export const metadata: Metadata = {
@@ -22,5 +27,15 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  </head><body>{children}</body></html>;
+  </head><body>{children}</body>
+    {googleAnalyticsId && <>
+      <Script src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`} strategy="afterInteractive" />
+      <Script id="google-analytics" strategy="afterInteractive">{`
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', ${JSON.stringify(googleAnalyticsId)});
+      `}</Script>
+    </>}
+  </html>;
 }

@@ -69,6 +69,8 @@ For geometry access, React custom-element types, shareable design codes, exports
 
 This is a pnpm monorepo. After cloning it, run `pnpm test` for the build, type check, geometry checks, renderer checks, and Open Graph image checks. Run `pnpm render:showcase` to regenerate the images above. See [CONTRIBUTING.md](CONTRIBUTING.md) before changing the mathematical catalogue.
 
+The site omits analytics by default. To enable Google Analytics 4 for a build or deployment, set `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` to a measurement ID such as `G-ABC123`. Next.js includes the Google tag on every page only when that variable is set.
+
 The geometry is an independent implementation informed by [Connor Hill's classification](https://arxiv.org/abs/2607.28711). No code or model files from the GPL-licensed `noble-tools-revised` project are included.
 
 MIT licensed. See [LICENSE](LICENSE).
