@@ -6,7 +6,6 @@ export const PRODUCT = {
   url: configuredOrigin && /^https?:\/\/[^/]+\/?$/.test(configuredOrigin)
     ? configuredOrigin.replace(/\/$/, "") : product.url,
 };
-/** Set githubUrl in product.config.json when the repository is ready to share. */
 export const PROJECT_GITHUB_URL: string | null = PRODUCT.githubUrl;
 
 export const RESEARCH_LINKS = {

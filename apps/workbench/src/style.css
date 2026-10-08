@@ -112,30 +112,30 @@ noble-shape { display: block; }
 .brand-lockup { display: flex; min-width: 0; align-items: baseline; white-space: nowrap; font: 900 16px/1 "Freight Sans Pro", Inter, sans-serif; letter-spacing: -0.035em; }
 .brand-lockup a { color: inherit; text-decoration: none; }
 .brand-lockup .brand-product { color: var(--foreground); }
-.brand-lockup a:focus-visible, .app-nav-link:focus-visible, .resource-link:focus-visible, .header-docs-link:focus-visible, .home-tabs a:focus-visible, .app-footer a:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
+.brand-lockup a:focus-visible, .app-nav-link:focus-visible, .resource-link:focus-visible, .header-docs-link:focus-visible, .home-tabs a:focus-visible, .github-stars:focus-visible { outline: 2px solid var(--ring); outline-offset: 3px; }
 .app-nav { display: grid; height: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: center; }
 .app-nav-link { display: flex; min-width: 0; height: 100%; align-items: center; justify-content: center; border-bottom: 1px solid transparent; color: var(--muted-foreground); padding: 1px 4px 0; font-size: 11px; font-weight: 600; text-align: center; text-decoration: none; transition: border-color 120ms ease, color 120ms ease; }
 .app-nav-link:hover { color: var(--foreground); }
 .app-nav-link.is-active { border-color: var(--foreground); color: var(--foreground); }
 .header-actions { display: flex; min-width: 0; align-items: center; justify-content: flex-end; gap: 4px; }
+.app-header.is-home-header { grid-template-columns: minmax(0, 1fr) auto; }
+.app-header.is-home-header .header-actions { grid-column: 2; }
 .header-docs-link { color: var(--muted-foreground); padding: 8px; font-size: 11px; font-weight: 600; text-decoration: none; }
 .header-docs-link:hover, .header-docs-link.is-active { color: var(--foreground); }
-.app-footer { position: relative; z-index: 2; display: flex; min-height: 28px; flex: none; align-items: center; justify-content: flex-end; border-top: 1px solid var(--border); background: color-mix(in srgb, var(--background) 68%, transparent); padding: 0 18px; backdrop-filter: blur(20px); }
-.app-footer a { color: var(--muted-foreground); font-size: 10px; text-decoration: none; }
-.app-footer a:hover { color: var(--foreground); }
-.home-hero { position: relative; display: flex; min-height: 0; flex: 1; align-items: flex-end; isolation: isolate; overflow: hidden; }
-.home-hero::after { content: ""; position: absolute; z-index: 0; inset: 38% 0 0; background: linear-gradient(transparent, rgb(2 9 15 / .68)); pointer-events: none; }
-.home-model { position: absolute; z-index: -1; inset: 0; transform: translateX(clamp(0px, 19vw, 245px)); }
+.home-hero { display: flex; min-height: 0; flex: 1; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
+.home-model { width: 100%; height: clamp(300px, 50dvh, 450px); flex: none; }
 .home-model noble-shape { width: 100%; height: 100%; touch-action: pan-y; }
-.home-content { position: relative; z-index: 1; width: min(100%, 1120px); margin: 0 auto; padding: 0 clamp(22px, 5vw, 64px) clamp(36px, 6vh, 66px); color: rgb(255 255 255 / 0.96); text-shadow: 0 1px 12px rgb(0 0 0 / 0.25); }
-.home-kicker { margin-bottom: 13px; color: rgb(255 255 255 / 0.7); font: 600 10px/1.4 ui-monospace, monospace; letter-spacing: .15em; text-transform: uppercase; }
-.home-content h1 { font: 900 clamp(48px, 8vw, 96px)/.95 "Freight Sans Pro", Inter, sans-serif; letter-spacing: -.055em; }
-.home-description { margin-top: 12px; font-size: clamp(14px, 1.7vw, 18px); }
-.home-shape-name { margin-top: 13px; color: rgb(255 255 255 / 0.58); font-size: 11px; }
-.home-tabs { display: grid; width: min(100%, 560px); grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; margin-top: 26px; border: 1px solid rgb(255 255 255 / 0.23); border-radius: 3px; background: rgb(255 255 255 / 0.23); text-shadow: none; }
-.home-tabs a { display: flex; min-width: 0; min-height: 48px; align-items: center; justify-content: space-between; gap: 5px; background: rgb(6 20 28 / 0.75); color: rgb(255 255 255 / 0.95); padding: 0 15px; font-size: 12px; font-weight: 600; text-decoration: none; transition: background 120ms ease; }
-.home-tabs a:hover { background: rgb(6 20 28 / 0.94); }
-.home-tabs svg { flex: none; opacity: .55; }
+.home-content { width: min(100%, 760px); padding: 0 24px 36px; color: rgb(255 255 255 / 0.96); text-align: center; }
+.home-shape-name { margin-bottom: 12px; color: rgb(255 255 255 / 0.58); font: 600 10px/1.4 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+.home-content h1 { font: 900 clamp(48px, 7vw, 76px)/1 "Freight Sans Pro", Inter, sans-serif; letter-spacing: -.055em; }
+.home-description { margin-top: 10px; font-size: clamp(14px, 1.7vw, 18px); }
+.home-kicker { margin-top: 14px; color: rgb(255 255 255 / 0.6); font: 600 10px/1.4 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase; }
+.home-tabs { display: grid; width: min(100%, 490px); grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: 26px auto 0; }
+.home-tabs a { display: flex; min-width: 0; min-height: 46px; align-items: center; justify-content: center; border-radius: 3px; background: rgb(245 247 247 / .96); color: #14242a; padding: 0 12px; font-size: 12px; font-weight: 700; text-decoration: none; transition: background 120ms ease, transform 120ms ease; }
+.home-tabs a:hover { background: #fff; transform: translateY(-1px); }
+.github-stars { display: inline-flex; min-height: 34px; align-items: center; gap: 8px; margin-top: 20px; border: 1px solid rgb(255 255 255 / .18); border-radius: 3px; background: rgb(255 255 255 / .06); color: rgb(255 255 255 / .78); padding: 0 11px; font-size: 11px; font-weight: 600; text-decoration: none; }
+.github-stars:hover { background: rgb(255 255 255 / .12); color: #fff; }
+.github-stars-count { display: inline-flex; align-items: center; gap: 4px; margin-left: 3px; border-left: 1px solid rgb(255 255 255 / .18); padding-left: 10px; }
 .app-layout { display: grid; min-height: 0; flex: 1; grid-template-columns: 318px minmax(0, 1fr); gap: 0; }
 .control-panel { display: flex; min-height: 0; flex-direction: column; overflow: hidden; border-right: 1px solid var(--border); background: color-mix(in srgb, var(--background) 69%, transparent); backdrop-filter: blur(30px) saturate(1.4); z-index: 2; }
 .control-intro { flex: none; padding: 18px 20px 19px; }
@@ -359,7 +359,7 @@ noble-shape { display: block; }
   .control-accordion[data-constrained="true"] .control-group.is-open .control-group-content { flex: none; }
   .control-group-content { overflow: visible; }
   .content-page { overflow: visible; }
-  .home-hero { min-height: max(640px, calc(100dvh - 124px)); }
+  .home-hero { min-height: calc(100dvh - 58px); }
   .docs-layout { grid-template-columns: minmax(0, 1fr); gap: 26px; }
   .docs-sidebar { min-width: 0; position: sticky; top: 0; z-index: 2; border-left: 0; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--background) 72%, transparent); padding: 9px 0; backdrop-filter: blur(22px) saturate(1.3); }
   .docs-sidebar-title { display: none; }
@@ -390,10 +390,9 @@ noble-shape { display: block; }
   .preview-dock { width: calc(100% - 20px); margin: auto 10px 10px; }
   .showcase-grid { grid-template-columns: 1fr; gap: 24px; }
   .page-count { display: none; }
-  .home-hero { min-height: max(610px, calc(100dvh - 124px)); }
-  .home-model { transform: none; }
-  .home-content { padding: 0 18px 30px; }
-  .home-content h1 { font-size: clamp(48px, 15vw, 68px); }
-  .home-tabs a { min-height: 44px; padding: 0 9px; font-size: 11px; }
-  .home-tabs svg { width: 12px; }
+  .home-model { height: clamp(250px, 42dvh, 340px); }
+  .home-content { padding: 0 18px 26px; }
+  .home-content h1 { font-size: clamp(44px, 14vw, 64px); }
+  .home-tabs { gap: 8px; margin-top: 22px; }
+  .home-tabs a { min-height: 44px; padding: 0 5px; font-size: 11px; }
 }

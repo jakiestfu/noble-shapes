@@ -1,7 +1,7 @@
 "use client";
 
 import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import { Box, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, Copy, Download, FileImage, Moon, RotateCcw, Share2, Shuffle, Sun } from "lucide-react";
+import { Box, Braces, Check, ChevronDown, ChevronLeft, ChevronRight, Code2, Copy, Download, FileImage, Moon, RotateCcw, Share2, Shuffle, Star, Sun } from "lucide-react";
 import { createPolyhedron, polyhedronToGlb, SHAPES, type ShapeId } from "@noble-shapes/core";
 import { DEFAULT_DESIGN_OPTIONS, DEFAULT_WORKBENCH_OPTIONS, designForTheme, optionsToString, PALETTES, paletteColors, randomOptions, randomSeed, stringToOptions, type DesignOptions, type PaletteName, type Quaternion, type RenderView, type WorkbenchOptions } from "@noble-shapes/render";
 import "noble-shapes/web-component";
@@ -17,7 +17,7 @@ import { Slider } from "@/components/ui/slider";
 import { eulerCharacteristic, REGULAR_SYMBOLS } from "@/lib/shape-math";
 import { workbenchCodeFormats } from "@/lib/workbench-code";
 import { Research } from "@/views/research";
-import { PRODUCT } from "@/lib/resources";
+import { PRODUCT, PROJECT_GITHUB_URL } from "@/lib/resources";
 
 const Showcase = lazy(() => import("@/views/showcase").then(module => ({ default: module.Showcase })));
 const Documentation = lazy(() => import("@/views/documentation").then(module => ({ default: module.Documentation })));
@@ -109,6 +109,7 @@ export function App() {
   const [identityOpen, setIdentityOpen] = useState(false);
   const [edgesPreferred, setEdgesPreferred] = useState(initial.design.view === "solid-wireframe");
   const [copied, setCopied] = useState<"link" | "">("");
+  const [githubStars, setGithubStars] = useState<number | null>(null);
   const code = useMemo(() => optionsToString(options), [options.shape, options.view, options.material, options.palette, options.paletteLinked,
     options.color, options.background, options.faceIndex, options.n, options.p, options.q,
     options.crownHeight, options.a, options.b, options.c]);
@@ -142,6 +143,16 @@ export function App() {
   }, [expandedSections]);
 
   useEffect(() => { document.documentElement.dataset.theme = options.theme; }, [options.theme]);
+  useEffect(() => {
+    if (page !== "home" || !PROJECT_GITHUB_URL || githubStars !== null) return;
+    const controller = new AbortController();
+    const repository = new URL(PROJECT_GITHUB_URL).pathname.replace(/^\/+|\/+$/g, "");
+    fetch(`https://api.github.com/repos/${repository}`, { signal: controller.signal, headers: { Accept: "application/vnd.github+json" } })
+      .then(response => response.ok ? response.json() : null)
+      .then(data => { if (typeof data?.stargazers_count === "number") setGithubStars(data.stargazers_count); })
+      .catch(() => { /* The repository link remains usable when the count is unavailable. */ });
+    return () => controller.abort();
+  }, [page, githubStars]);
   useEffect(() => {
     const onSystemTheme = (event: MediaQueryListEvent) => {
       if (hasThemeOverride.current) return;
@@ -354,15 +365,15 @@ export function App() {
 
   const homeDesign = DEFAULT_DESIGN_OPTIONS;
   return <div className={`app-shell ${page === "create" ? "is-workbench" : ""} ${page === "home" ? "is-home" : ""} ${page === "create" && options.background === "transparent" ? "is-transparent" : ""}`} style={page === "create" ? { "--scene-background": options.background === "transparent" ? "var(--background)" : options.background, "--scene-color": options.color } as CSSProperties : page === "home" ? { "--scene-background": homeDesign.background, "--scene-color": homeDesign.color } as CSSProperties : undefined}>
-    <header className="app-header">
+    <header className={`app-header ${page === "home" ? "is-home-header" : ""}`}>
       <div className="brand-lockup"><a className="brand-product" href="/" onClick={event => navClick(event, "home")}>{PRODUCT.name}</a></div>
-      <nav className="app-nav" aria-label="Main navigation">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>
+      {page !== "home" && <nav className="app-nav" aria-label="Main navigation">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>}
       <div className="header-actions"><a href="/documentation" className={`header-docs-link ${page === "documentation" ? "is-active" : ""}`} aria-current={page === "documentation" ? "page" : undefined} onClick={event => navClick(event, "documentation")}>Docs</a><Button variant="ghost" size="icon" aria-label={`Switch to ${options.theme === "light" ? "dark" : "light"} mode`} title="Toggle theme (D)" onClick={toggleTheme}>{options.theme === "light" ? <Moon className="size-4" /> : <Sun className="size-4" />}</Button></div>
     </header>
 
     {page === "home" ? <main className="home-hero">
       <div className="home-model"><noble-shape shape={homeDesign.shape} view={homeDesign.view} material={homeDesign.material} color={homeDesign.color} background="transparent" yaw="0.6" pitch="0.72" rotate={!reducedMotion.matches ? "0.25" : undefined} float={!reducedMotion.matches ? "0.25" : undefined} aria-label={SHAPES.find(item => item.id === homeDesign.shape)?.name ?? "Noble polyhedron"} /></div>
-      <div className="home-content"><p className="home-kicker">146 finite forms · two infinite families</p><h1>Noble Shapes</h1><p className="home-description">Explore the geometry. Make it yours.</p><p className="home-shape-name">Featuring the small stellated dodecahedron</p><nav className="home-tabs" aria-label="Explore Noble Shapes">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}<ChevronRight aria-hidden="true" className="size-4" /></a>)}</nav></div>
+      <div className="home-content"><p className="home-shape-name">Small stellated dodecahedron</p><h1>Noble Shapes</h1><p className="home-description">Explore the geometry. Make it yours.</p><p className="home-kicker">146 finite forms · two infinite families</p><nav className="home-tabs" aria-label="Explore Noble Shapes">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>{PROJECT_GITHUB_URL && <a className="github-stars" href={PROJECT_GITHUB_URL} target="_blank" rel="noopener noreferrer"><Star aria-hidden="true" className="size-4" /><span>Star on GitHub</span>{githubStars !== null && <span className="github-stars-count">{githubStars.toLocaleString()}</span>}</a>}</div>
     </main> : page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
         <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Create</h1><p className="mt-1 text-xs text-muted-foreground">146 finite polyhedra · two infinite families</p></div>
@@ -445,6 +456,5 @@ export function App() {
         <div className="preview-dock"><details className="embed-panel"><summary><span className="flex items-center gap-2"><Code2 className="size-4" /> Use this shape</span><span className="text-xs text-muted-foreground">Code examples</span></summary><div className="embed-content"><CodePreview formats={codeFormats} compact /></div></details></div>
       </main>
     </div>}
-    <footer className="app-footer"><a href={PRODUCT.author.url} target="_blank" rel="noopener noreferrer">by {PRODUCT.author.name}</a></footer>
   </div>;
 }

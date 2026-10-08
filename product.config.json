@@ -3,11 +3,7 @@
   "domain": "nobleshap.es",
   "url": "https://nobleshap.es",
   "element": "noble-shape",
-  "author": {
-    "name": "jakiestfu",
-    "url": "https://jakiestfu.com/"
-  },
-  "githubUrl": null,
+  "githubUrl": "https://github.com/jakiestfu/noble-shapes",
   "packages": {
     "main": "noble-shapes",
     "core": "@noble-shapes/core",
