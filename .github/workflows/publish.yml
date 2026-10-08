@@ -12,8 +12,31 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  publish:
+  test:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.3.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm release:check
+      - run: node scripts/pack-release.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: noble-shapes-package
+          path: release/noble-shapes-*.tgz
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    needs: test
+    runs-on: ubuntu-latest
+    environment: Production
     permissions:
       contents: read
       id-token: write
@@ -26,6 +49,10 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - run: pnpm install --frozen-lockfile --ignore-scripts
       - run: npm install --global npm@11.21.0
-      - run: pnpm release
+      - uses: actions/download-artifact@v4
+        with:
+          name: noble-shapes-package
+          path: release
+      - run: pnpm release:publish

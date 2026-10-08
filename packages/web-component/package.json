@@ -1,20 +1,47 @@
 {
   "name": "@noble-shapes/web-component",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "WebGL2 custom element for interactive noble polyhedra",
   "license": "MIT",
   "homepage": "https://nobleshap.es",
-  "repository": { "type": "git", "url": "https://github.com/jakiestfu/noble-shapes.git", "directory": "packages/web-component" },
-  "bugs": { "url": "https://github.com/jakiestfu/noble-shapes/issues" },
-  "keywords": ["noble-polyhedra", "web-components", "webgl", "typescript"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jakiestfu/noble-shapes.git",
+    "directory": "packages/web-component"
+  },
+  "bugs": {
+    "url": "https://github.com/jakiestfu/noble-shapes/issues"
+  },
+  "keywords": [
+    "noble-polyhedra",
+    "web-components",
+    "webgl",
+    "typescript"
+  ],
   "type": "module",
   "exports": {
-    ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" },
-    "./react": { "types": "./dist/react.d.ts", "import": "./dist/react.js" }
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./react": {
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
+    }
   },
-  "files": ["dist"],
-  "scripts": { "build": "tsc -p tsconfig.json" },
-  "dependencies": { "@noble-shapes/core": "workspace:*", "@noble-shapes/render": "workspace:*" },
-  "devDependencies": { "@types/react": "^19.3.0", "typescript": "^5.9.0" }
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@noble-shapes/core": "workspace:*",
+    "@noble-shapes/render": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "typescript": "^5.9.0"
+  }
 }

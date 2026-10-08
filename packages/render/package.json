@@ -1,17 +1,41 @@
 {
   "name": "@noble-shapes/render",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Browser-safe image renderer, palettes, and design codes for noble polyhedra",
   "license": "MIT",
   "homepage": "https://nobleshap.es",
-  "repository": { "type": "git", "url": "https://github.com/jakiestfu/noble-shapes.git", "directory": "packages/render" },
-  "bugs": { "url": "https://github.com/jakiestfu/noble-shapes/issues" },
-  "keywords": ["noble-polyhedra", "renderer", "geometry", "typescript"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jakiestfu/noble-shapes.git",
+    "directory": "packages/render"
+  },
+  "bugs": {
+    "url": "https://github.com/jakiestfu/noble-shapes/issues"
+  },
+  "keywords": [
+    "noble-polyhedra",
+    "renderer",
+    "geometry",
+    "typescript"
+  ],
   "type": "module",
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
-  "files": ["dist"],
-  "scripts": { "build": "tsc -p tsconfig.json" },
-  "dependencies": { "@noble-shapes/core": "workspace:*" },
-  "devDependencies": { "typescript": "^5.9.0" }
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@noble-shapes/core": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0"
+  }
 }

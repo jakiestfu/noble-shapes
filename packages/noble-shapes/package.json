@@ -1,6 +1,6 @@
 {
   "name": "noble-shapes",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "type": "module",
   "description": "Noble polyhedron geometry, rendering, web component, and Node image tools",

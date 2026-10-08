@@ -4,10 +4,12 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import semver from "semver";
 
-const checkOnly = process.argv.slice(2).join(" ") === "--check";
-if (process.argv.length > 2 && !checkOnly) {
-  throw new Error("Usage: pnpm release [--check]");
+const mode = process.argv[2] ?? "release";
+if (process.argv.length > 3 || !["release", "--check", "--publish-only"].includes(mode)) {
+  throw new Error("Usage: pnpm release [--check] or pnpm release:publish");
 }
+const checkOnly = mode === "--check";
+const publishOnly = mode === "--publish-only";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const workspace = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
@@ -82,10 +84,18 @@ if (checkOnly) {
   process.exit(0);
 }
 
-run("pnpm", ["release:check"]);
-run("pnpm", ["release:pack"]);
+if (!publishOnly) {
+  run("pnpm", ["release:check"]);
+  run("node", ["scripts/pack-release.mjs"]);
+}
 const archive = join(root, "release", `${publishedPackage.name}-${version}.tgz`);
 if (!existsSync(archive)) throw new Error(`Release archive was not created: ${archive}`);
+const packedResult = spawnSync("tar", ["-xOf", archive, "package/package.json"], { cwd: root, encoding: "utf8" });
+if (packedResult.error || packedResult.status !== 0) throw new Error("Could not read release archive manifest");
+const packedManifest = JSON.parse(packedResult.stdout);
+if (packedManifest.name !== publishedPackage.name || packedManifest.version !== version) {
+  throw new Error("Release archive name or version does not match the root package.json");
+}
 run("npm", ["publish", archive, "--access", "public", "--tag", tag]);
 await ensureTag();
 console.log(`${publishedPackage.name}@${version} is the current ${tag} release.`);
