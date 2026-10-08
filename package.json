@@ -9,8 +9,7 @@
     "test": "pnpm build && pnpm --filter @noble-shapes/workbench typecheck && node --test tests/*.test.mjs",
     "bench": "pnpm -r --filter './packages/**' build && node scripts/benchmark.mjs",
     "render:examples": "node scripts/render-examples.mjs",
-    "render:showcase": "pnpm -r --filter './packages/**' build && node scripts/render-showcase.mjs",
-    "render:home": "pnpm -r --filter './packages/**' build && node scripts/render-home.mjs"
+    "render:showcase": "pnpm -r --filter './packages/**' build && node scripts/render-showcase.mjs"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

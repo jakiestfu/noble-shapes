@@ -9,7 +9,7 @@ const googleAnalyticsId = process.env.NEXT_PUBLIC_GOOGLE_ANALYTICS_ID?.trim();
 if (googleAnalyticsId && !/^G-[A-Z0-9]+$/.test(googleAnalyticsId)) {
   throw new Error("NEXT_PUBLIC_GOOGLE_ANALYTICS_ID must be a GA4 measurement ID such as G-ABC123");
 }
-const description = "Explore, customize, and render 146 noble polyhedra and two infinite families.";
+const description = "A playground for exploring finite and infinite noble polyhedra.";
 const defaultImage = `${siteUrl}/og/default.png`;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

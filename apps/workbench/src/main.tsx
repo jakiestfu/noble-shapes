@@ -377,8 +377,7 @@ export function App() {
     saveBlob(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }), "json");
   };
 
-  const homeDesign = DEFAULT_DESIGN_OPTIONS;
-  return <div className={`app-shell ${page === "create" ? "is-workbench" : ""} ${page === "home" ? "is-home" : ""} ${page === "create" && options.background === "transparent" ? "is-transparent" : ""}`} style={page === "create" ? { "--scene-background": options.background === "transparent" ? "var(--background)" : options.background, "--scene-color": options.color } as CSSProperties : page === "home" ? { "--scene-background": homeDesign.background, "--scene-color": homeDesign.color } as CSSProperties : undefined}>
+  return <div className={`app-shell ${page === "create" ? "is-workbench" : ""} ${page === "home" ? "is-home" : ""} ${page === "create" && options.background === "transparent" ? "is-transparent" : ""}`} style={page === "create" ? { "--scene-background": options.background === "transparent" ? "var(--background)" : options.background, "--scene-color": options.color } as CSSProperties : undefined}>
     <header className={`app-header ${page === "home" ? "is-home-header" : ""}`}>
       <div className="brand-lockup"><a className="brand-product" href="/" onClick={event => navClick(event, "home")}>{PRODUCT.name}</a><GitHubStars count={githubStars} /></div>
       {page !== "home" && <nav className="app-nav" aria-label="Main navigation">{(["create", "showcase", "research", "documentation"] as const).map(item => <a key={item} href={pathForPage(item)} className={`app-nav-link ${page === item ? "is-active" : ""}`} aria-current={page === item ? "page" : undefined} onClick={event => navClick(event, item)}>{pageLabel(item)}</a>)}</nav>}

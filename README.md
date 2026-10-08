@@ -67,7 +67,7 @@ For geometry access, React custom-element types, shareable design codes, exports
 
 ## Develop
 
-This is a pnpm monorepo. After cloning it, run `pnpm test` for the build, type check, geometry checks, renderer checks, and Open Graph image checks. Run `pnpm render:showcase` to regenerate the images above, or `pnpm render:home` for the homepage transition images. See [CONTRIBUTING.md](CONTRIBUTING.md) before changing the mathematical catalogue.
+This is a pnpm monorepo. After cloning it, run `pnpm test` for the build, type check, geometry checks, renderer checks, and Open Graph image checks. Run `pnpm render:showcase` to regenerate the images above. See [CONTRIBUTING.md](CONTRIBUTING.md) before changing the mathematical catalogue.
 
 The site omits analytics by default. To enable Google Analytics 4 for a build or deployment, set `NEXT_PUBLIC_GOOGLE_ANALYTICS_ID` to a measurement ID such as `G-ABC123`. Next.js includes the Google tag on every page only when that variable is set.
 
