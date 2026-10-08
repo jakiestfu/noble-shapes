@@ -48,7 +48,9 @@ function sceneIsLight(background: string, theme: "light" | "dark"): boolean {
 const THEME_STORAGE_KEY = "noble-shapes-theme";
 const OLD_VIEWER_STORAGE_KEY = "noble-forms-viewer-v1";
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
+const systemLight = window.matchMedia("(prefers-color-scheme: light)");
+const systemDark = window.matchMedia("(prefers-color-scheme: dark)");
+const preferredSystemTheme = (): "light" | "dark" => systemLight.matches ? "light" : "dark";
 function readThemePreference(): "light" | "dark" | undefined {
   try {
     const value = localStorage.getItem(THEME_STORAGE_KEY) ?? localStorage.getItem("noble-polyhedra-theme");
@@ -56,7 +58,7 @@ function readThemePreference(): "light" | "dark" | undefined {
   } catch { return undefined; }
 }
 const savedTheme = readThemePreference();
-const initialTheme = savedTheme ?? (systemTheme.matches ? "dark" : "light");
+const initialTheme = savedTheme ?? preferredSystemTheme();
 try { localStorage.removeItem(OLD_VIEWER_STORAGE_KEY); } catch { /* Storage may be disabled. */ }
 const DEFAULT_CODE = optionsToString(DEFAULT_DESIGN_OPTIONS);
 const defaultWorkbench = (design: DesignOptions, theme: "light" | "dark"): WorkbenchOptions =>
@@ -154,13 +156,17 @@ export function App() {
     return () => controller.abort();
   }, [page, githubStars]);
   useEffect(() => {
-    const onSystemTheme = (event: MediaQueryListEvent) => {
+    const onSystemTheme = () => {
       if (hasThemeOverride.current) return;
-      const theme = event.matches ? "dark" : "light";
+      const theme = preferredSystemTheme();
       setOptions(previous => designForTheme({ ...previous, theme }, theme));
     };
-    systemTheme.addEventListener("change", onSystemTheme);
-    return () => systemTheme.removeEventListener("change", onSystemTheme);
+    systemLight.addEventListener("change", onSystemTheme);
+    systemDark.addEventListener("change", onSystemTheme);
+    return () => {
+      systemLight.removeEventListener("change", onSystemTheme);
+      systemDark.removeEventListener("change", onSystemTheme);
+    };
   }, []);
   useEffect(() => { if (options.view === "solid" || options.view === "solid-wireframe") setEdgesPreferred(options.view === "solid-wireframe"); }, [options.view]);
   useEffect(() => { if (options.background !== "transparent") setOpaqueBackground(options.background); }, [options.background]);
@@ -373,7 +379,7 @@ export function App() {
 
     {page === "home" ? <main className="home-hero">
       <div className="home-model"><noble-shape shape={homeDesign.shape} view={homeDesign.view} material={homeDesign.material} color={homeDesign.color} background="transparent" yaw="0.6" pitch="0.72" rotate={!reducedMotion.matches ? "0.25" : undefined} float={!reducedMotion.matches ? "0.25" : undefined} aria-label={SHAPES.find(item => item.id === homeDesign.shape)?.name ?? "Noble polyhedron"} /></div>
-      <div className="home-content"><p className="home-shape-name">Small stellated dodecahedron</p><h1>Noble Shapes</h1><p className="home-description">A noble polyhedron has one kind of vertex and one kind of face.</p><p className="home-kicker">146 finite forms · two infinite families</p><nav className="home-tabs" aria-label="Explore Noble Shapes">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>{PROJECT_GITHUB_URL && <a className="github-stars" href={PROJECT_GITHUB_URL} target="_blank" rel="noopener noreferrer"><Star aria-hidden="true" className="size-4" /><span>Star on GitHub</span>{githubStars !== null && <span className="github-stars-count">{githubStars.toLocaleString()}</span>}</a>}</div>
+      <div className="home-content"><p className="home-shape-name">Small stellated dodecahedron</p><h1>Noble Shapes</h1><p className="home-kicker">146 finite forms · two infinite families</p><nav className="home-tabs" aria-label="Explore Noble Shapes">{(["create", "showcase", "research"] as const).map(item => <a key={item} href={pathForPage(item)} onClick={event => navClick(event, item)}>{item.charAt(0).toUpperCase() + item.slice(1)}</a>)}</nav>{PROJECT_GITHUB_URL && <a className="github-stars" href={PROJECT_GITHUB_URL} target="_blank" rel="noopener noreferrer"><Star aria-hidden="true" className="size-4" /><span>Star on GitHub</span>{githubStars !== null && <span className="github-stars-count">{githubStars.toLocaleString()}</span>}</a>}</div>
     </main> : page === "showcase" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading showcase" /></main>}><Showcase /></Suspense> : page === "research" ? <Research /> : page === "documentation" ? <Suspense fallback={<main className="content-page loading-page" aria-busy="true"><LoadingState label="Loading documentation" /></main>}><Documentation /></Suspense> : <div className="app-layout">
       <aside className="control-panel">
         <div className="control-intro"><h1 className="font-heading text-xl font-bold tracking-tight">Create</h1><p className="mt-1 text-xs text-muted-foreground">146 finite polyhedra · two infinite families</p></div>
