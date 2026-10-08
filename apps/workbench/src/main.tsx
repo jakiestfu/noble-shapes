@@ -179,7 +179,7 @@ export function App() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [options.theme]);
   useEffect(() => {
-    document.title = page === "home" ? PRODUCT.name : `${pageLabel(page)} — ${PRODUCT.name}`;
+    document.title = page === "home" ? PRODUCT.name : `${pageLabel(page)} | ${PRODUCT.name}`;
     document.querySelector<HTMLLinkElement>('link[rel="canonical"]')?.setAttribute("href", `${PRODUCT.url}${pathForPage(page)}`);
   }, [page]);
   useLayoutEffect(() => {

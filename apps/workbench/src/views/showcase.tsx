@@ -7,7 +7,7 @@ import scenes from "@/lib/showcase-scenes.json";
 
 export function Showcase() {
   return <main className="content-page"><div className="content-inner">
-    <div className="page-heading"><div><p className="eyebrow">Curated shapes</p><h1 className="section-title">Showcase</h1><p className="page-description">A few ways nobility can look, from the regular stars to newer facetings and an infinite family. Select a shape to open its design in Create 3D.</p></div><span className="page-count">01 — {String(scenes.length).padStart(2, "0")}</span></div>
+    <div className="page-heading"><div><p className="eyebrow">Selected forms</p><h1 className="section-title">Showcase</h1><p className="page-description">Regular stars, newer facetings, and a member of an infinite family. Select a shape to inspect or edit it.</p></div><span className="page-count">01 / {String(scenes.length).padStart(2, "0")}</span></div>
     <div className="showcase-grid">{scenes.map((scene, index) => {
       const shape = scene.shape as ShapeId;
       const palette = scene.palette as PaletteName;

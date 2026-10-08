@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "predev": "node scripts/generate-doc-source.mjs",
+    "predev": "node scripts/generate-doc-source.mjs && node scripts/generate-default-assets.mjs",
     "dev": "next dev --webpack",
-    "prebuild": "node scripts/generate-doc-source.mjs && node scripts/generate-og-images.mjs",
+    "prebuild": "node scripts/generate-doc-source.mjs && node scripts/generate-default-assets.mjs && node scripts/generate-og-images.mjs",
     "build": "next build --webpack",
     "typecheck": "node scripts/generate-doc-source.mjs && tsc -p tsconfig.json"
   },

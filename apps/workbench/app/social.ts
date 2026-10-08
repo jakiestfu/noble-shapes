@@ -11,10 +11,10 @@ export function pageSocial(page: PageCard, path: string, title: string, descript
     description,
     alternates: { canonical: `${origin}${path}` },
     openGraph: {
-      type: "website", siteName: product.name, title: `${title} — ${product.name}`,
+      type: "website", siteName: product.name, title: `${title} | ${product.name}`,
       description, url: `${origin}${path}`,
       images: [{ url: image, width: 1200, height: 630, alt: `${title} on ${product.name}` }],
     },
-    twitter: { card: "summary_large_image", title: `${title} — ${product.name}`, description, images: [image] },
+    twitter: { card: "summary_large_image", title: `${title} | ${product.name}`, description, images: [image] },
   };
 }

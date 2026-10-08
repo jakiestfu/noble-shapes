@@ -13,7 +13,7 @@ const description = "A playground for exploring finite and infinite noble polyhe
 const defaultImage = `${siteUrl}/og/default.png`;
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: { default: product.name, template: `%s — ${product.name}` },
+  title: { default: product.name, template: `%s | ${product.name}` },
   description,
   openGraph: {
     type: "website", siteName: product.name, title: product.name, description, url: siteUrl,
