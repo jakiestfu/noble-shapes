@@ -2,6 +2,7 @@ import sharp from "sharp";
 import { SHAPES } from "@noble-shapes/core";
 import { renderPng } from "@noble-shapes/node";
 import { DEFAULT_DESIGN_OPTIONS, PALETTES, type DesignOptions } from "@noble-shapes/render";
+import { OG_FONT_BOLD, OG_FONT_REGULAR } from "./og-fonts.ts";
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -89,12 +90,16 @@ export async function renderOgCard(design: DesignOptions, title: string, subtitl
   </svg>`);
   const shape = Buffer.from(renderPng({ ...design, background: "transparent", width: 475, height: 475, quality: 1 }));
   const foreground = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}">
-    <text x="526" y="${brandY}" fill="${heading}" font-family="Arial,DejaVu Sans,sans-serif" font-size="62" font-weight="700" letter-spacing="-2">Noble Shapes</text>
-    <text fill="${escapeXml(design.color)}" font-family="Arial,DejaVu Sans,sans-serif" font-size="${accentSize}" font-weight="700" letter-spacing="-.6">${svgLines(accentLines, 526, accentY, 52)}</text>
-    ${subtitle ? `<text fill="${muted}" font-family="Arial,DejaVu Sans,sans-serif" font-size="${subtitleSize}" font-weight="400">${svgLines(subtitleLines, 526, subtitleY, 31)}</text>` : ""}
+    <style>
+      @font-face { font-family: NobleCard; src: url(data:font/ttf;base64,${OG_FONT_REGULAR}) format("truetype"); font-weight: 400; }
+      @font-face { font-family: NobleCard; src: url(data:font/ttf;base64,${OG_FONT_BOLD}) format("truetype"); font-weight: 700; }
+    </style>
+    <text x="526" y="${brandY}" fill="${heading}" font-family="NobleCard" font-size="62" font-weight="700" letter-spacing="-2">Noble Shapes</text>
+    <text fill="${escapeXml(design.color)}" font-family="NobleCard" font-size="${accentSize}" font-weight="700" letter-spacing="-.6">${svgLines(accentLines, 526, accentY, 52)}</text>
+    ${subtitle ? `<text fill="${muted}" font-family="NobleCard" font-size="${subtitleSize}" font-weight="400">${svgLines(subtitleLines, 526, subtitleY, 31)}</text>` : ""}
     <rect x="526" y="${badgeY}" width="190" height="${badgeHeight}" rx="22.5" fill="${escapeXml(design.color)}" fill-opacity=".1" stroke="${escapeXml(design.color)}" stroke-opacity=".36"/>
-    <text x="548" y="${badgeY + 29}" fill="${escapeXml(design.color)}" font-family="Arial,DejaVu Sans,sans-serif" font-size="21" font-weight="600">Explore now</text>
-    <text x="682" y="${badgeY + 29}" fill="${escapeXml(design.color)}" font-family="Arial,DejaVu Sans,sans-serif" font-size="23">→</text>
+    <text x="548" y="${badgeY + 29}" fill="${escapeXml(design.color)}" font-family="NobleCard" font-size="21" font-weight="700">Explore now</text>
+    <path d="M684 ${badgeY + 22.5}h19m-7-7 7 7-7 7" fill="none" stroke="${escapeXml(design.color)}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
   </svg>`);
   return sharp(backdrop).composite([{ input: shape, left: 27, top: 78 }, { input: foreground, left: 0, top: 0 }]).png().toBuffer();
 }
