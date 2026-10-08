@@ -5,45 +5,98 @@ import { DEFAULT_DESIGN_OPTIONS, PALETTES, type DesignOptions } from "@noble-sha
 
 const WIDTH = 1200;
 const HEIGHT = 630;
+export const PLAYGROUND_DESCRIPTION = "A playground for exploring finite and infinite noble polyhedra.";
 
 export type PageCard = "default" | "create" | "showcase" | "research" | "documentation";
 
-export const PAGE_CARDS: Record<PageCard, { title: string; subtitle: string; design: DesignOptions }> = {
-  default: { title: "Noble Shapes", subtitle: "Explore 146 finite forms and two infinite families.", design: DEFAULT_DESIGN_OPTIONS },
+export const PAGE_CARDS: Record<PageCard, { title: string; subtitle?: string; design: DesignOptions }> = {
+  default: { title: PLAYGROUND_DESCRIPTION, design: DEFAULT_DESIGN_OPTIONS },
   create: { title: "Create 3D", subtitle: "Choose a noble polyhedron, shape its appearance, and share your design.", design: DEFAULT_DESIGN_OPTIONS },
   showcase: { title: "Shape showcase", subtitle: "A closer look at remarkable noble polyhedra.", design: { ...DEFAULT_DESIGN_OPTIONS, shape: "great-stellated-dodecahedron", palette: "coral", color: PALETTES.coral.color, background: PALETTES.coral.background } },
   research: { title: "The mathematics", subtitle: "One kind of vertex. One kind of face.", design: { ...DEFAULT_DESIGN_OPTIONS, shape: "icosahedron", palette: "gold", color: PALETTES.gold.color, background: PALETTES.gold.background } },
-  documentation: { title: "Build with Noble Shapes", subtitle: "Web components, Node images, a CLI, and a JavaScript API.", design: { ...DEFAULT_DESIGN_OPTIONS, shape: "dodecahedron", palette: "violet", color: PALETTES.violet.color, background: PALETTES.violet.background } },
+  documentation: { title: "Developer tools", subtitle: "Web components, Node images, a CLI, and a JavaScript API.", design: { ...DEFAULT_DESIGN_OPTIONS, shape: "dodecahedron", palette: "violet", color: PALETTES.violet.color, background: PALETTES.violet.background } },
 };
 
 function escapeXml(value: string): string {
   return value.replace(/[&<>"']/g, character => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&apos;" })[character]!);
 }
 
-function titleLines(title: string): string[] {
-  const words = title.split(/\s+/);
-  const lines: string[] = [];
-  for (const word of words) {
-    const last = lines.length - 1;
-    if (last >= 0 && `${lines[last]} ${word}`.length <= 19) lines[last] += ` ${word}`;
-    else lines.push(word);
-  }
-  return lines.slice(0, 4);
+function rgb(hex: string): [number, number, number] {
+  return [1, 3, 5].map(index => Number.parseInt(hex.slice(index, index + 2), 16)) as [number, number, number];
 }
 
-/** Branded card shared by static page previews and dynamic design previews. */
-export async function renderOgCard(design: DesignOptions, title: string, subtitle: string): Promise<Buffer> {
+function blend(from: string, to: string, amount: number): string {
+  const a = rgb(from);
+  const b = rgb(to);
+  return `#${a.map((channel, index) => Math.round(channel * (1 - amount) + b[index]! * amount).toString(16).padStart(2, "0")).join("")}`;
+}
+
+function isLight(hex: string): boolean {
+  const [red, green, blue] = rgb(hex).map(channel => {
+    const value = channel / 255;
+    return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return red! * 0.2126 + green! * 0.7152 + blue! * 0.0722 > 0.35;
+}
+
+function textWidth(value: string, fontSize: number): number {
+  return [...value].reduce((width, character) => width + fontSize * (
+    character === " " ? 0.31 : /[ilI.,'!]/.test(character) ? 0.29 : /[MWmw]/.test(character) ? 0.83 : /[A-Z]/.test(character) ? 0.67 : 0.53
+  ), 0);
+}
+
+function wrapText(value: string, fontSize: number, maxWidth: number): string[] {
+  const lines: string[] = [];
+  for (const word of value.split(/\s+/)) {
+    const last = lines.length - 1;
+    const candidate = last < 0 ? word : `${lines[last]} ${word}`;
+    if (last >= 0 && textWidth(candidate, fontSize) <= maxWidth) lines[last] = candidate;
+    else lines.push(word);
+  }
+  return lines;
+}
+
+function svgLines(lines: string[], x: number, y: number, lineHeight: number): string {
+  return lines.map((line, index) => `<tspan x="${x}" y="${y + index * lineHeight}">${escapeXml(line)}</tspan>`).join("");
+}
+
+/** A profile-style card shared by page images and encoded design previews. */
+export async function renderOgCard(design: DesignOptions, title: string, subtitle?: string): Promise<Buffer> {
   const background = design.background === "transparent" ? PALETTES[design.palette].background : design.background;
-  const titleColor = "#f6f7f4";
-  const lines = titleLines(title);
-  const fontSize = lines.length > 2 ? 54 : 61;
-  const lineHeight = 1.07 * fontSize;
-  const titleY = 270 - (lines.length - 1) * 26;
-  const safeTitle = lines.map((line, index) => `<tspan x="70" y="${Math.round(titleY + index * lineHeight)}">${escapeXml(line)}</tspan>`).join("");
-  const backdrop = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}"><defs><radialGradient id="glow"><stop stop-color="${escapeXml(design.color)}" stop-opacity=".27"/><stop offset="1" stop-color="${escapeXml(background)}" stop-opacity="0"/></radialGradient><linearGradient id="veil"><stop stop-color="${escapeXml(background)}" stop-opacity=".94"/><stop offset=".57" stop-color="${escapeXml(background)}" stop-opacity=".2"/><stop offset="1" stop-color="${escapeXml(background)}" stop-opacity="0"/></linearGradient></defs><rect width="1200" height="630" fill="${escapeXml(background)}"/><ellipse cx="855" cy="290" rx="490" ry="490" fill="url(#glow)"/></svg>`);
-  const shape = Buffer.from(renderPng({ ...design, background: "transparent", width: 700, height: 630, quality: 1 }));
-  const foreground = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630"><defs><linearGradient id="veil"><stop stop-color="${escapeXml(background)}" stop-opacity=".98"/><stop offset=".55" stop-color="${escapeXml(background)}" stop-opacity=".75"/><stop offset="1" stop-color="${escapeXml(background)}" stop-opacity="0"/></linearGradient></defs><rect width="775" height="630" fill="url(#veil)"/><text x="70" y="100" fill="${titleColor}" font-family="Arial,DejaVu Sans,sans-serif" font-size="24" font-weight="700" letter-spacing="5">NOBLE SHAPES</text><text fill="${titleColor}" font-family="Arial,DejaVu Sans,sans-serif" font-size="${fontSize}" font-weight="700" letter-spacing="-1.5">${safeTitle}</text><text x="70" y="${Math.max(405, Math.round(titleY + (lines.length - 1) * lineHeight + 70))}" fill="#ffffffb8" font-family="Arial,DejaVu Sans,sans-serif" font-size="22">${escapeXml(subtitle)}</text><line x1="70" x2="1130" y1="555" y2="555" stroke="#ffffff55"/><text x="70" y="592" fill="#ffffffa8" font-family="Arial,DejaVu Sans,sans-serif" font-size="18" letter-spacing="1.5">NOBLESHAP.ES</text></svg>`);
-  return sharp(backdrop).composite([{ input: shape, left: 500, top: 0 }, { input: foreground, left: 0, top: 0 }]).png().toBuffer();
+  const light = isLight(background);
+  const outer = blend(background, "#000000", light ? 0.08 : 0.18);
+  const border = blend(background, light ? "#000000" : "#ffffff", light ? 0.12 : 0.16);
+  const heading = light ? "#162027" : "#f7f7f8";
+  const muted = light ? "#4e5860" : "#b3b7bd";
+  const accentSize = subtitle ? 43 : 36;
+  const accentLines = wrapText(title, accentSize, 605);
+  const subtitleSize = 22;
+  const subtitleLines = subtitle ? wrapText(subtitle, subtitleSize, 600) : [];
+  const brandHeight = 74;
+  const accentHeight = accentLines.length * 52;
+  const subtitleHeight = subtitleLines.length * 31;
+  const subtitleGap = subtitle ? 12 : 0;
+  const badgeHeight = 45;
+  const stackHeight = brandHeight + 20 + accentHeight + subtitleGap + subtitleHeight + 20 + badgeHeight;
+  const stackTop = (HEIGHT - stackHeight) / 2;
+  const brandY = stackTop + 61;
+  const accentY = stackTop + brandHeight + 20 + 37;
+  const subtitleY = stackTop + brandHeight + 20 + accentHeight + subtitleGap + 23;
+  const badgeY = stackTop + stackHeight - badgeHeight;
+  const backdrop = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}">
+    <rect width="1200" height="630" fill="${outer}"/>
+    <rect x="28" y="28" width="1144" height="574" rx="27" fill="${background}" stroke="${border}" stroke-width="2"/>
+  </svg>`);
+  const shape = Buffer.from(renderPng({ ...design, background: "transparent", width: 475, height: 475, quality: 1 }));
+  const foreground = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${WIDTH}" height="${HEIGHT}">
+    <text x="526" y="${brandY}" fill="${heading}" font-family="Arial,DejaVu Sans,sans-serif" font-size="62" font-weight="700" letter-spacing="-2">Noble Shapes</text>
+    <text fill="${escapeXml(design.color)}" font-family="Arial,DejaVu Sans,sans-serif" font-size="${accentSize}" font-weight="700" letter-spacing="-.6">${svgLines(accentLines, 526, accentY, 52)}</text>
+    ${subtitle ? `<text fill="${muted}" font-family="Arial,DejaVu Sans,sans-serif" font-size="${subtitleSize}" font-weight="400">${svgLines(subtitleLines, 526, subtitleY, 31)}</text>` : ""}
+    <rect x="526" y="${badgeY}" width="190" height="${badgeHeight}" rx="22.5" fill="${escapeXml(design.color)}" fill-opacity=".1" stroke="${escapeXml(design.color)}" stroke-opacity=".36"/>
+    <text x="548" y="${badgeY + 29}" fill="${escapeXml(design.color)}" font-family="Arial,DejaVu Sans,sans-serif" font-size="21" font-weight="600">Explore now</text>
+    <text x="682" y="${badgeY + 29}" fill="${escapeXml(design.color)}" font-family="Arial,DejaVu Sans,sans-serif" font-size="23">→</text>
+  </svg>`);
+  return sharp(backdrop).composite([{ input: shape, left: 27, top: 78 }, { input: foreground, left: 0, top: 0 }]).png().toBuffer();
 }
 
 export function shapeName(design: DesignOptions): string {
