@@ -1,0 +1,34 @@
+{
+  "shape": "great-stellated-dodecahedron",
+  "classification": "Regular star polyhedron",
+  "notation": "{5/2, 3}",
+  "faceName": "Pentagram {5/2}",
+  "faceIndex": 0,
+  "palette": "coral",
+  "view": "solid-wireframe",
+  "duration": 18,
+  "fps": 24,
+  "resolution": "1080p",
+  "yaw": 0.55,
+  "pitch": 0.68,
+  "turns": 1,
+  "floatPixels": 16,
+  "zoom": 1.08,
+  "chapters": [
+    {
+      "label": "01 / THE FORM",
+      "title": "A star made of stars",
+      "body": "The symbol {5/2, 3} means pentagram faces, with three meeting at each vertex."
+    },
+    {
+      "label": "02 / ONE FACE",
+      "title": "Follow the pentagram",
+      "body": "The five-pointed star at right is a single face. Its crossings are not extra vertices."
+    },
+    {
+      "label": "03 / THE COUNT",
+      "title": "A familiar equation",
+      "body": "20 vertices - 30 edges + 12 faces = 2. The abstract surface satisfies Euler's formula."
+    }
+  ]
+}

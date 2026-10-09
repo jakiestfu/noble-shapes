@@ -156,6 +156,25 @@ importers:
         specifier: ^5.9.0
         version: 5.9.3
 
+  packages/video:
+    dependencies:
+      '@noble-shapes/core':
+        specifier: workspace:*
+        version: link:../core
+      '@noble-shapes/render':
+        specifier: workspace:*
+        version: link:../render
+      sharp:
+        specifier: 0.35.5
+        version: 0.35.5(@types/node@24.19.1)
+    devDependencies:
+      '@types/node':
+        specifier: ^24.0.0
+        version: 24.19.1
+      typescript:
+        specifier: ^5.9.0
+        version: 5.9.3
+
   packages/web-component:
     dependencies:
       '@noble-shapes/core':

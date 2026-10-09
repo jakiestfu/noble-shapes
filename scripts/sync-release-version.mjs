@@ -8,7 +8,7 @@ if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(rootManifest.version ?? "")) {
   throw new Error("Set a valid release version in the root package.json");
 }
 
-for (const directory of ["noble-shapes", "core", "render", "node", "web-component"]) {
+for (const directory of ["noble-shapes", "core", "render", "node", "web-component", "video"]) {
   const path = join(root, "packages", directory, "package.json");
   const manifest = JSON.parse(readFileSync(path, "utf8"));
   if (manifest.version !== rootManifest.version) {

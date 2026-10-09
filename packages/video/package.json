@@ -1,0 +1,32 @@
+{
+  "name": "@noble-shapes/video",
+  "private": true,
+  "version": "0.1.2",
+  "description": "Educational video rendering for noble polyhedra",
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "noble-video": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "render": "node dist/cli.js",
+    "sample": "node dist/cli.js --config examples/great-stellated-dodecahedron.json --output ../../renders/video/great-stellated-dodecahedron.mp4",
+    "sample:faces": "node dist/cli.js --config examples/small-stellated-face-tour.json --output ../../renders/video/small-stellated-face-tour.mp4"
+  },
+  "dependencies": {
+    "@noble-shapes/core": "workspace:*",
+    "@noble-shapes/render": "workspace:*",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}

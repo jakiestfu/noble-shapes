@@ -1,6 +1,6 @@
 {
   "name": "noble-shapes-workspace",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "packageManager": "pnpm@11.3.0",
   "type": "module",
@@ -16,7 +16,9 @@
     "bench": "pnpm -r --filter './packages/**' build && node scripts/benchmark.mjs",
     "render:examples": "node scripts/render-examples.mjs",
     "render:home": "pnpm -r --filter './packages/**' build && node scripts/render-home.mjs",
-    "render:showcase": "pnpm -r --filter './packages/**' build && node scripts/render-showcase.mjs"
+    "render:showcase": "pnpm -r --filter './packages/**' build && node scripts/render-showcase.mjs",
+    "video:sample": "pnpm -r --filter './packages/**' build && pnpm --filter @noble-shapes/video sample",
+    "video:sample:faces": "pnpm -r --filter './packages/**' build && pnpm --filter @noble-shapes/video sample:faces"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

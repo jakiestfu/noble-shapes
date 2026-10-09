@@ -1,0 +1,35 @@
+{
+  "shape": "dodecahedron",
+  "classification": "Platonic solid",
+  "notation": "{5, 3}",
+  "faceName": "Regular pentagon",
+  "palette": "jade",
+  "view": "solid-wireframe",
+  "duration": 60,
+  "loops": 2,
+  "fps": 24,
+  "resolution": "1080p",
+  "yaw": 0.55,
+  "pitch": 0.5,
+  "turns": 0.25,
+  "floatPixels": 12,
+  "pitchSwing": 0.06,
+  "zoom": 1.08,
+  "chapters": [
+    {
+      "label": "01 / FACES",
+      "title": "Twelve pentagons",
+      "body": "Every face is a regular pentagon. The twelve faces are congruent."
+    },
+    {
+      "label": "02 / VERTICES",
+      "title": "Three meet at a corner",
+      "body": "At each of its twenty vertices, exactly three pentagons meet."
+    },
+    {
+      "label": "03 / DUALITY",
+      "title": "Paired with the icosahedron",
+      "body": "Connect the centers of neighboring faces to obtain an icosahedron."
+    }
+  ]
+}

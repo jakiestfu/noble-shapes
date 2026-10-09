@@ -1,0 +1,38 @@
+{
+  "shape": "small-stellated-dodecahedron",
+  "classification": "Kepler-Poinsot solid",
+  "notation": "{5/2, 5}",
+  "faceName": "Pentagram {5/2}",
+  "palette": "violet",
+  "view": "solid-wireframe",
+  "duration": 60,
+  "loops": 2,
+  "introFraction": 0.18,
+  "faceTourFraction": 0.28,
+  "crossfadeSeconds": 0.6,
+  "fps": 24,
+  "resolution": "1080p",
+  "yaw": 1.03,
+  "pitch": 0.75,
+  "turns": 1,
+  "floatPixels": 16,
+  "pitchSwing": 0.07,
+  "zoom": 1.08,
+  "chapters": [
+    {
+      "label": "01 / FACES",
+      "title": "Twelve pentagrams",
+      "body": "Each face traces a five-pointed star. The crossings inside a pentagram are not extra vertices."
+    },
+    {
+      "label": "02 / VERTICES",
+      "title": "Five stars meet",
+      "body": "Five pentagram faces meet at each of the twelve vertices, giving the symbol {5/2, 5}."
+    },
+    {
+      "label": "03 / TOPOLOGY",
+      "title": "An Euler count of -6",
+      "body": "For this abstract face structure, V - E + F = 12 - 30 + 12 = -6, unlike a convex solid's 2."
+    }
+  ]
+}
